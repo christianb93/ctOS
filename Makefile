@@ -17,6 +17,10 @@ $(SUBDIRS):
 
 clean:
 	for i in $(SUBDIRS); do (cd $$i ; $(MAKE) clean) ; done
+	
+distclean:
+	for i in $(SUBDIRS); do (cd $$i ; $(MAKE) distclean) ; done
+	
 
 dep:
 	for i in $(SUBDIRS); do (cd $$i ; make dep) ; done
