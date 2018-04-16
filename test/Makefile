@@ -1,4 +1,4 @@
-TESTS = test_gdt test_idt test_string test_stdlib test_lists test_pagetables test_heap test_mm test_pm test_sched test_params test_dm test_fs test_fs_ext2 test_blockcache test_fs_stack test_elf test_tty test_keyboard test_hd test_irq test_time test_streams test_stdio test_stdio_baseline test_setjmp test_dirstreams test_env test_pipes test_string_baseline test_stdlib_baseline test_tools test_getopt  test_vga test_net test_inet test_inet_baseline test_tcp test_ip test_net_if test_udp test_resolv test_fnmatch test_fnmatch_baseline test_netdb test_netdb_baseline test_pwd test_math
+TESTS = test_gdt test_idt test_string test_stdlib test_lists test_pagetables test_heap test_mm test_pm test_sched test_params test_dm test_fs test_fs_ext2 test_blockcache test_fs_stack test_tty test_keyboard test_hd test_irq test_time test_streams test_stdio test_stdio_baseline test_setjmp test_dirstreams test_env test_pipes test_string_baseline test_stdlib_baseline test_tools test_getopt  test_vga test_net test_inet test_inet_baseline test_tcp test_ip test_net_if test_udp test_resolv test_fnmatch test_fnmatch_baseline test_netdb test_netdb_baseline test_pwd test_math
 INTERACTIVE = test_debug test_write test_memorder
 all: $(TESTS) $(INTERACTIVE) testgrub
 
@@ -88,8 +88,6 @@ test_blockcache: test_blockcache.c ../kernel/blockcache.o ../include/blockcache.
 test_fs_stack: test_fs_stack.c ../kernel/blockcache.o ../kernel/fs.o ../kernel/dm.o ../kernel/fs_ext2.o kunit.o
 	gcc -o test_fs_stack test_fs_stack.c kunit.o ../kernel/blockcache.o ../kernel/fs.o ../kernel/fs_pipe.o ../kernel/dm.o ../kernel/fs_ext2.o ../kernel/fs_fat16.o ../kernel/kprintf.o -fno-builtin -iquote../include -Wno-packed-bitfield-compat -m32 -Wno-implicit-function-declaration
  
-test_elf: test_elf.c ../kernel/elf.o kunit.o
-	gcc -o test_elf test_elf.c kunit.o ../kernel/elf.o ../kernel/kprintf.o -fno-builtin -iquote../include -Wno-packed-bitfield-compat -m32 -Wno-implicit-function-declaration
 
 test_tty: test_tty.c ../driver/tty.o ../driver/tty_ld.o kunit.o
 	gcc -o test_tty -g test_tty.c kunit.o ../driver/tty.o ../driver/tty_ld.o ../kernel/kprintf.o -iquote../include -m32 -Wno-implicit-function-declaration
