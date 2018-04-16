@@ -1,0 +1,310 @@
+abort.o: abort.c /usr/include/stdc-predef.h ../../include/lib/ctype.h \
+ ../../include/lib/string.h ../../include/lib/unistd.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/getopt.h ../../include/lib/signal.h \
+ ../../include/lib/os/signals.h ../../include/lib/os/types.h \
+ ../../include/lib/os/streams.h
+asctime.o: asctime.c /usr/include/stdc-predef.h ../../include/lib/stdio.h \
+ ../../include/lib/stddef.h ../../include/lib/os/streams.h \
+ ../../include/lib/os/types.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/stdarg.h \
+ ../../include/lib/time.h
+close.o: close.c /usr/include/stdc-predef.h \
+ ../../include/lib/os/oscalls.h ../../include/lib/os/types.h \
+ ../../include/lib/os/signals.h ../../include/lib/os/dirstreams.h \
+ ../../include/lib/sys/stat.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/sys/times.h \
+ ../../include/lib/sys/resource.h ../../include/lib/termios.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/socket.h \
+ ../../include/lib/sys/select.h ../../include/lib/sys/time.h \
+ ../../include/lib/utime.h ../../include/lib/errno.h \
+ ../../include/lib/os/errors.h
+crt0.o: crt0.c /usr/include/stdc-predef.h ../../include/lib/os/heap.h \
+ ../../include/lib/os/types.h ../../include/lib/os/oscalls.h \
+ ../../include/lib/os/signals.h ../../include/lib/os/dirstreams.h \
+ ../../include/lib/sys/stat.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/sys/times.h \
+ ../../include/lib/sys/resource.h ../../include/lib/termios.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/socket.h \
+ ../../include/lib/sys/select.h ../../include/lib/sys/time.h \
+ ../../include/lib/utime.h ../../include/lib/stdio.h \
+ ../../include/lib/stddef.h ../../include/lib/os/streams.h \
+ ../../include/lib/stdarg.h ../../include/lib/unistd.h \
+ ../../include/lib/getopt.h ../../include/lib/stdlib.h \
+ ../../include/lib/unistd.h ../../include/lib/string.h \
+ ../../include/lib/locale.h
+ctype.o: ctype.c /usr/include/stdc-predef.h ../../include/lib/ctype.h
+dirent.o: dirent.c /usr/include/stdc-predef.h ../../include/lib/dirent.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/os/dirstreams.h ../../include/lib/os/types.h \
+ ../../include/lib/stdlib.h ../../include/lib/unistd.h \
+ ../../include/lib/getopt.h ../../include/lib/stddef.h \
+ ../../include/lib/errno.h ../../include/lib/os/errors.h \
+ ../../include/lib/fcntl.h
+env.o: env.c /usr/include/stdc-predef.h ../../include/lib/errno.h \
+ ../../include/lib/os/errors.h ../../include/lib/string.h \
+ ../../include/lib/unistd.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/getopt.h \
+ ../../include/lib/stdlib.h ../../include/lib/stddef.h
+errno.o: errno.c /usr/include/stdc-predef.h
+exit.o: exit.c /usr/include/stdc-predef.h ../../include/lib/os/oscalls.h \
+ ../../include/lib/os/types.h ../../include/lib/os/signals.h \
+ ../../include/lib/os/dirstreams.h ../../include/lib/sys/stat.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/sys/times.h ../../include/lib/sys/resource.h \
+ ../../include/lib/termios.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/socket.h ../../include/lib/sys/select.h \
+ ../../include/lib/sys/time.h ../../include/lib/utime.h \
+ ../../include/lib/os/streams.h
+fcntl.o: fcntl.c /usr/include/stdc-predef.h ../../include/lib/fcntl.h \
+ ../../include/lib/os/oscalls.h ../../include/lib/os/types.h \
+ ../../include/lib/os/signals.h ../../include/lib/os/dirstreams.h \
+ ../../include/lib/sys/stat.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/sys/times.h \
+ ../../include/lib/sys/resource.h ../../include/lib/termios.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/socket.h \
+ ../../include/lib/sys/select.h ../../include/lib/sys/time.h \
+ ../../include/lib/utime.h ../../include/lib/stdarg.h \
+ ../../include/lib/errno.h ../../include/lib/os/errors.h
+fnmatch.o: fnmatch.c /usr/include/stdc-predef.h \
+ ../../include/lib/fnmatch.h
+fork.o: fork.c /usr/include/stdc-predef.h ../../include/lib/os/oscalls.h \
+ ../../include/lib/os/types.h ../../include/lib/os/signals.h \
+ ../../include/lib/os/dirstreams.h ../../include/lib/sys/stat.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/sys/times.h ../../include/lib/sys/resource.h \
+ ../../include/lib/termios.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/socket.h ../../include/lib/sys/select.h \
+ ../../include/lib/sys/time.h ../../include/lib/utime.h \
+ ../../include/lib/errno.h ../../include/lib/os/errors.h
+getopt.o: getopt.c /usr/include/stdc-predef.h ../../include/lib/string.h \
+ ../../include/lib/unistd.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/getopt.h
+inet.o: inet.c /usr/include/stdc-predef.h ../../include/lib/arpa/inet.h \
+ ../../include/lib/netinet/in.h ../../include/lib/netinet/../sys/socket.h \
+ ../../include/lib/netinet/../sys/types.h \
+ ../../include/lib/netinet/../sys/../os/types.h \
+ ../../include/lib/netinet/../sys/select.h \
+ ../../include/lib/netinet/../sys/time.h \
+ ../../include/lib/netinet/../inttypes.h \
+ ../../include/lib/netinet/../stdint.h \
+ ../../include/lib/netinet/../arpa/inet.h ../../include/lib/errno.h \
+ ../../include/lib/os/errors.h ../../include/lib/stdio.h \
+ ../../include/lib/stddef.h ../../include/lib/os/streams.h \
+ ../../include/lib/os/types.h ../../include/lib/sys/types.h \
+ ../../include/lib/stdarg.h
+ioctl.o: ioctl.c /usr/include/stdc-predef.h ../../include/lib/sys/ioctl.h \
+ ../../include/lib/stdarg.h ../../include/lib/os/oscalls.h \
+ ../../include/lib/os/types.h ../../include/lib/os/signals.h \
+ ../../include/lib/os/dirstreams.h ../../include/lib/sys/stat.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/sys/times.h ../../include/lib/sys/resource.h \
+ ../../include/lib/termios.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/socket.h ../../include/lib/sys/select.h \
+ ../../include/lib/sys/time.h ../../include/lib/utime.h \
+ ../../include/lib/errno.h ../../include/lib/os/errors.h
+locale.o: locale.c /usr/include/stdc-predef.h ../../include/lib/stddef.h \
+ ../../include/lib/locale.h ../../include/lib/string.h \
+ ../../include/lib/unistd.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/getopt.h
+lseek.o: lseek.c /usr/include/stdc-predef.h \
+ ../../include/lib/os/oscalls.h ../../include/lib/os/types.h \
+ ../../include/lib/os/signals.h ../../include/lib/os/dirstreams.h \
+ ../../include/lib/sys/stat.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/sys/times.h \
+ ../../include/lib/sys/resource.h ../../include/lib/termios.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/socket.h \
+ ../../include/lib/sys/select.h ../../include/lib/sys/time.h \
+ ../../include/lib/utime.h ../../include/lib/sys/types.h \
+ ../../include/lib/errno.h ../../include/lib/os/errors.h
+malloc.o: malloc.c /usr/include/stdc-predef.h ../../include/lib/os/heap.h \
+ ../../include/lib/os/types.h ../../include/lib/string.h \
+ ../../include/lib/unistd.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/getopt.h
+net.o: net.c /usr/include/stdc-predef.h ../../include/lib/stdint.h \
+ ../../include/lib/string.h ../../include/lib/unistd.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/getopt.h ../../include/lib/stdlib.h \
+ ../../include/lib/stddef.h ../../include/debug.h ../../include/irq.h \
+ ../../include/lib/sys/types.h ../../include/pci.h ../../include/ktypes.h \
+ ../../include/lib/os/types.h ../../include/apic.h \
+ ../../include/kprintf.h ../../include/vga.h ../../include/multiboot.h \
+ ../../include/locks.h ../../include/console.h \
+ ../../include/lib/netinet/in.h ../../include/lib/netinet/../sys/socket.h \
+ ../../include/lib/netinet/../sys/types.h \
+ ../../include/lib/netinet/../sys/select.h \
+ ../../include/lib/netinet/../sys/time.h \
+ ../../include/lib/netinet/../inttypes.h \
+ ../../include/lib/netinet/../stdint.h \
+ ../../include/lib/netinet/../arpa/inet.h ../../include/lib/arpa/inet.h \
+ ../../include/lib/stdio.h ../../include/lib/os/streams.h \
+ ../../include/lib/os/types.h ../../include/lib/stdarg.h
+netdb.o: netdb.c /usr/include/stdc-predef.h ../../include/lib/netdb.h \
+ ../../include/lib/string.h ../../include/lib/unistd.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/getopt.h
+open.o: open.c /usr/include/stdc-predef.h ../../include/lib/os/oscalls.h \
+ ../../include/lib/os/types.h ../../include/lib/os/signals.h \
+ ../../include/lib/os/dirstreams.h ../../include/lib/sys/stat.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/sys/times.h ../../include/lib/sys/resource.h \
+ ../../include/lib/termios.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/socket.h ../../include/lib/sys/select.h \
+ ../../include/lib/sys/time.h ../../include/lib/utime.h \
+ ../../include/lib/errno.h ../../include/lib/os/errors.h \
+ ../../include/lib/fcntl.h ../../include/lib/stdarg.h
+pwd.o: pwd.c /usr/include/stdc-predef.h ../../include/lib/pwd.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/os/pwddb.h ../../include/lib/os/types.h \
+ ../../include/lib/errno.h ../../include/lib/os/errors.h
+read.o: read.c /usr/include/stdc-predef.h ../../include/lib/os/oscalls.h \
+ ../../include/lib/os/types.h ../../include/lib/os/signals.h \
+ ../../include/lib/os/dirstreams.h ../../include/lib/sys/stat.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/sys/times.h ../../include/lib/sys/resource.h \
+ ../../include/lib/termios.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/socket.h ../../include/lib/sys/select.h \
+ ../../include/lib/sys/time.h ../../include/lib/utime.h \
+ ../../include/lib/sys/types.h ../../include/lib/errno.h \
+ ../../include/lib/os/errors.h
+setjmp.o: setjmp.c /usr/include/stdc-predef.h ../../include/lib/setjmp.h
+signals.o: signals.c /usr/include/stdc-predef.h \
+ ../../include/lib/signal.h ../../include/lib/os/signals.h \
+ ../../include/lib/os/types.h ../../include/lib/errno.h \
+ ../../include/lib/os/errors.h ../../include/lib/os/oscalls.h \
+ ../../include/lib/os/signals.h ../../include/lib/os/dirstreams.h \
+ ../../include/lib/sys/stat.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/sys/times.h \
+ ../../include/lib/sys/resource.h ../../include/lib/termios.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/socket.h \
+ ../../include/lib/sys/select.h ../../include/lib/sys/time.h \
+ ../../include/lib/utime.h ../../include/lib/string.h \
+ ../../include/lib/unistd.h ../../include/lib/getopt.h
+socket.o: socket.c /usr/include/stdc-predef.h \
+ ../../include/lib/os/oscalls.h ../../include/lib/os/types.h \
+ ../../include/lib/os/signals.h ../../include/lib/os/dirstreams.h \
+ ../../include/lib/sys/stat.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/sys/times.h \
+ ../../include/lib/sys/resource.h ../../include/lib/termios.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/socket.h \
+ ../../include/lib/sys/select.h ../../include/lib/sys/time.h \
+ ../../include/lib/utime.h ../../include/lib/errno.h \
+ ../../include/lib/os/errors.h
+stat.o: stat.c /usr/include/stdc-predef.h ../../include/lib/sys/stat.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/os/oscalls.h ../../include/lib/os/types.h \
+ ../../include/lib/os/signals.h ../../include/lib/os/dirstreams.h \
+ ../../include/lib/sys/times.h ../../include/lib/sys/resource.h \
+ ../../include/lib/termios.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/socket.h ../../include/lib/sys/select.h \
+ ../../include/lib/sys/time.h ../../include/lib/utime.h \
+ ../../include/lib/errno.h ../../include/lib/os/errors.h
+stdio.o: stdio.c /usr/include/stdc-predef.h \
+ ../../include/lib/os/streams.h ../../include/lib/os/types.h \
+ ../../include/lib/os/oscalls.h ../../include/lib/os/signals.h \
+ ../../include/lib/os/dirstreams.h ../../include/lib/sys/stat.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/sys/times.h ../../include/lib/sys/resource.h \
+ ../../include/lib/termios.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/socket.h ../../include/lib/sys/select.h \
+ ../../include/lib/sys/time.h ../../include/lib/utime.h \
+ ../../include/lib/unistd.h ../../include/lib/getopt.h \
+ ../../include/lib/stdlib.h ../../include/lib/unistd.h \
+ ../../include/lib/stddef.h ../../include/lib/errno.h \
+ ../../include/lib/os/errors.h ../../include/lib/stdarg.h \
+ ../../include/lib/stdio.h ../../include/lib/os/streams.h \
+ ../../include/lib/stdarg.h ../../include/lib/string.h \
+ ../../include/lib/fcntl.h ../../include/lib/ctype.h \
+ ../../include/lib/limits.h ../../include/lib/stdint.h \
+ ../../include/lib/os/mathlib.h
+stdlib.o: stdlib.c /usr/include/stdc-predef.h ../../include/lib/ctype.h \
+ ../../include/lib/string.h ../../include/lib/unistd.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/getopt.h ../../include/lib/errno.h \
+ ../../include/lib/os/errors.h ../../include/lib/limits.h \
+ ../../include/lib/time.h ../../include/lib/stdlib.h \
+ ../../include/lib/stddef.h
+strdup.o: strdup.c /usr/include/stdc-predef.h ../../include/lib/string.h \
+ ../../include/lib/unistd.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/getopt.h \
+ ../../include/lib/stdlib.h ../../include/lib/stddef.h \
+ ../../include/lib/errno.h ../../include/lib/os/errors.h
+string.o: string.c /usr/include/stdc-predef.h ../../include/lib/string.h \
+ ../../include/lib/unistd.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/getopt.h \
+ ../../include/lib/ctype.h ../../include/lib/errno.h \
+ ../../include/lib/os/errors.h
+termios.o: termios.c /usr/include/stdc-predef.h \
+ ../../include/lib/os/oscalls.h ../../include/lib/os/types.h \
+ ../../include/lib/os/signals.h ../../include/lib/os/dirstreams.h \
+ ../../include/lib/sys/stat.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/sys/times.h \
+ ../../include/lib/sys/resource.h ../../include/lib/termios.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/socket.h \
+ ../../include/lib/sys/select.h ../../include/lib/sys/time.h \
+ ../../include/lib/utime.h ../../include/lib/errno.h \
+ ../../include/lib/os/errors.h
+time.o: time.c /usr/include/stdc-predef.h ../../include/lib/time.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/os/oscalls.h ../../include/lib/os/types.h \
+ ../../include/lib/os/signals.h ../../include/lib/os/dirstreams.h \
+ ../../include/lib/sys/stat.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/times.h ../../include/lib/sys/resource.h \
+ ../../include/lib/termios.h ../../include/lib/sys/socket.h \
+ ../../include/lib/sys/select.h ../../include/lib/sys/time.h \
+ ../../include/lib/utime.h ../../include/lib/stdio.h \
+ ../../include/lib/stddef.h ../../include/lib/os/streams.h \
+ ../../include/lib/stdarg.h
+times.o: times.c /usr/include/stdc-predef.h ../../include/lib/sys/times.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/os/oscalls.h ../../include/lib/os/types.h \
+ ../../include/lib/os/signals.h ../../include/lib/os/dirstreams.h \
+ ../../include/lib/sys/stat.h ../../include/lib/sys/resource.h \
+ ../../include/lib/termios.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/socket.h ../../include/lib/sys/select.h \
+ ../../include/lib/sys/time.h ../../include/lib/utime.h
+unistd.o: unistd.c /usr/include/stdc-predef.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/../os/types.h \
+ ../../include/lib/unistd.h ../../include/lib/sys/types.h \
+ ../../include/lib/getopt.h ../../include/lib/os/oscalls.h \
+ ../../include/lib/os/types.h ../../include/lib/os/signals.h \
+ ../../include/lib/os/dirstreams.h ../../include/lib/sys/stat.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/times.h \
+ ../../include/lib/sys/resource.h ../../include/lib/termios.h \
+ ../../include/lib/sys/socket.h ../../include/lib/sys/select.h \
+ ../../include/lib/sys/time.h ../../include/lib/utime.h \
+ ../../include/lib/errno.h ../../include/lib/os/errors.h \
+ ../../include/lib/stdarg.h ../../include/lib/stdlib.h \
+ ../../include/lib/unistd.h ../../include/lib/stddef.h \
+ ../../include/lib/sys/ioctl.h ../../include/lib/string.h
+unlink.o: unlink.c /usr/include/stdc-predef.h \
+ ../../include/lib/os/oscalls.h ../../include/lib/os/types.h \
+ ../../include/lib/os/signals.h ../../include/lib/os/dirstreams.h \
+ ../../include/lib/sys/stat.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/sys/times.h \
+ ../../include/lib/sys/resource.h ../../include/lib/termios.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/socket.h \
+ ../../include/lib/sys/select.h ../../include/lib/sys/time.h \
+ ../../include/lib/utime.h ../../include/lib/errno.h \
+ ../../include/lib/os/errors.h
+wait.o: wait.c /usr/include/stdc-predef.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/errno.h \
+ ../../include/lib/os/errors.h ../../include/lib/os/oscalls.h \
+ ../../include/lib/os/types.h ../../include/lib/os/signals.h \
+ ../../include/lib/os/dirstreams.h ../../include/lib/sys/stat.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/times.h \
+ ../../include/lib/sys/resource.h ../../include/lib/termios.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/socket.h \
+ ../../include/lib/sys/select.h ../../include/lib/sys/time.h \
+ ../../include/lib/utime.h ../../include/lib/sys/wait.h \
+ ../../include/lib/sys/resource.h
+write.o: write.c /usr/include/stdc-predef.h \
+ ../../include/lib/os/oscalls.h ../../include/lib/os/types.h \
+ ../../include/lib/os/signals.h ../../include/lib/os/dirstreams.h \
+ ../../include/lib/sys/stat.h ../../include/lib/sys/types.h \
+ ../../include/lib/sys/../os/types.h ../../include/lib/sys/times.h \
+ ../../include/lib/sys/resource.h ../../include/lib/termios.h \
+ ../../include/lib/sys/types.h ../../include/lib/sys/socket.h \
+ ../../include/lib/sys/select.h ../../include/lib/sys/time.h \
+ ../../include/lib/utime.h ../../include/lib/sys/types.h \
+ ../../include/lib/errno.h ../../include/lib/os/errors.h

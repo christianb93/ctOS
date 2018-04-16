@@ -1,0 +1,143 @@
+8139.o: 8139.c /usr/include/stdc-predef.h ../include/ktypes.h \
+ ../include/lib/os/types.h ../include/8139.h ../include/pci.h \
+ ../include/ktypes.h ../include/eth.h ../include/locks.h ../include/mm.h \
+ ../include/irq.h ../include/lib/sys/types.h \
+ ../include/lib/sys/../os/types.h ../include/apic.h ../include/tests.h \
+ ../include/pagetables.h ../include/multiboot.h ../include/pci.h \
+ ../include/lists.h ../include/debug.h ../include/kprintf.h \
+ ../include/vga.h ../include/console.h ../include/irq.h ../include/io.h \
+ ../include/timer.h ../include/lib/sys/time.h ../include/lib/stdint.h \
+ ../include/locks.h ../include/lib/arpa/inet.h ../include/lib/os/errors.h \
+ ../include/net.h ../include/lib/sys/socket.h ../include/lib/sys/types.h \
+ ../include/lib/sys/select.h ../include/lib/sys/time.h \
+ ../include/lib/os/if.h ../include/lib/os/../netinet/in.h \
+ ../include/lib/os/../netinet/../sys/socket.h \
+ ../include/lib/os/../netinet/../inttypes.h \
+ ../include/lib/os/../netinet/../stdint.h \
+ ../include/lib/os/../netinet/../arpa/inet.h ../include/arp.h \
+ ../include/net.h ../include/params.h ../include/lib/string.h \
+ ../include/lib/unistd.h ../include/lib/sys/types.h \
+ ../include/lib/getopt.h ../include/net_if.h
+ahci.o: ahci.c /usr/include/stdc-predef.h ../include/ahci.h \
+ ../include/lib/sys/types.h ../include/lib/sys/../os/types.h \
+ ../include/pci.h ../include/ktypes.h ../include/lib/os/types.h \
+ ../include/drivers.h ../include/lib/unistd.h ../include/lib/sys/types.h \
+ ../include/lib/getopt.h ../include/kerrno.h ../include/lib/os/errors.h \
+ ../include/hd.h ../include/pm.h ../include/locks.h \
+ ../include/lib/pthread.h ../include/irq.h ../include/apic.h \
+ ../include/lib/os/signals.h ../include/lib/os/types.h \
+ ../include/lib/os/times.h ../include/lib/sys/resource.h ../include/ata.h \
+ ../include/drivers.h ../include/debug.h ../include/kprintf.h \
+ ../include/vga.h ../include/multiboot.h ../include/console.h \
+ ../include/dm.h ../include/lists.h ../include/mm.h ../include/tests.h \
+ ../include/pagetables.h ../include/hd.h ../include/lib/string.h \
+ ../include/lib/unistd.h ../include/timer.h ../include/lib/sys/time.h \
+ ../include/params.h
+console.o: console.c /usr/include/stdc-predef.h ../include/ktypes.h \
+ ../include/lib/os/types.h ../include/vga.h ../include/multiboot.h \
+ ../include/ktypes.h ../include/locks.h ../include/console.h \
+ ../include/vga.h ../include/console.h ../include/params.h \
+ ../include/lib/ctype.h ../include/io.h ../include/kprintf.h
+eth.o: eth.c /usr/include/stdc-predef.h ../include/eth.h \
+ ../include/ktypes.h ../include/lib/os/types.h ../include/pci.h \
+ ../include/locks.h ../include/net.h ../include/eth.h \
+ ../include/lib/sys/socket.h ../include/lib/sys/types.h \
+ ../include/lib/sys/../os/types.h ../include/lib/sys/select.h \
+ ../include/lib/sys/time.h ../include/lib/os/if.h \
+ ../include/lib/os/../netinet/in.h \
+ ../include/lib/os/../netinet/../sys/socket.h \
+ ../include/lib/os/../netinet/../inttypes.h \
+ ../include/lib/os/../netinet/../stdint.h \
+ ../include/lib/os/../netinet/../arpa/inet.h ../include/kprintf.h \
+ ../include/vga.h ../include/multiboot.h ../include/console.h \
+ ../include/lib/stdint.h ../include/lib/arpa/inet.h \
+ ../include/lib/os/errors.h ../include/lib/string.h \
+ ../include/lib/unistd.h ../include/lib/sys/types.h \
+ ../include/lib/getopt.h
+hd.o: hd.c /usr/include/stdc-predef.h ../include/hd.h \
+ ../include/lib/sys/types.h ../include/lib/sys/../os/types.h \
+ ../include/drivers.h ../include/ktypes.h ../include/lib/os/types.h \
+ ../include/lib/unistd.h ../include/lib/sys/types.h \
+ ../include/lib/getopt.h ../include/kerrno.h ../include/lib/os/errors.h \
+ ../include/pm.h ../include/locks.h ../include/lib/pthread.h \
+ ../include/irq.h ../include/pci.h ../include/apic.h \
+ ../include/lib/os/signals.h ../include/lib/os/types.h \
+ ../include/lib/os/times.h ../include/lib/sys/resource.h \
+ ../include/kerrno.h ../include/debug.h ../include/kprintf.h \
+ ../include/vga.h ../include/multiboot.h ../include/console.h \
+ ../include/lib/string.h ../include/lib/unistd.h ../include/mm.h \
+ ../include/tests.h ../include/pagetables.h
+pata.o: pata.c /usr/include/stdc-predef.h ../include/pata.h \
+ ../include/drivers.h ../include/ktypes.h ../include/lib/os/types.h \
+ ../include/lib/unistd.h ../include/lib/sys/types.h \
+ ../include/lib/sys/../os/types.h ../include/lib/getopt.h \
+ ../include/kerrno.h ../include/lib/os/errors.h ../include/hd.h \
+ ../include/lib/sys/types.h ../include/pm.h ../include/locks.h \
+ ../include/lib/pthread.h ../include/irq.h ../include/pci.h \
+ ../include/apic.h ../include/lib/os/signals.h ../include/lib/os/types.h \
+ ../include/lib/os/times.h ../include/lib/sys/resource.h ../include/mm.h \
+ ../include/tests.h ../include/pagetables.h ../include/multiboot.h \
+ ../include/ata.h ../include/pci.h ../include/debug.h \
+ ../include/kprintf.h ../include/vga.h ../include/console.h \
+ ../include/io.h ../include/lib/string.h ../include/lib/unistd.h \
+ ../include/irq.h ../include/hd.h ../include/timer.h \
+ ../include/lib/sys/time.h ../include/mm.h ../include/dm.h \
+ ../include/drivers.h ../include/keyboard.h ../include/lib/termios.h \
+ ../include/params.h
+pci.o: pci.c /usr/include/stdc-predef.h ../include/pci.h \
+ ../include/ktypes.h ../include/lib/os/types.h ../include/io.h \
+ ../include/locks.h ../include/debug.h ../include/irq.h \
+ ../include/lib/sys/types.h ../include/lib/sys/../os/types.h \
+ ../include/pci.h ../include/apic.h ../include/kprintf.h ../include/vga.h \
+ ../include/multiboot.h ../include/locks.h ../include/console.h \
+ ../include/mm.h ../include/tests.h ../include/pagetables.h \
+ ../include/lists.h ../include/keyboard.h ../include/lib/termios.h \
+ ../include/lib/sys/types.h ../include/vga.h
+ramdisk.o: ramdisk.c /usr/include/stdc-predef.h ../include/ramdisk.h \
+ ../include/mm.h ../include/ktypes.h ../include/lib/os/types.h \
+ ../include/irq.h ../include/lib/sys/types.h \
+ ../include/lib/sys/../os/types.h ../include/pci.h ../include/apic.h \
+ ../include/tests.h ../include/pagetables.h ../include/locks.h \
+ ../include/multiboot.h ../include/debug.h ../include/kprintf.h \
+ ../include/vga.h ../include/console.h ../include/dm.h \
+ ../include/drivers.h ../include/lib/unistd.h ../include/lib/sys/types.h \
+ ../include/lib/getopt.h ../include/kerrno.h ../include/lib/os/errors.h \
+ ../include/lib/string.h ../include/lib/unistd.h
+tty.o: tty.c /usr/include/stdc-predef.h ../include/irq.h \
+ ../include/lib/sys/types.h ../include/lib/sys/../os/types.h \
+ ../include/pci.h ../include/ktypes.h ../include/lib/os/types.h \
+ ../include/apic.h ../include/debug.h ../include/irq.h \
+ ../include/kprintf.h ../include/vga.h ../include/multiboot.h \
+ ../include/locks.h ../include/console.h ../include/keyboard.h \
+ ../include/lib/termios.h ../include/lib/sys/types.h ../include/util.h \
+ ../include/drivers.h ../include/lib/unistd.h ../include/lib/getopt.h \
+ ../include/kerrno.h ../include/lib/os/errors.h ../include/dm.h \
+ ../include/drivers.h ../include/vga.h ../include/locks.h ../include/pm.h \
+ ../include/lib/pthread.h ../include/lib/os/signals.h \
+ ../include/lib/os/types.h ../include/lib/os/times.h \
+ ../include/lib/sys/resource.h ../include/tty.h \
+ ../include/lib/os/errors.h ../include/lib/termios.h \
+ ../include/lib/os/signals.h ../include/fs.h ../include/lib/os/stat.h \
+ ../include/pm.h ../include/fs_pipe.h ../include/lib/limits.h \
+ ../include/net.h ../include/eth.h ../include/lib/sys/socket.h \
+ ../include/lib/sys/types.h ../include/lib/sys/select.h \
+ ../include/lib/sys/time.h ../include/lib/os/if.h \
+ ../include/lib/os/../netinet/in.h \
+ ../include/lib/os/../netinet/../sys/socket.h \
+ ../include/lib/os/../netinet/../inttypes.h \
+ ../include/lib/os/../netinet/../stdint.h \
+ ../include/lib/os/../netinet/../arpa/inet.h ../include/lib/netinet/in.h \
+ ../include/lib/utime.h ../include/tty_ld.h ../include/lib/fcntl.h
+tty_ld.o: tty_ld.c /usr/include/stdc-predef.h ../include/tty.h \
+ ../include/ktypes.h ../include/lib/os/types.h ../include/drivers.h \
+ ../include/lib/unistd.h ../include/lib/sys/types.h \
+ ../include/lib/sys/../os/types.h ../include/lib/getopt.h \
+ ../include/kerrno.h ../include/lib/os/errors.h ../include/lib/termios.h \
+ ../include/locks.h ../include/tty_ld.h ../include/lib/string.h \
+ ../include/lib/unistd.h ../include/lib/os/signals.h \
+ ../include/lib/os/types.h ../include/pm.h ../include/lib/sys/types.h \
+ ../include/lib/pthread.h ../include/irq.h ../include/pci.h \
+ ../include/apic.h ../include/lib/os/signals.h ../include/lib/os/times.h \
+ ../include/lib/sys/resource.h ../include/debug.h ../include/kprintf.h \
+ ../include/vga.h ../include/multiboot.h ../include/console.h \
+ ../include/vga.h

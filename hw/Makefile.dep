@@ -1,0 +1,105 @@
+apic.o: apic.c /usr/include/stdc-predef.h ../include/apic.h \
+ ../include/ktypes.h ../include/lib/os/types.h ../include/debug.h \
+ ../include/irq.h ../include/lib/sys/types.h \
+ ../include/lib/sys/../os/types.h ../include/pci.h ../include/apic.h \
+ ../include/kprintf.h ../include/vga.h ../include/multiboot.h \
+ ../include/locks.h ../include/console.h ../include/mm.h \
+ ../include/tests.h ../include/pagetables.h ../include/smp.h \
+ ../include/smp_const.h ../include/timer.h ../include/lib/sys/time.h \
+ ../include/cpu.h ../include/lib/limits.h
+cpu.o: cpu.c /usr/include/stdc-predef.h ../include/cpu.h \
+ ../include/ktypes.h ../include/lib/os/types.h ../include/lists.h \
+ ../include/mm.h ../include/irq.h ../include/lib/sys/types.h \
+ ../include/lib/sys/../os/types.h ../include/pci.h ../include/apic.h \
+ ../include/tests.h ../include/pagetables.h ../include/locks.h \
+ ../include/multiboot.h ../include/debug.h ../include/kprintf.h \
+ ../include/vga.h ../include/console.h ../include/locks.h \
+ ../include/util.h ../include/lib/string.h ../include/lib/unistd.h \
+ ../include/lib/sys/types.h ../include/lib/getopt.h
+gdt.o: gdt.c /usr/include/stdc-predef.h ../include/gdt.h \
+ ../include/ktypes.h ../include/lib/os/types.h ../include/gdt_const.h \
+ ../include/tss.h ../include/mm.h ../include/irq.h \
+ ../include/lib/sys/types.h ../include/lib/sys/../os/types.h \
+ ../include/pci.h ../include/apic.h ../include/tests.h \
+ ../include/pagetables.h ../include/locks.h ../include/multiboot.h \
+ ../include/lib/string.h ../include/lib/unistd.h \
+ ../include/lib/sys/types.h ../include/lib/getopt.h ../include/smp.h \
+ ../include/smp_const.h
+idt.o: idt.c /usr/include/stdc-predef.h ../include/ktypes.h \
+ ../include/lib/os/types.h ../include/idt.h ../include/ktypes.h \
+ ../include/gdt.h ../include/gdt_const.h ../include/lib/string.h \
+ ../include/lib/unistd.h ../include/lib/sys/types.h \
+ ../include/lib/sys/../os/types.h ../include/lib/getopt.h
+keyboard.o: keyboard.c /usr/include/stdc-predef.h ../include/keyboard.h \
+ ../include/lib/sys/types.h ../include/lib/sys/../os/types.h \
+ ../include/irq.h ../include/pci.h ../include/ktypes.h \
+ ../include/lib/os/types.h ../include/apic.h ../include/lib/termios.h \
+ ../include/lib/sys/types.h ../include/io.h ../include/debug.h \
+ ../include/kprintf.h ../include/vga.h ../include/multiboot.h \
+ ../include/locks.h ../include/console.h ../include/locks.h \
+ ../include/tty.h ../include/drivers.h ../include/lib/unistd.h \
+ ../include/lib/getopt.h ../include/kerrno.h ../include/lib/os/errors.h \
+ ../include/vga.h ../include/lib/termios.h ../include/lib/ctype.h \
+ ../include/pm.h ../include/lib/pthread.h ../include/lib/os/signals.h \
+ ../include/lib/os/types.h ../include/lib/os/times.h \
+ ../include/lib/sys/resource.h ../include/lib/os/signals.h \
+ ../include/lib/string.h ../include/lib/unistd.h ../include/cpu.h \
+ ../include/apic.h ../include/util.h
+pagetables.o: pagetables.c /usr/include/stdc-predef.h \
+ ../include/pagetables.h ../include/ktypes.h ../include/lib/os/types.h
+pic.o: pic.c /usr/include/stdc-predef.h ../include/pic.h \
+ ../include/ktypes.h ../include/lib/os/types.h ../include/io.h \
+ ../include/debug.h ../include/irq.h ../include/lib/sys/types.h \
+ ../include/lib/sys/../os/types.h ../include/pci.h ../include/apic.h \
+ ../include/kprintf.h ../include/vga.h ../include/multiboot.h \
+ ../include/locks.h ../include/console.h ../include/params.h
+pit.o: pit.c /usr/include/stdc-predef.h ../include/lib/sys/types.h \
+ ../include/lib/sys/../os/types.h ../include/io.h ../include/ktypes.h \
+ ../include/lib/os/types.h ../include/pit.h ../include/debug.h \
+ ../include/irq.h ../include/lib/sys/types.h ../include/pci.h \
+ ../include/apic.h ../include/kprintf.h ../include/vga.h \
+ ../include/multiboot.h ../include/locks.h ../include/console.h \
+ ../include/locks.h ../include/timer.h ../include/lib/sys/time.h
+reboot.o: reboot.c /usr/include/stdc-predef.h ../include/reboot.h \
+ ../include/io.h ../include/ktypes.h ../include/lib/os/types.h \
+ ../include/rtc.h ../include/keyboard.h ../include/lib/sys/types.h \
+ ../include/lib/sys/../os/types.h ../include/irq.h ../include/pci.h \
+ ../include/apic.h ../include/lib/termios.h ../include/lib/sys/types.h \
+ ../include/util.h ../include/debug.h ../include/kprintf.h \
+ ../include/vga.h ../include/multiboot.h ../include/locks.h \
+ ../include/console.h
+rtc.o: rtc.c /usr/include/stdc-predef.h ../include/locks.h \
+ ../include/ktypes.h ../include/lib/os/types.h ../include/rtc.h \
+ ../include/io.h ../include/debug.h ../include/irq.h \
+ ../include/lib/sys/types.h ../include/lib/sys/../os/types.h \
+ ../include/pci.h ../include/apic.h ../include/kprintf.h ../include/vga.h \
+ ../include/multiboot.h ../include/locks.h ../include/console.h \
+ ../include/pit.h ../include/kerrno.h ../include/lib/os/errors.h \
+ ../include/lib/time.h ../include/lib/sys/types.h
+smp.o: smp.c /usr/include/stdc-predef.h ../include/debug.h \
+ ../include/irq.h ../include/lib/sys/types.h \
+ ../include/lib/sys/../os/types.h ../include/pci.h ../include/ktypes.h \
+ ../include/lib/os/types.h ../include/apic.h ../include/kprintf.h \
+ ../include/vga.h ../include/multiboot.h ../include/locks.h \
+ ../include/console.h ../include/io.h ../include/rtc.h \
+ ../include/lib/string.h ../include/lib/unistd.h \
+ ../include/lib/sys/types.h ../include/lib/getopt.h ../include/gdt.h \
+ ../include/gdt_const.h ../include/cpu.h ../include/util.h \
+ ../include/tests.h ../include/smp.h ../include/smp_const.h \
+ ../include/sched.h ../include/pit.h ../include/pm.h \
+ ../include/lib/pthread.h ../include/lib/os/signals.h \
+ ../include/lib/os/types.h ../include/lib/os/times.h \
+ ../include/lib/sys/resource.h ../include/mm.h ../include/tests.h \
+ ../include/pagetables.h ../include/smp_const.h ../include/timer.h \
+ ../include/lib/sys/time.h
+vga.o: vga.c /usr/include/stdc-predef.h ../include/ktypes.h \
+ ../include/lib/os/types.h ../include/vga.h ../include/multiboot.h \
+ ../include/ktypes.h ../include/locks.h ../include/console.h \
+ ../include/vga.h ../include/io.h ../include/tests.h ../include/locks.h \
+ ../include/params.h ../include/lib/ctype.h ../include/debug.h \
+ ../include/irq.h ../include/lib/sys/types.h \
+ ../include/lib/sys/../os/types.h ../include/pci.h ../include/apic.h \
+ ../include/kprintf.h ../include/multiboot.h ../include/mm.h \
+ ../include/tests.h ../include/pagetables.h ../include/cpu.h \
+ ../include/smp.h ../include/smp_const.h ../include/sched.h \
+ ../include/pit.h ../include/console.h ../include/rm.h

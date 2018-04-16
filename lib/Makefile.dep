@@ -1,0 +1,9 @@
+heap.o: heap.c ../include/lib/heap.h ../include/lib/types.h \
+ ../include/debug.h ../include/irq.h ../include/lib/types.h \
+ ../include/pci.h ../include/apic.h ../include/kprintf.h
+stdlib.o: stdlib.c ../include/lib/ctype.h ../include/lib/string.h \
+ ../include/lib/unistd.h ../include/lib/types.h
+string.o: string.c ../include/lib/string.h ../include/lib/unistd.h \
+ ../include/lib/types.h ../include/lib/ctype.h
+unistd.o: unistd.c ../include/lib/types.h ../include/varargs.h \
+ ../include/lib/unistd.h ../include/lib/types.h
