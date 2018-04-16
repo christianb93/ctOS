@@ -5,6 +5,7 @@ CDROM=""
 BOOT=""
 HD=""
 NET=""
+SMP=""
 APPEND=""
 KERNEL=""
 
@@ -44,6 +45,8 @@ help | ?)
     default:    Boot using QEMU from the CDROM image and use ramdisk as root device
     qemu-ide:   Boot directly using multiboot, attach an IDE drive and use hard disk image
     qemu-net:   QEMU multiboot with IDE drive (hdimage) and a network card
+    qemu-smp:   QEMU with 8 simulated CPUs
+    qemu-tap:   QEMU attached to a tap networking device (must be root to run this)
     
     
 EOF
@@ -82,11 +85,33 @@ qemu-net)
     NET="-net nic,vlan=1,macaddr=00:00:00:00:11:11,model=rtl8139 -net socket,vlan=1,listen=127.0.0.1:9030"
     ;;
 
+qemu-smp)
+    #
+    # Use QEMUs multiboot capabilities to boot the kernel directly,
+    # attach a PATA drive and simulate 8 CPUs
+    # Required images: kernel, hdimage
+    #
+    EMU=$QEMU
+    HD="-drive id=disk,file=bin/hdimage,if=ide,media=disk"
+    KERNEL="-kernel bin/ctOSkernel"
+    SMP="-smp sockets=8,threads=1 -enable-kvm"
+    APPEND="-append \"use_debug_port=1 root=769 loglevel=0 vga=1\""
+    ;;
 
+qemu-tap)
+    # 
+    # Start a QEMU instance (IDE, 1 CPU) connected to a tap device
+    # You need to be root to run this
+    #
+    EMU=$QEMU
+    HD="-drive id=disk,file=bin/hdimage,if=ide,media=disk"
+    KERNEL="-kernel bin/ctOSkernel"
+    NET="-net nic,vlan=1,macaddr=00:00:00:00:11:11,model=rtl8139 -net dump,vlan=1,file=qemu_vlan1.pcap -net tap,vlan=1,script=no,downscript=no"
+    APPEND="-append \"use_debug_port=1 root=769 loglevel=0\""
 
 esac
     
-CMD="$EMU $CDROM $HD $NET $KERNEL $APPEND"
+CMD="$EMU $CDROM $HD $NET $SMP $KERNEL $APPEND"
 echo "Running " $CMD
 eval $CMD
 

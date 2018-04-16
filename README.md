@@ -15,6 +15,7 @@ Currently, the following features have been implemented:
 * Built-in kernel debugger to inspect CPU state, memory contents, threads, kernel configuraton etc. (launch with F1)
 * 32 bit mode (64 bit not supported and unlikely that I will ever find the time to port it)
 * Virtual memory and multi-tasking
+* Signal handling
 * RAM disk
 * Device drivers:
     * VGA
@@ -22,6 +23,7 @@ Currently, the following features have been implemented:
     * Ethernet adapter (RTL8139)
     * IDE hard drive
     * AHCI hard drive
+* Support for ext2 and FAT16 file systems
 * APIC support
 * Support for SMP with up to eight CPUs 
 * A full networking stack, supporting ARP, ICMP, IP, UDP and TCP 
@@ -47,5 +49,10 @@ This should bring up a QEMU window with a GRUB menu inside. Select the first opt
     
 from the user space command line interface. Entering 'help' gives you a list of available commands and you can start to play around. I will add a description of a few test cases that you can run later.
 
+**Building**
+
+Instructions to build ctOS from the source can be found in the file [BUILD.md][3]
+
 [1]: http://www.qemu.org
 [2]: http://www.github.com/christianb93/ctOS/releases
+[3]: https://www.github.com/christianb93/ctOS/BUILD.md

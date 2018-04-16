@@ -1199,15 +1199,19 @@ int main(int argc, char** argv) {
      */
     if (argc <= 2) {
         printf("Usage: testnet  <dst_address> <dst_port>\n");
-        _exit(0);
-    }
-    dest_addr = inet_addr((const char*) argv[1]);
-    if (argv[2]) {
-        port = strtoull(argv[2], 0, 10);
+        printf("Will fall back to defaults (port 30000, IP 10.0.2.21\n");
+        port = strtoull("30000", 0, 10);
+        dest_addr = inet_addr("10.0.2.21");
     }
     else {
-        printf("ARGV[2] is NULL\n");
-        _exit(1);
+        dest_addr = inet_addr((const char*) argv[1]);
+        if (argv[2]) {
+            port = strtoull(argv[2], 0, 10);
+        }
+        else {
+            printf("ARGV[2] is NULL\n");
+            _exit(1);
+        }
     }
     /*
      * Run tests

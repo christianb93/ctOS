@@ -13,4 +13,6 @@ dist:
 distclean:
 	rm -rf ctOSkernel ramdisk.img iso/ctOSkernel iso/ramdisk.img cdimage.iso hdimage ctOS.bin.tar.gz
 
+dep:
+	# do nothing
 	

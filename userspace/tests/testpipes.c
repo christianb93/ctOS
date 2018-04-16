@@ -799,7 +799,7 @@ int testcase15() {
     ASSERT(fd[0]);
     ASSERT(fd[1]);
     int i;
-    int pipe_capacity = 65536;
+    int pipe_capacity = PIPE_BUF;
     buffer = '0';
     /*
      * Set fd[1] to O_NONBLOCK

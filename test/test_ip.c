@@ -1150,7 +1150,6 @@ int testcase9() {
     /*
      * Now call ip_tx_msg
      */
-    printf("Calling ip_tx_msg\n");
     wq_schedule_called = 0;
     ip_tx_msg(net_msg);
     /*

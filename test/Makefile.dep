@@ -93,17 +93,6 @@ test_dm.o: test_dm.c /usr/include/stdc-predef.h ../include/kunit.h \
  /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h \
  /usr/lib/gcc/x86_64-linux-gnu/5/include/stdarg.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-test_elf.o: test_elf.c /usr/include/stdc-predef.h ../include/elf.h \
- ../include/ktypes.h ../include/lib/os/types.h ../include/vga.h \
- ../include/multiboot.h ../include/locks.h ../include/console.h \
- ../include/vga.h ../include/kunit.h ../include/lib/sys/types.h \
- ../include/lib/sys/../os/types.h /usr/include/fcntl.h \
- /usr/include/features.h /usr/include/sys/cdefs.h \
- /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
- /usr/include/gnu/stubs-32.h /usr/include/bits/types.h \
- /usr/include/bits/typesizes.h /usr/include/bits/fcntl.h \
- /usr/include/bits/fcntl-linux.h /usr/include/time.h \
- /usr/include/bits/stat.h
 test_env.o: test_env.c /usr/include/stdc-predef.h ../include/kunit.h \
  ../include/lib/sys/types.h ../include/lib/sys/../os/types.h
 test_fnmatch.o: test_fnmatch.c /usr/include/stdc-predef.h \

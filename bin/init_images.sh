@@ -65,7 +65,11 @@ sudo mount /dev/loop7 mnt
 #
 sudo mkdir mnt/dev
 sudo mknod -m 666 mnt/dev/tty c 2 0
-sudo cp ../userspace/cli ../userspace/init ../userspace/testfork ../userspace/testfiles ../userspace/testmisc ../userspace/testwait mnt
+sudo cp ../userspace/cli ../userspace/init mnt
+sudo mkdir mnt/tests
+sudo cp  ../userspace/tests/testjc ../userspace/tests/testwait ../userspace/tests/testfiles ../userspace/tests/testsignals mnt/tests
+sudo cp ../userspace/tests/testpipes ../userspace/tests/testfork ../userspace/tests/testmisc ../userspace/tests/testtty mnt/tests
+sudo cp ../userspace/tests/testall ../userspace/tests/testnet mnt/tests
 echo "Hello" > /tmp/hello
 sudo cp /tmp/hello mnt
 sudo chown -R $ctOSUser mnt/*
@@ -76,7 +80,7 @@ sudo umount mnt
 sudo losetup -d /dev/loop7
 
 echo "Created ramdisk file (ramdisk.img)"
-echo "Let me kow create an ISO image for you"
+echo "Let me now create an ISO image for you"
 
 cp ctOSkernel ./iso
 cp ramdisk.img ./iso
