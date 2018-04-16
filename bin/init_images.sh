@@ -17,6 +17,12 @@
 #
 ctOSUser=$(whoami)
 
+if [ ! -e "ctOSkernel" ]
+then
+  echo "Could not find kernel, are you sure that you did execute me in the bin directory?"
+  exit
+fi
+
 #
 # Do not say that you have not been warned
 #
@@ -25,7 +31,7 @@ echo "   ----> /dev/loop7 <----"
 echo "for this purpose. Please make sure that this device exists and is not already used"
 echo "I will also need grub2 and xorriso installed."
 echo ""
-echo "You should also run this as the other owning the ctOS installation, but I will"
+echo "You should also run this as the user owning the ctOS installation, but I will"
 echo "use sudo at some points, so be prepared to enter your password."
 echo "You are currently logged in as "  $ctOSUser
 read -p "Ok and proceed? (Y/n): "

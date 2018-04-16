@@ -1,0 +1,6 @@
+**/cdimage.iso
+**/hdimage
+**/ramdisk.img
+**/*.o
+**/.a
+**/ctOSkernel

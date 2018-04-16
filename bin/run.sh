@@ -23,17 +23,32 @@ fi
 #
 if [ $# -gt 0 ]; then
     CONF=$1
-    echo "Using configuration " $CONF
 else
-    echo "No configuration specified, using default 0"
-    CONF=0
+    echo "No configuration specified, using default configuration"
+    CONF="default"
 fi
 
 #
 # Determine configuration
 #
 case $CONF in
-0)
+help | ?)
+    # 
+    # Print list of configurations and exit
+    #
+    echo "Usage run.sh [configuration]"
+    echo ""
+    echo "Available configurations:"
+    cat << EOF
+    
+    default:    Boot using QEMU from the CDROM image and use ramdisk as root device
+    qemu-ide:   Boot directly using multiboot, attach an IDE drive and use hard disk image
+    qemu-net:   QEMU multiboot with IDE drive (hdimage) and a network card
+    
+    
+EOF
+    ;;
+default)
     #
     # Default configuration - use QEMU to boot from CDROM
     # Required images: CD ROM ISO image
@@ -41,7 +56,8 @@ case $CONF in
     EMU=$QEMU
     CDROM="-cdrom bin/cdimage.iso"
     ;;
-1)
+    
+qemu-ide)
     #
     # Use QEMUs multiboot capabilities to boot the kernel directly,
     # attach a PATA drive 
@@ -53,7 +69,7 @@ case $CONF in
     APPEND="-append \"use_debug_port=1 root=769 loglevel=0\""
     ;;
 
-2)
+qemu-net)
     #
     # Use QEMUs multiboot capabilities to boot the kernel directly,
     # attach a PATA drive  and a network drive
