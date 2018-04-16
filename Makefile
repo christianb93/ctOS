@@ -24,6 +24,9 @@ distclean:
 
 dep:
 	for i in $(SUBDIRS); do (cd $$i ; make dep) ; done
+	
+dist:
+	(cd bin ; make dist)
 
 ########################################################################################################
 # Create an ISO CDROM image from the current kernel
