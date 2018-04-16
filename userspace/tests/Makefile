@@ -3,8 +3,8 @@ CCFLAGS = -g -nostdinc -fno-stack-protector -mpush-args -Wno-packed -Wno-packed-
 CC = gcc $(CCFLAGS) 
 LD = ld -Ttext 0x40000000 -melf_i386 -e _start
 LIBS = kunit.o ../../lib/std/crt0.o ../../lib/std/crt.a ../../lib/os/libos.a 
-UNATTENDED = testjc.o testwait.o testfile.o testsignals.o testpipes.o testfork.o testmisc.o 
-OBJ = kunit.o $(UNATTEND) testrawcons.o testnet.o testall.o testtty.o
+UNATTENDED = testjc.o testwait.o testfiles.o testsignals.o testpipes.o testfork.o testmisc.o 
+OBJ = kunit.o $(UNATTENDED) testrawcons.o testnet.o testall.o testtty.o
 EXEC = testfiles testfork testmisc testpipes testrawcons testtty testsignals testwait testjc testall testnet
 
 
