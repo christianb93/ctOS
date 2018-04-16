@@ -48,36 +48,36 @@ blk_dev_ops_t ops;
 /*
  * Inode of the file /test - get this with ls -li
  */
-#define TEST_INODE 13
+#define TEST_INODE 12
 
 /*
  * Inode number of file with hole in second direct block
  */
-#define SAMPLE_A_INODE 14
+#define SAMPLE_A_INODE 13
 
 /*
  * Inode number of file with hole in the indirect block, i.e. indirect
  * block is zero, double indirect block is different from zero and first
  * direct block is different from zero
  */
-#define SAMPLE_B_INODE 15
+#define SAMPLE_B_INODE 14
 
 /*
  * Inode number of file with hole in the double indirect block, i.e. double indirect
  * block is zero, triple indirect block is different from zero and first
  * direct block is different from zero
  */
-#define SAMPLE_C_INODE 16
+#define SAMPLE_C_INODE 15
 
 /*
  * Inode number of a short file with length 10 bytes
  */
-#define SAMPLE_D_INODE 17
+#define SAMPLE_D_INODE 16
 
 /*
  * Copy of the file /test on the local file system
  */
-#define TEST_COPY "/home/chr/Downloads/gparted-live-0.8.1-3.iso"
+#define TEST_COPY "./testfile"
 /*
  * Size of the test file /test in bytes
  */
@@ -1869,7 +1869,6 @@ int testcase48() {
     next_ext2_inode = ((ext2_inode_data_t*) next_inode->data)->ext2_inode;
     memcpy((void*) &next_ext2_inode_backup, next_ext2_inode,
             sizeof(ext2_inode_t));
-    next_inode->iops->inode_release(next_inode);
     /*
      * Put some data into the buffer
      */

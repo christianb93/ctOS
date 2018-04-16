@@ -27,6 +27,9 @@ dep:
 	
 dist:
 	(cd bin ; make dist)
+	
+tests: 
+	(cd test ; make testrun)
 
 ########################################################################################################
 # Create an ISO CDROM image from the current kernel

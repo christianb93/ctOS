@@ -12,8 +12,9 @@
 # - finally, if you want to emulate a hard disk, you will need a 
 #   HD image including a MBR
 # 
-# This script will build all these images. Please make sure to execute it
+# This script will build the first three of these images. Please make sure to execute it
 # in the ctOS bin directory (where the kernel is located as well)
+# (to build to test image, use init_test_images.sh in the tools directory)
 #
 ctOSUser=$(whoami)
 
@@ -56,6 +57,7 @@ mkfs -t ext2 -b 1024 -O none  ramdisk.img
 # Now mount it 
 #
 sudo losetup /dev/loop7 ramdisk.img
+mkdir -p mnt
 sudo mount /dev/loop7 mnt
 #
 # Create a TTY device and copy some files from the userspace
