@@ -54,3 +54,44 @@ cd ..
 
 Without any options, this will run ctOS on the QEMU emulator (assuming that it is installed). To see a list of available configurations, enter `./bin/run.sh ?`. Currently, all configurations require QEMU, but ctOS also works with Bochs and Virtualbox, and I will add more run targets in the future.
 
+Of course, you can also try to run ctOS on real hardware. **Be very careful when you try this, as especially during installation, you can break your partition table and loose data!** Needless to say that I do not assume responsibility for any potential damage that your system incurs while trying this. 
+
+One possible approach to get ctOS up and running on your system is to use an existing GRUB2 installation. Here are instructions to do this on an Ubuntu system.
+
+First, as root, navigate to `/etc/grub.d/`. In this directory, you will find a couple of scripts that GRUB2 will run during the configuration process and that will spit out individual parts of the GRUB configuration file. The default installation already contains a file `40_custom` that you can use to build your own entries. This is a very simple script that looks as follows.
+
+```bash
+#!/bin/sh
+exec tail -n +3 $0
+# This file provides an easy way to add custom menu entries.  Simply type the
+# menu entries you want to add after this comment.  Be careful not to change
+# the 'exec tail' line above.
+```
+
+This script will simply print out everything below the third line. So we can make it print out our custom configuration by simply adding a GRUB2 configuration entry, like the following one.
+
+```bash
+#!/bin/sh
+exec tail -n +3 $0
+# This file provides an easy way to add custom menu entries.  Simply type the
+# menu entries you want to add after this comment.  Be careful not to change
+# the 'exec tail' line above.
+menuentry "ctOS (RAMDISK)" {
+  multiboot /boot/ctOSkernel use_debug_port=1 root=256 loglevel=0 do_test=0 
+  module /boot/ctOS.ramdisk.img
+}
+```
+This assumes that you have copied the current kernel to `/boot/ctOSkernel` and the ramdisk to `/boot/ctOS.ramdisk.img`. Then regenerate the GRUB2 configuration file using
+
+```
+sudo update-grub
+```
+
+and verify the result in `/boot/grub/grub.cfg`. If you are satisfied with the result, update the actual GRUB2 boot record by running
+
+```
+sudo grub-mkconfig
+```
+
+It is usually best to first boot using the ramdisk, as in the example above. Then use the kernel debugger to verify that ctOS has recognized your drives and partitions, and then exchange the boot partition using the parameter `root=` in the GRUB configuration. On my machine, for instance, I have a ctOS partition `/dev/sda10` on an AHCI drive which corresponds to `root=1034`. 
+

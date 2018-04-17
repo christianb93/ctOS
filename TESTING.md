@@ -57,6 +57,10 @@ When you now run the automated tests, in particular the test `testfork`, and bri
 
 ![ctOS SMP test][1]
 
+The screenshot below shows the same tests after completion on my real PC, which is equipped with a Core i7 Intel CPU with four cores and an AHCI hard disk (apologies for the poor quality, it was already a bit late in the evening with low light).
+
+![ctOS SMP test on bare metal][6]
+
 
 ### Networking basics
 
@@ -188,4 +192,5 @@ In addition, the debugger offers a few commands to dump memory, print out regist
 [3]: https://leftasexercise.files.wordpress.com/2018/04/ctos_basic_networking_test.png
 [4]: https://leftasexercise.files.wordpress.com/2018/04/ctos_advanced_networking_test.png
 [5]: https://leftasexercise.files.wordpress.com/2018/04/ctos_stack_analysis.png
+[6]: https://leftasexercise.files.wordpress.com/2018/04/ctos_bare_metal.jpg
 
