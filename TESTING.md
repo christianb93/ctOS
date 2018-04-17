@@ -151,7 +151,7 @@ First, there is the good old **printf-debugging** - add log statements to the co
 
 Next, we can use ctOS built-in **kernel debugger**. In the screenshot below, I have created an error (trying to mount the root file system onto a non-existing disk) that results in a page fault and makes ctOS enter the debugger (which can also be entered manually at any point in time using F1). 
 
-![ctOS Kernel debugger][4]
+![ctOS Kernel debugger][5]
 
 The most important information that you can get from there is the current value of the EIP. Using `objdump -S` on the compiled kernel, we can easily find out where exactly the exception was raised. For instance, in this case, this gives us
 
