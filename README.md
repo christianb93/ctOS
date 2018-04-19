@@ -16,6 +16,7 @@ Currently, the following features have been implemented:
 * 32 bit mode (64 bit not supported and unlikely that I will ever find the time to port it)
 * Virtual memory and multi-tasking
 * Signal handling
+* Pipes
 * RAM disk
 * Device drivers:
     * VGA
@@ -30,7 +31,9 @@ Currently, the following features have been implemented:
 * A simple user-space command line utility
 * A basic POSIX compatible C library
 
-I did also port a few tools (dash, wget, elvis) in that past, but this requires a cross-build toolchain and I have not yet found the time to set this up again, so I will probably make this available in a separate repository at a later point in time.
+I did also port a few tools (dash, wget, elvis) in that past, but this requires a cross-build toolchain and I have not yet found the time to set this up again, so I will probably make this available in a separate repository at a later point in time. The screenshot below, by the way, shows elvis running in ctOS on an QEMU emulator and editing `main.c` of the kernel code.
+
+![ctOS Elvis][4]
 
 **Running**
 
@@ -38,15 +41,19 @@ I have tested ctOS with three emulators (QEMU, VirtualBox and Bochs) and also di
 
 The binary distribution (see the [release page][2]) comes as a GZIPPED TAR files. To install and run, simply enter
 
-     gzip -d ctOS.bin.tar.gz
-     tar xvf ctOS.bin.tar
-     chmod 700 ./bin/run.sh
-     ./bin/run.sh
-     
+```bash
+gzip -d ctOS.bin.tar.gz
+tar xvf ctOS.bin.tar
+chmod 700 ./bin/run.sh
+./bin/run.sh
+```
+
 This should bring up a QEMU window with a GRUB menu inside. Select the first option (ctOS from ramdisk) and hit enter. You should then see the first kernel messages from ctOS, telling you that a few subsystems have been initialized, a root partition has been mounted and the init process has been started. If everything works fine, you should see the prompt
 
-    @>
-    
+```
+@>
+```
+
 from the user space command line interface. Entering 'help' gives you a list of available commands and you can start to play around. I will add a description of a few test cases that you can run later.
 
 **Building**
@@ -56,3 +63,4 @@ Instructions to build ctOS from the source can be found in the file [BUILD.md][3
 [1]: http://www.qemu.org
 [2]: http://www.github.com/christianb93/ctOS/releases
 [3]: https://www.github.com/christianb93/ctOS/BUILD.md
+[4]: https://leftasexercise.files.wordpress.com/2018/04/ctos_elvis.png
