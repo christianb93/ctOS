@@ -3,6 +3,7 @@ bin/ramdisk.img
 bin/hdimage
 bin/iso/ramdisk.img
 bin/cdimage.iso
+bin/hdimage.vdi
 **/*.o
 **/.a
 **/ctOSkernel

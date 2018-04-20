@@ -47,6 +47,7 @@ help | ?)
     qemu-net:   QEMU multiboot with IDE drive (hdimage) and a network card
     qemu-smp:   QEMU with 8 simulated CPUs
     qemu-tap:   QEMU attached to a tap networking device (must be root to run this)
+    vbox-ahci:  VirtualBox with an AHCI drive and the PIIX3 chipset
     
     
 EOF
@@ -108,6 +109,21 @@ qemu-tap)
     KERNEL="-kernel bin/ctOSkernel"
     NET="-net nic,vlan=1,macaddr=00:00:00:00:11:11,model=rtl8139 -net dump,vlan=1,file=qemu_vlan1.pcap -net tap,vlan=1,script=no,downscript=no"
     APPEND="-append \"use_debug_port=1 root=769 loglevel=0\""
+    ;;
+    
+vbox-ahci)
+    #
+    # Use Virtualbox with the PIIX3 chipset and AHCI
+    #
+	vboxmanage unregistervm ctOS-ahci --delete
+	rm -f hdimage.vdi
+	vboxmanage convertfromraw bin/hdimage bin/hdimage.vdi --format=vdi
+	vboxmanage createvm --name "ctOS-ahci" --ostype "Other" --register
+	vboxmanage modifyvm "ctOS-ahci" --memory 512  --cpus 1   --boot1 dvd --chipset piix3
+	vboxmanage storagectl "ctOS-ahci" --add sata --name "AHCI"
+	vboxmanage storageattach "ctOS-ahci" --storagectl "AHCI" --port 0 --device 0 --medium `pwd`/bin//hdimage.vdi --type hdd
+	vboxmanage storageattach "ctOS-ahci" --storagectl "AHCI" --port 1 --device 0 --medium `pwd`/bin/cdimage.iso --type dvddrive
+    vboxmanage startvm ctOS-ahci
 
 esac
     

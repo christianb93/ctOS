@@ -21,6 +21,7 @@
  */
 static char parm_heap_validate[2];
 static char parm_use_debug_port[2];
+static char parm_use_vbox_port[2];
 static char parm_do_test[2];
 static char parm_root[8];
 static char parm_apic[2];
@@ -34,6 +35,29 @@ static char parm_net_loglevel[2];
 static char parm_eth_loglevel[2];
 static char parm_tcp_disable_cc[2];
 static char parm_irq_watch[8];
+
+
+/*
+ *
+ * heap_validate: validate the heap whenever memory is allocated
+ * use_debug_port: duplicate console output to Bochs / QEMU debug port
+ * use_vbox_port: duplicate console output to Vbox debugging port (see vmmdevBackdoorLog in the VBox source code)
+ * do_test: run kernel level tests at startup
+ * apic: 0 = do not use apic, 1 = send all IRQs to BSP, 2 = use fixed assignment, 3 = lowest priority delivery mode
+ * loglevel: set the global loglevel
+ * pata_ro: block all writes to PATA devices
+ * ahci_ro: block all writes to AHCI devices
+ * sched_ipi: inform CPUs via IPI when they have a high priority task in their queue
+ * irq_log: turn on logging in the interrupt manager
+ * vga: determine vga mode (see vga.c for a complete list)
+ * net_loglevel: enable logging in network stack
+ * irq_watch: define a vector for which all IRQs will be logged
+ * eth_loglevel: enable logging in eth layer
+ * tcp_disable_cc: disable tcp congestion control
+ */
+ 
+ 
+
 
 static kparm_t kparm[] = {
         { "heap_validate", parm_heap_validate, 1, "0", 0 },
@@ -51,6 +75,7 @@ static kparm_t kparm[] = {
         { "irq_watch", parm_irq_watch, 6, "0", 0},
         { "eth_loglevel", parm_eth_loglevel, 1, "0", 0},
         { "tcp_disable_cc", parm_tcp_disable_cc, 1, "0", 0},
+        { "use_vbox_port", parm_use_vbox_port, 1, "0", 0 },
 };
 
 #define NR_KPARM (sizeof(kparm) / sizeof(kparm_t))

@@ -399,7 +399,19 @@ static void mp_table_process_routing(void* mp_table_entry) {
         irq_routing_ptr->src_device = ((mp_table_irq->src_bus_irq) & 0x7f) / 4;
         irq_routing_ptr->src_pin = (mp_table_irq->src_bus_irq & 0x3) + 'A';
     }
+    DEBUG("Found routing table entry: bus_id = %x, src_device = %d, src_pin = %d, src_irq = %x\n", irq_routing_ptr->src_bus->bus_id, irq_routing_ptr->src_device, irq_routing_ptr->src_pin, irq_routing_ptr->src_irq);
+    
     LIST_ADD_END(routing_list_head, routing_list_tail, irq_routing_ptr);
+}
+
+/*
+ * Process a local interrupt entry in the MP table
+ * Parameters:
+ * @mp_table_entry_ptr - pointer to the table entry
+ */
+static void mp_table_process_local(void* mp_table_entry) {
+    mp_table_local_t* mp_table_local = (mp_table_local_t*) mp_table_entry;
+    DEBUG("Found local assignment entry, source bus id = %d\n", mp_table_local->src_bus_id);
 }
 
 /*
@@ -423,11 +435,17 @@ static void mp_table_build_routing_list(mp_table_header_t* mp_table_header) {
     mp_table_entry_ptr = ((void*) mp_table_header) + 44;
     while ((mp_table_entry_count < mp_table_entry_max)) {
         mp_table_entry_type = *((unsigned char*) mp_table_entry_ptr);
+        DEBUG("Processing entry %d of type %d\n", mp_table_entry_count, mp_table_entry_type);
         /*
          * Process entry
          */
         if (MP_TABLE_ENTRY_TYPE_ROUTING == mp_table_entry_type) {
+            
             mp_table_process_routing(mp_table_entry_ptr);
+        }
+        if (MP_TABLE_ENTRY_TYPE_LOCAL == mp_table_entry_type) {
+            
+            mp_table_process_local(mp_table_entry_ptr);
         }
         /*
          * Advance to next entry
@@ -545,8 +563,10 @@ static void mp_table_init() {
     mp_table_header_t* mp_table;
     mp_table = mp_table_scan();
     if (0 == mp_table) {
+        DEBUG("Could not locate MP table\n");
         return;
     }
+    DEBUG("Found MP table at address %x\n", mp_table);
     mp_table_build_bus_list(mp_table);
     mp_table_build_routing_list(mp_table);
     /*

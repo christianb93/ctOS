@@ -98,6 +98,20 @@ typedef struct {
 }__attribute__ ((packed)) mp_table_irq_t;
 
 /*
+ * Entry in MP table describing a local interrupt
+ * routing
+ */
+typedef struct {
+    char entry_type;
+    char irq_type;
+    u16 irq_flags;
+    char src_bus_id;
+    char src_bus_irq;
+    char dest_apic_id;
+    char dest_pin;
+}__attribute__ ((packed)) mp_table_local_t;
+
+/*
  * Entry describing a CPU
  */
 typedef struct {
@@ -173,6 +187,7 @@ typedef struct _isr_handler_t {
 #define MP_TABLE_ENTRY_TYPE_BUS 1
 #define MP_TABLE_ENTRY_TYPE_APIC 2
 #define MP_TABLE_ENTRY_TYPE_ROUTING 3
+#define MP_TABLE_ENTRY_TYPE_LOCAL 4
 
 /*
  * IRQ trigger modes and polarities

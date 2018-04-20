@@ -1000,6 +1000,7 @@ static void ahci_register_cntl(const pci_dev_t* dev) {
     ahci_port_t* port;
     u32 tmp;
     int i;
+    int irq;
     MSG("Found AHCI controller (%d:%d.%d)\n", dev->bus->bus_id, dev->device, dev->function);
     /*
      * Set up everything else
@@ -1061,8 +1062,14 @@ static void ahci_register_cntl(const pci_dev_t* dev) {
     /*
      * Register interrupt handler
      */
-    ahci_cntl->irq = irq_add_handler_pci(ahci_handle_irq, 1, (pci_dev_t*) dev);
-    MSG("Using interrupt vector %x\n", ahci_cntl->irq);
+    irq = irq_add_handler_pci(ahci_handle_irq, 1, (pci_dev_t*) dev);
+    if (irq < 0) {
+        ERROR("Could not get valid interrupt vector for this device\n");
+    }
+    else {
+        ahci_cntl->irq = irq;
+        MSG("Using interrupt vector %x\n", ahci_cntl->irq);
+    }
 }
 
 /*

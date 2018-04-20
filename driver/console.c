@@ -69,7 +69,8 @@ extern void (*vga_hide_hw_cursor)(win_t*);
 /*
  * Control debugging port
  */
-static int use_debug_port = 1;
+static int use_debug_port = 0;
+static int use_vbox_port = 0;
 
 /*
  * The console window
@@ -732,6 +733,11 @@ void win_putchar(win_t* win, u8 c) {
                  */
                 if ((use_debug_port) && (_win == &console_win))
                     outb(c, 0xe9);
+                /*
+                 * and the same for Virtualbox
+                 */
+                if ((use_vbox_port) && (_win == &console_win))
+                    outb(c, 0x504);
             }
             break;
         case PARSER_STATE_S1:
@@ -846,6 +852,7 @@ void cons_init() {
      * Control debugging port
      */
     use_debug_port = params_get_int("use_debug_port");
+    use_vbox_port = params_get_int("use_vbox_port");
     /*
      * Initialize console window at position 5/50
      */
