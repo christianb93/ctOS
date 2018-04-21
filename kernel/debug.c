@@ -450,6 +450,7 @@ static void print_usage() {
     PRINT("mmval - validate memory layout\n");
     PRINT("if - print network interfaces\n");
     PRINT("route - print routing table\n");
+    PRINT("pir - print PIR BIOS table\n");
 }
 
 /*
@@ -965,6 +966,9 @@ void debug_main(ir_context_t* ir_context) {
         }
         else if (0 == strncmp("route", cmd, 5)) {
             ip_print_routing_table();
+        }
+        else if (0 == strncmp("pir", cmd, 3)) {
+            irq_print_pir_table();
         }
         else {
             print_usage(line);
