@@ -155,6 +155,18 @@ typedef struct _irq_routing_t {
     struct _irq_routing_t* prev;
 } irq_routing_t;
 
+/*
+ * Additional entries that we do for specific motherboards which do not
+ * fill the MP table completely 
+ */
+typedef struct _irq_forced_entry_t {
+    char oem_id[8];
+    char product_id[12];
+    char src_pin;
+    char src_device;
+    char src_bus_id;
+    char dest_irq;
+} irq_forced_entry_t;
 
 /*
  * This type defines an interrupt service handler

@@ -114,7 +114,10 @@ static int irq[IRQ_MAX_VECTOR+1];
  */
 static bus_t* bus_list_head = 0;
 static bus_t* bus_list_tail = 0;
-
+/*
+ * Is the first bus (bus ID 0) an ISA bus?
+ */
+static int first_bus_is_isa = 0;
 
 /*
  * A list of all I/O APICs in the system
@@ -149,6 +152,24 @@ static int irq_locked[IRQ_MAX_VECTOR];
  * APIC mode, i.e. validated value of kernel parameter APIC
  */
 static int apic_mode = 1;
+
+
+/*
+ * Additional entries for specific boards. This is a workaround for the fact
+ * that currenty, we do not have an ACPI implementation yet. Values should be taken from 
+ * the DSL of the target system. Example for Virtualbox, taken from vbox.dsl:
+ * - device is 00:31 (SATA drive)
+ * - package returned by method _PRT of device PCI0 is Package (0x04) {0x001FFFFF, 0x00, 0x00, 0x17,},
+ *                                                                        A                       A
+ *                                                                        |                       |
+ *                                                                        |                       |
+ *                                                                        |                       |
+ *                                                                    device 0x1F               IRQ 17
+ * - first package is for IRQ pin A, second for IRQ pin B etc.
+ */
+static irq_forced_entry_t forced_irq_routings[] = {
+    {"VBOXCPU ","VirtualBox  ", 'A', 31, 1, 0x17},
+};
 
 /****************************************************************************************
  * At boot time, the interrupt manager parses the MP BIOS tables and stores the         *
@@ -257,6 +278,10 @@ static void mp_table_process_bus(void* mp_table_entry_ptr) {
     bus->is_pci = 0;
     if (0 == strncmp(bus->bus_type, "PCI   ", 6)) {
         bus->is_pci = 1;
+    }
+    else {
+        if (0 == bus->bus_id)
+            first_bus_is_isa = 1;
     }
     LIST_ADD_END(bus_list_head, bus_list_tail, bus);
 }
@@ -420,11 +445,13 @@ static void mp_table_process_local(void* mp_table_entry) {
  * Parameters:
  * @mp_table_header - pointer to header of MP table
  */
-static void mp_table_build_routing_list(mp_table_header_t* mp_table_header) {
+static void mp_table_build_routing_list(mp_table_header_t* mp_table_header, char* oem_id, char* product_id) {
     u32 mp_table_entry_max;
     void* mp_table_entry_ptr;
     int mp_table_entry_count = 0;
     u8 mp_table_entry_type;
+    irq_forced_entry_t* forced;
+    int i;
     /*
      * We should have at most mp_table_header->entry_count entries
      */
@@ -458,7 +485,31 @@ static void mp_table_build_routing_list(mp_table_header_t* mp_table_header) {
         }
         mp_table_entry_count += 1;
     }
+    /*
+     * Now see whether we have to add any additional entries for known 
+     * motherboards that do not create a full MP configuration table any
+     * more
+     */
+    for (i = 0; i < sizeof(forced_irq_routings) / sizeof(irq_forced_entry_t); i++) {
+        forced = forced_irq_routings + i;
+        if ((0 == strncmp(oem_id, forced->oem_id,8)) && (0 == strncmp(product_id,forced->product_id, 12))) {
+            MSG("Applying MP table workaround for %s / %s\n", oem_id, product_id);
+            irq_routing_t* irq_routing = kmalloc(sizeof(irq_routing_t));
+            irq_routing->src_bus = get_bus_for_id(forced->src_bus_id);
+            irq_routing->src_irq = 0xFF;
+            irq_routing->src_device = forced->src_device;
+            irq_routing->src_pin = forced->src_pin;
+            irq_routing->dest_irq = forced->dest_irq;
+            irq_routing->polarity = 1;
+            irq_routing->trigger = 0;
+            irq_routing->type = 0;
+            irq_routing->effective_polarity = 0;
+            irq_routing->effective_trigger = 1;
+            LIST_ADD_END(routing_list_head, routing_list_tail, irq_routing);
+        }
+    }
 }
+
 
 /*
  * Parse an entry in the MP table describing an I/O APIC and add the
@@ -560,6 +611,8 @@ static void mp_table_build_bus_list(mp_table_header_t* mp_table_header) {
  * based on that information
  */
 static void mp_table_init() {
+    char oem_id[16];
+    char product_id[16];
     mp_table_header_t* mp_table;
     mp_table = mp_table_scan();
     if (0 == mp_table) {
@@ -567,8 +620,13 @@ static void mp_table_init() {
         return;
     }
     DEBUG("Found MP table at address %x\n", mp_table);
+    strncpy(oem_id, mp_table->oem_id, 8);
+    oem_id[8]=0;
+    strncpy(product_id, mp_table->product_id, 12);
+    product_id[12]=0;
+    DEBUG("OEM ID: >%s<, PRODUCT_ID: >%s<\n", oem_id, product_id);
     mp_table_build_bus_list(mp_table);
-    mp_table_build_routing_list(mp_table);
+    mp_table_build_routing_list(mp_table, oem_id, product_id);
     /*
      * We use the local APIC address from the MP table
      * to set up the local APIC and map its address
@@ -619,6 +677,14 @@ static int get_irq_pin_pci(int bus, int device, int pin) {
     irq_routing_t* irq_routing;
     int irq = IRQ_UNUSED;
     char src_pin = (char)(pin+'A'-1);
+    /*
+     * If the first bus (bus 0) is the ISA bus, the bus numbers
+     * for the PCI bus start with 1, so PCI bus 0 is bus 1 etc.
+     * This is a dirty hack...
+     */
+    if (1 == first_bus_is_isa)
+       bus+=1;
+    DEBUG("Looking for entry with src_pin=%c, src_device=%d, bus_id=%d\n", src_pin, device, bus); 
     LIST_FOREACH(routing_list_head, irq_routing) {
         if ((0 == irq_routing->type) && (irq_routing->src_device == device) &&
                 (irq_routing->src_pin == src_pin) &&
@@ -790,6 +856,7 @@ static int get_apic_pin_isa(int _irq) {
       */
      if (IRQ_MODE_APIC == irq_mode) {
          _irq = get_irq_pin_pci(pci_dev->bus->bus_id, pci_dev->device, pci_dev->irq_pin);
+         DEBUG("Got IRQ %d from configuration tables\n", _irq);
      }
      else {
          _irq = pci_dev->irq_line;
@@ -893,7 +960,8 @@ static void do_eoi(ir_context_t* ir_context) {
         return;
     if (ir_context->vector == 0x81)
             return;
-    IRQ_DEBUG("Doing EOI for vector %d\n", ir_context->vector);
+    if (ir_context->vector != 0x20)
+        IRQ_DEBUG("Doing EOI for vector %d\n", ir_context->vector);
     if (params_get_int("irq_watch") == (ir_context->vector)) {
         DEBUG("Got EOI for context vector %d, ORIGIN_PIC = %d\n", ir_context->vector, ORIGIN_PIC(ir_context->vector));
     }
@@ -1102,8 +1170,9 @@ void irq_init() {
      * use it, otherwise use PIC
      */
     use_apic = params_get_int("apic");
-    if (use_apic)
+    if (use_apic) {
         mp_table_init();
+    }
     if ((0 == io_apic_list_head) || (0 == use_apic)) {
         MSG("Setting up PIC\n");
         pic_init(IRQ_OFFSET_PIC);

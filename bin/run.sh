@@ -47,7 +47,9 @@ help | ?)
     qemu-net:   QEMU multiboot with IDE drive (hdimage) and a network card
     qemu-smp:   QEMU with 8 simulated CPUs
     qemu-tap:   QEMU attached to a tap networking device (must be root to run this)
+    qemu-ahci:  QEMU with an emulated AHCI drive
     vbox-ahci:  VirtualBox with an AHCI drive and the PIIX3 chipset
+    vbox-ich9:  VirtualBox with an AHCI drive and the Intel ICH9  chipset 
     
     
 EOF
@@ -111,6 +113,17 @@ qemu-tap)
     APPEND="-append \"use_debug_port=1 root=769 loglevel=0\""
     ;;
     
+qemu-ahci)
+    #
+    # QEMU with one CPU and an AHCI hard disk
+    # Required images: kernel, hdimage
+    #
+    EMU=$QEMU
+    HD="-drive id=disk,file=bin/hdimage,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0"
+    KERNEL="-kernel bin/ctOSkernel"
+    APPEND="-append \"use_debug_port=1 root=1025 loglevel=0 vga=1\""
+    ;;
+    
 vbox-ahci)
     #
     # Use Virtualbox with the PIIX3 chipset and AHCI
@@ -123,7 +136,20 @@ vbox-ahci)
 	vboxmanage storagectl "ctOS-ahci" --add sata --name "AHCI"
 	vboxmanage storageattach "ctOS-ahci" --storagectl "AHCI" --port 0 --device 0 --medium `pwd`/bin//hdimage.vdi --type hdd
 	vboxmanage storageattach "ctOS-ahci" --storagectl "AHCI" --port 1 --device 0 --medium `pwd`/bin/cdimage.iso --type dvddrive
-    vboxmanage startvm ctOS-ahci
+    EMU="vboxmanage startvm ctOS-ahci"
+    ;;
+    
+vbox-ich9)
+	vboxmanage unregistervm ctOS-ich9 --delete
+	rm -f hdimage.vdi
+	vboxmanage convertfromraw bin/hdimage bin/hdimage.vdi --format=vdi
+	vboxmanage createvm --name "ctOS-ich9" --ostype "Other" --register
+	vboxmanage modifyvm "ctOS-ich9" --memory 512  --cpus 1   --boot1 dvd --apic on --chipset ich9
+	vboxmanage storagectl "ctOS-ich9" --add sata --name "AHCI"
+	vboxmanage storageattach "ctOS-ich9" --storagectl "AHCI" --port 0 --device 0 --medium `pwd`/bin//hdimage.vdi --type hdd
+	vboxmanage storageattach "ctOS-ich9" --storagectl "AHCI" --port 1 --device 0 --medium `pwd`/bin/cdimage.iso --type dvddrive
+    EMU="vboxmanage startvm ctOS-ich9"
+    ;;
 
 esac
     
