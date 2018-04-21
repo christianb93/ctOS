@@ -1365,3 +1365,75 @@ void irq_print_vectors() {
         }
     }
 }
+
+/*
+ * Print PIR table entries
+ */
+void irq_print_pir_table() {
+    int i;
+	void* table_start=0;
+	void* table_search;
+	pir_table_t* pir_table = 0;
+	pir_entry_t* pir_entry = 0;
+	int nr_of_slots = 0;
+    int linecount = 0;
+	unsigned char checksum;
+	/*
+	 * Search area for string "$PIR" on 16-byte boundaries         
+	*/
+	table_search = (void*) PIR_BASE;
+	while ((0==table_start) && (table_search<= (void*)(PIR_BASE+PIR_LENGTH))) {
+		if (0==strncmp(table_search,"$PIR",4)) {
+			table_start=table_search;
+		}
+		table_search+=16;
+	}
+    cls(0);
+	if (0==table_start) {
+		PRINT("Could not locate PIR table in memory\n");
+		return;
+	}
+	PRINT("Start address of PIR is %p\n",table_start);
+	pir_table=(pir_table_t*) table_start;
+    checksum = 0;
+    for (i=0;i<pir_table->table_size;i++)
+        checksum += *(((unsigned char*) pir_table) + i);
+    PRINT("Checksum (should be 0):   %x\n", checksum);
+    PRINT("Checksum field:           %x\n", pir_table->checksum);
+    /*
+     * Now print actual contents
+     */
+	nr_of_slots = (pir_table->table_size-sizeof(pir_table_t)) / 16;
+	PRINT("Bus         Device          PIN  Link          Slot\n");
+	PRINT("----------------------------------------------------\n");
+	pir_entry = (pir_entry_t*)(table_start+sizeof(pir_table_t));
+	for (i=0;i<nr_of_slots;i++) {
+        PRINT("%2x   %2x       A    %2x     %d\n", 
+			pir_entry->bus, 
+			pir_entry->device/8,
+			pir_entry->inta_link_value,pir_entry->slot);
+        PRINT("%2x   %2x       B    %2x     %d\n", 
+			pir_entry->bus, 
+			pir_entry->device/8,
+			pir_entry->intb_link_value,pir_entry->slot);
+        PRINT("%2x   %2x       C    %2x     %d\n", 
+				pir_entry->bus, 
+				pir_entry->device/8,
+				pir_entry->intc_link_value,pir_entry->slot);
+		PRINT("%2x   %2x       D    %2x     %d\n", 
+				pir_entry->bus, 
+				pir_entry->device/8,
+				pir_entry->intd_link_value,pir_entry->slot);
+		pir_entry++;		
+        linecount+=4;
+        if (linecount >=16) {
+            PRINT("Hit any key to proceed to next page\n");
+            early_getchar();
+            cls(0);
+            PRINT("Bus         Device          PIN  Link          Slot\n");
+            PRINT("----------------------------------------------------\n");
+            linecount = 0;
+        }
+	}
+
+}

@@ -46,6 +46,9 @@ void timer_print_cpu_ticks() {
 
 }
 
+void irq_print_pir_table() {
+}
+
 void cpuid(u32 eax, u32* ebx, u32* ecx, u32* edx) {
 
 }

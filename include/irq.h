@@ -33,6 +33,42 @@ typedef struct {
     u32 eflags;
 } ir_context_t;
 
+
+/*
+ * An entry in the PIR table
+ */
+typedef struct {
+	u8	bus;		
+	u8  device;	 	
+	u8	inta_link_value;	
+	u16	inta_irqs_allowed;	
+	u8 intb_link_value;	
+	u16 intb_irqs_allowed;	
+	u8 intc_link_value;	
+	u16 intc_irqs_allowed;	
+	u8 intd_link_value;	
+	u16 intd_irqs_allowed;	
+	u8 slot;		
+	u8 reserved;	
+} __attribute__ ((packed)) pir_entry_t;
+
+/*
+ * The PIR table header
+ */
+typedef struct {
+	u32 signature;	
+	u16 version;		
+	u16 table_size;	/* total size of table */
+	u8 bus;		
+	u8 devfunc;	
+	u16 pci_irqs;	
+	u32 compatible;	
+	u32 miniport_data;	
+	u8 reserved[11]; 
+	u8 checksum;
+} __attribute__ ((packed)) pir_table_t;
+
+
 /*
  * The following typedefs describe
  * the structure of the MP tables
@@ -60,16 +96,16 @@ typedef struct {
     u32 oem_table_ptr;
     u16 oem_table_size;
     u16 entry_count;
-    u32 local_apic_address;
+    u32 local_apic_address;     // address at which local APIC can be seen in memory
 }__attribute__ ((packed)) mp_table_header_t;
 
 /*
  * Entry in MP table describing a bus
  */
 typedef struct {
-    u8 entry_type;
-    u8 bus_id;
-    char bus_type[6];
+    u8 entry_type;              
+    u8 bus_id;                  // unique ID of the bus
+    char bus_type[6];           // bus type - ISA, PCI, ..
 }__attribute__ ((packed)) mp_table_bus_t;
 
 
@@ -78,10 +114,10 @@ typedef struct {
  */
 typedef struct {
     char entry_type;
-    char io_apic_id;
-    char io_apic_version;
-    char io_apic_flags;
-    u32 io_apic_address;
+    char io_apic_id;            // unique ID of the APIC
+    char io_apic_version;       // Bits 0 - 7 of the APIC version register
+    char io_apic_flags;         // Bit 0: usable?
+    u32 io_apic_address;        // Base address for this APIC
 }__attribute__ ((packed)) mp_table_io_apic_t;
 
 /*
@@ -89,12 +125,12 @@ typedef struct {
  */
 typedef struct {
     char entry_type;
-    char irq_type;
-    u16 irq_flags;
-    char src_bus_id;
-    char src_bus_irq;
-    char dest_apic_id;
-    char dest_irq;
+    char irq_type;              // 0 = vectored interrupt, 1 = NMI, 2 = SMI, 3 = external interrupt
+    u16 irq_flags;              // Bits 0, 1: polarity, bits 3, 4: trigger mode
+    char src_bus_id;            // ID of the source bus
+    char src_bus_irq;           // source interrupt (for PCI: bits 0,1 are pin, remaining bits are device)
+    char dest_apic_id;          // ID of destination APIC
+    char dest_irq;              // input line of destination APIC
 }__attribute__ ((packed)) mp_table_irq_t;
 
 /*
@@ -116,11 +152,11 @@ typedef struct {
  */
 typedef struct {
     char entry_type;
-    char local_apic_id;
-    char local_apic_version;
-    char cpu_flags;
-    u32 cpu_signature;
-    u32 feature_flags;
+    char local_apic_id;         // ID of local APIC for this CPU
+    char local_apic_version;    // its version
+    char cpu_flags;             // Bit 2: is this the BSP?
+    u32 cpu_signature;          // CPU signature
+    u32 feature_flags;          // CPU feature flags
     u32 reserved[2];
 }__attribute__ ((packed)) mp_table_cpu_t;
 
@@ -274,6 +310,7 @@ void irq_print_io_apics();
 void irq_print_apic_conf();
 void irq_print_stats();
 void irq_print_vectors();
+void irq_print_pir_table();
 int irq_get_mode();
 
 #endif /* _IRQ_H_ */

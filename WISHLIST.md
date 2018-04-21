@@ -7,6 +7,8 @@ ctOS is far from complete (and, as any OS project, will never be complete...). A
 * The entire block cache is a stub at the moment and would have to be implemented - this is probably non-trivial on an SMP system because we need to synchronize access and maintain cache coherence
 * ctOS has a UID and an EUID, but the entire file system is unproteced and ownership and access rights have to be implemented
 * Something like the /proc and /sys filesystems would be nice
+* Support for MSI
+* ACPI integration, for instance via ACPICA
 * We have virtual memory, but no swapping to disk
 * Drivers for more network cards - currently only the RTL8139 is supported because it is simple and available in QEMU, but no real hardware uses that any more. The RTL8169 or the NE2000 would be good to start with.
 * Of course additional ports would be great, like Lynx or even binutils and GCC

@@ -23,6 +23,8 @@ void cond_reschedule() {
 
 }
 
+void cls(win_t* win) {
+}
 
 void save_eflags(u32* eflags) {
 
