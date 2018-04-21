@@ -41,7 +41,7 @@ Re-reading the partition table failed.: Invalid argument
 The kernel still uses the old table. The new table will be used at the next reboot or after you run partprobe(8) or kpartx(8).
 ```
 
-This is perfectly find and can be ignored.
+This is perfectly fine and can be ignored.
 
 **Running**
 
