@@ -12,10 +12,12 @@ So I invested some time to dig out the old source code and find my way through t
 Currently, the following features have been implemented:
 
 * Boot using GRUBs multiboot configuration
-* Built-in kernel debugger to inspect CPU state, memory contents, threads, kernel configuraton etc. (launch with F1)
-* 32 bit mode (64 bit not supported and unlikely that I will ever find the time to port it)
+* Built-in kernel debugger to inspect CPU state, memory contents, threads, kernel configuration etc. (launch with F1)
+* 32 bit protected mode (64 bit not supported and unlikely that I will ever find the time to port it)
 * Virtual memory and multi-tasking
-* Signal handling
+* Kernel threads and threaded interrupt handling (queues)
+* POSIX Signal handling
+* Job control a la POSIX
 * Pipes
 * RAM disk
 * Device drivers:
@@ -24,6 +26,7 @@ Currently, the following features have been implemented:
     * Ethernet adapter (RTL8139)
     * IDE hard drive
     * AHCI hard drive
+    * PCI bus
 * Support for ext2 and FAT16 file systems
 * APIC support
 * Support for SMP with up to eight CPUs 
@@ -37,7 +40,7 @@ I did also port a few tools (dash, wget, elvis) in that past, but this requires 
 
 **Running**
 
-I have tested ctOS with three emulators (QEMU, VirtualBox and Bochs) and also did quite a few tests on my old machine back in 2012 (no idea whether it would still run on curernt hardware). The easiest way to run ctOS is to the QEMU. Please make sure that you get a comparatively recent version of QEMU installed (Ubuntu 16.04 for instance comes with QEMU 2.5 which works fine). 
+I have tested ctOS with three emulators (QEMU, VirtualBox and Bochs) and also did quite a few tests on three different real machines. The easiest way to run ctOS is to use the emulator QEMU. Please make sure that you get a comparatively recent version of QEMU installed (Ubuntu 16.04 for instance comes with QEMU 2.5 which works fine). 
 
 The binary distribution (see the [release page][2]) comes as a GZIPPED TAR files. To install and run, simply enter
 
