@@ -3,10 +3,20 @@
  *
  */
 
+#include <string.h>
+#include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include "kunit.h"
 #include "lib/os/resolv.h"
+
+/*
+ * This global variable will store
+ * the nameserver that we use for our tests. In
+ * main, we try get the correct value from your /etc/resolv.conf,
+ * if this does not work edit the value here
+ */
+char* nameserver =  "192.168.178.1";
 
 int h_errno;
 
@@ -222,7 +232,7 @@ int testcase3() {
      * Put together destination
      */
     dest.sin_family = AF_INET;
-    dest.sin_addr.s_addr = inet_addr("127.0.0.1");
+    dest.sin_addr.s_addr = inet_addr(nameserver);
     dest.sin_port = ntohs(53);
     /*
      * Open UDP socket
@@ -649,8 +659,8 @@ int testcase8() {
 /*
  * Testcase 9: send a DNS resolution request for localhost requesting recursion to the local
  * nameserver and validate result.
- * NOTE: this testcase will only work if there is a nameserver running on UDP port 53 on the local
- * machine (should be the case on most flavours of Unix)
+ * NOTE: this testcase will only work if there is a nameserver running on UDP port 53 on the 
+ * machine with the IP address nameserver
  */
 int testcase9() {
     int fd;
@@ -661,14 +671,10 @@ int testcase9() {
     struct sockaddr_in dest;
     struct sockaddr_in src;
     /*
-     * Skip this testcase until further notice 
-     * */
-     return 0;
-    /*
      * Put together destination
      */
     dest.sin_family = AF_INET;
-    dest.sin_addr.s_addr = inet_addr("127.0.0.1");
+    dest.sin_addr.s_addr = inet_addr(nameserver);
     dest.sin_port = ntohs(53);
     /*
      * Open UDP socket
@@ -728,15 +734,11 @@ int testcase9() {
 int testcase10() {
     struct sockaddr_in dest;
     unsigned int addr;
-       /*
-     * Skip this testcase until further notice 
-     * */
-     return 0;
     /*
      * Put together destination
      */
     dest.sin_family = AF_INET;
-    dest.sin_addr.s_addr = inet_addr("127.0.0.1");
+    dest.sin_addr.s_addr = inet_addr(nameserver);
     dest.sin_port = ntohs(53);
     /*
      * and resolve
@@ -749,8 +751,8 @@ int testcase10() {
 /*
  * Testcase 11: send a DNS resolution request for a real host requesting recursion to the local
  * nameserver and validate result.
- * NOTE: this testcase will only work if there is a nameserver running on UDP port 53 on the local
- * machine (should be the case on most flavours of Unix)
+ * NOTE: this testcase will only work if there is a nameserver running on UDP port 53 on * machine
+ * with the address nameserver
  */
 int testcase11() {
     int fd;
@@ -760,15 +762,11 @@ int testcase11() {
     unsigned char msg[512];
     struct sockaddr_in dest;
     struct sockaddr_in src;
-   /*
-     * Skip this testcase until further notice 
-     * */
-     return 0;    
     /*
      * Put together destination
      */
     dest.sin_family = AF_INET;
-    dest.sin_addr.s_addr = inet_addr("127.0.0.1");
+    dest.sin_addr.s_addr = inet_addr(nameserver);
     dest.sin_port = ntohs(53);
     /*
      * Open UDP socket
@@ -923,8 +921,8 @@ int testcase12() {
 /*
  * Testcase 13: send a DNS resolution request for a real host requesting recursion to the local
  * nameserver and validate result - chose a host which has a CNAME (www.kernel.org)
- * NOTE: this testcase will only work if there is a nameserver running on UDP port 53 on the local
- * machine (should be the case on most flavours of Unix)
+ * NOTE: this testcase will only work if there is a nameserver running on UDP port 53 on the 
+ * machine with IP address nameserver
  */
 int testcase13() {
     int fd;
@@ -1136,8 +1134,8 @@ int testcase14() {
  * Testcase 15: send a DNS resolution request for a real host requesting recursion to the local
  * nameserver and validate result - chose a host which has a CNAME (www.kernel.org) and use
  * upper cases in the query
- * NOTE: this testcase will only work if there is a nameserver running on UDP port 53 on the local
- * machine (should be the case on most flavours of Unix)
+ * NOTE: this testcase will only work if there is a nameserver running on UDP port 53 on the 
+ * the machine with IP address nameserver
  */
 int testcase15() {
     int fd;
@@ -1147,15 +1145,11 @@ int testcase15() {
     unsigned char msg[512];
     struct sockaddr_in dest;
     struct sockaddr_in src;
-   /*
-     * Skip this testcase until further notice 
-     * */
-     return 0;    
     /*
      * Put together destination
      */
     dest.sin_family = AF_INET;
-    dest.sin_addr.s_addr = inet_addr("127.0.0.1");
+    dest.sin_addr.s_addr = inet_addr(nameserver);
     dest.sin_port = ntohs(53);
     /*
      * Open UDP socket
@@ -1198,6 +1192,29 @@ int testcase15() {
 }
 
 int main() {
+    /*
+     * Try to figure out the nameserver that we can use for our tests
+     */
+    FILE *fp;
+    char line[200];
+    if((fp = fopen("/etc/resolv.conf" , "r")) == NULL)
+    {
+        printf("Failed opening /etc/resolv.conf file \n");
+        exit(1);
+    }
+    while(fgets(line , 200 , fp))
+    {
+        if(strncmp(line , "nameserver" , 10) == 0) {
+            strtok(line," ");
+            nameserver = strtok(NULL," ");
+            /*
+             * nameserver is now pointing
+             * into line, so make sure that we do not change this any more
+             */
+            break;
+        }
+    }
+    
     INIT;
     RUN_CASE(1);
     RUN_CASE(2);
