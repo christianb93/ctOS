@@ -10,7 +10,7 @@
  *
  * 1) do_pre_init_tests() is called during the boot process of the BSP immediately before the INIT
  *    process is generated
- * 2) do_post_init_tests() is called during the boot process of the BPS immediately before /init
+ * 2) do_post_init_tests() is called during the boot process of the BPS immediately before /bin/init
  *    is started and runs as process 1
  * 3) do_smp_tests_boot_ap() is called by the AP immediately after it has been brought up into
  *    protected mode - this happens for the first AP only
@@ -125,7 +125,7 @@
  *                                     tests
  *                                       |
  *                                      run
- *                                     /init
+ *                                     /bin/init
  */
 
 #include "debug.h"
@@ -218,8 +218,8 @@ static void go_idle() {
     /*
      * Load init program
      */
-    MSG("Starting /init\n");
-    KASSERT(0==do_exec("/init", 0, 0, 0));
+    MSG("Starting /bin/init\n");
+    KASSERT(0==do_exec("/bin/init", 0, 0, 0));
     KASSERT(0);
 }
 

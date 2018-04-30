@@ -9,9 +9,9 @@
 #   file system and the user space programs
 # - for some tests, like the ext2 file system unit test, a test image is
 #   required
-# - finally, if you want to emulate a hard disk, you will need a 
+# - finally, if you want to emulate a hard disk, you will need a
 #   HD image including a MBR
-# 
+#
 # This script will build the first three of these images. Please make sure to execute it
 # in the ctOS bin directory (where the kernel is located as well)
 # (to build to test image, use init_test_images.sh in the tools directory)
@@ -44,7 +44,7 @@ fi
 
 #
 # For building the CD image, we also need the ramdisk image, so we do
-# this first. First we create an empty file 
+# this first. First we create an empty file
 #
 rm -f ramdisk.img
 dd if=/dev/zero of=ramdisk.img bs=512 count=19136
@@ -54,7 +54,7 @@ dd if=/dev/zero of=ramdisk.img bs=512 count=19136
 #
 mkfs -t ext2 -b 1024 -O none  ramdisk.img
 #
-# Now mount it 
+# Now mount it
 #
 sudo losetup /dev/loop7 ramdisk.img
 mkdir -p mnt
@@ -65,12 +65,13 @@ sudo mount /dev/loop7 mnt
 #
 sudo mkdir -p mnt/dev
 sudo mknod -m 666 mnt/dev/tty c 2 0
-sudo cp ../userspace/cli ../userspace/init mnt
+sudo mkdir -p mnt/bin
+sudo cp ../userspace/cli ../userspace/init ../userspace/args mnt/bin
 sudo mkdir -p mnt/tests
 sudo cp  ../userspace/tests/testjc ../userspace/tests/testwait ../userspace/tests/testfiles ../userspace/tests/testsignals mnt/tests
 sudo cp ../userspace/tests/testpipes ../userspace/tests/testfork ../userspace/tests/testmisc ../userspace/tests/testtty mnt/tests
 sudo cp ../userspace/tests/testall ../userspace/tests/testnet mnt/tests
-if [ -d "import" ] 
+if [ -d "import" ]
 then
   sudo cp -v ./import/* ./mnt/
 fi
@@ -114,6 +115,6 @@ sudo sfdisk --no-reread /dev/loop7 << EOF
 EOF
 
 #
-# Clean up 
+# Clean up
 #
 sudo losetup -d /dev/loop7

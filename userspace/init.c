@@ -15,10 +15,10 @@ int main() {
     int pid;
     int status;
     int rc;
-    printf("INIT: starting /cli\n");
+    printf("INIT: starting /bin/cli\n");
     pid = fork();
     if (0 == pid) {
-        execl("/cli", "myarg", "test", 0);
+        execl("/bin/cli", 0);
     }
     if (pid < 0) {
         printf("Error: could not fork!\n");

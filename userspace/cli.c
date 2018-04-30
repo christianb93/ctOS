@@ -67,6 +67,11 @@ typedef struct {
 #define CHECK(x)   do { if (-1==(x)) { printf("Error %s at line %d\n", strerror(errno), __LINE__);  _exit(1); } } while (0);
 
 
+/*
+ * Maximum number of arguments that we expect
+ */
+#define MAX_ARGS 32
+
 /************************************************
  * Structures                                   *
  ***********************************************/
@@ -591,8 +596,11 @@ static void wait_fg_job(job_t* job) {
 static void start_job(job_t* job, int foreground) {
     process_t* proc;
     int pid;
-    char* argv[2];
+    char* argv[MAX_ARGS+1];
     char* env[3];
+    char* ptr;
+    int i;
+    char delimiter[] = " ";
     env[0]="HOME=/";
     env[1]="TERM=ctos";
     env[2]=0;
@@ -654,10 +662,17 @@ static void start_job(job_t* job, int foreground) {
                 close(proc->outfd);
             }
             /*
-             * Now unblock job control signals and run program image
+             * Now prepare arguments, unblock job control signals and
+             * run the actual program image
              */
-            argv[1] = 0;
-            argv[0] = proc->cmd;
+            i = 0;
+            ptr = strtok(proc->cmd, delimiter);
+            while ((ptr != NULL) && (i < MAX_ARGS)) {
+                argv[i] = ptr;
+                i++;
+                ptr = strtok(NULL, delimiter);
+            }
+            argv[i] = 0;
             unblock_signals();
             execve(proc->cmd, argv, env);
             fprintf(stderr, "Execution failed\n");
