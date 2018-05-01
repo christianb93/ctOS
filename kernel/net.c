@@ -60,6 +60,7 @@
 #include "lib/os/signals.h"
 #include "lists.h"
 #include "lib/sys/ioctl.h"
+#include "lib/fcntl.h"
 #include "timer.h"
 
 /*
@@ -805,8 +806,12 @@ ssize_t net_socket_recv(socket_t* socket, void* buffer, size_t len, int flags, s
         NET_DEBUG("Return code from protocol specific recv: %d\n", rc);
         if (-EAGAIN == rc) {
             /*
-             * No data - need to wait
+             * No data - need to wait unless O_NONBLOCK is set
              */
+            if (flags && O_NONBLOCK) {
+                rc = 0;
+                break;
+            }
             if (0 == socket->so_rcvtimeout)
                 rc = cond_wait_intr(&socket->rcv_buffer_change, &socket->lock, &eflags);
             else

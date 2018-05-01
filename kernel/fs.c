@@ -1649,7 +1649,7 @@ ssize_t fs_read(open_file_t* file, size_t bytes, void* buffer) {
         rc = fs_pipe_read(file->pipe, bytes, buffer, (file->flags & O_NONBLOCK) ? 1 : 0);
     }
     else if (S_ISSOCK(file->inode->mode)) {
-        rc = net_socket_recv(file->socket, buffer, bytes, 0, 0, 0, 0);
+        rc = net_socket_recv(file->socket, buffer, bytes, file->flags, 0, 0, 0);
     }
     else {
         /*
