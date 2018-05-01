@@ -182,7 +182,8 @@ void cmd_route(char* line);
 void cmd_ping(char* line);
 void cmd_dns(char* line);
 void cmd_whoami(char* line);
-
+void cmd_host(char* line);
+void cmd_http(char* line);
 
 /*
  * A list of supported commands
@@ -214,6 +215,8 @@ static cmd_t cmds[] = { { "help", cmd_help },
         { "ping", cmd_ping},
         { "dns", cmd_dns},
         { "whoami", cmd_whoami},
+        { "host", cmd_host},
+        { "http", cmd_http},
         { 0, 0 } };
 
 
@@ -822,6 +825,8 @@ void cmd_help(char* line) {
     printf("dns - manage DNS server configuration\n");
     printf("whoami - print user information\n");
     printf("ping <ip_address> - ping a remote host\n");
+    printf("host <hostname> - resolve hostname\n");
+    printf("http <URL> - get and dump web page\n");
     printf("exit - leave current instance of CLI\n");
 }
 
@@ -2292,6 +2297,129 @@ void cmd_ping(char* line) {
       * and print statistics
       */
      printf("Sent %d packets, got %d replies, %d packets lost\n", requests, replies, requests - replies);
+}
+
+/*
+ * Resolve a hostname
+ */
+void cmd_host(char* line) {
+    char* addr;
+    unsigned int dest;
+    struct hostent* he;
+    char addr_str[16];
+    const char* conv;
+    /*
+      * Get first argument - hostname
+      */
+    if (0 == (addr = strtok(line, " \n\t"))) {
+         printf("No host name specified, syntax is host <hostname>\n");
+         return;
+    }
+    /*
+     * addr seems to be a hostname - try to resolv it
+     */
+    if (0 == (he = gethostbyname(addr))) {
+        printf("Could not resolve host name %s\n", addr);
+        return;
+    }
+    dest = *((unsigned int *) he->h_addr_list[0]);
+    conv = inet_ntop(AF_INET, (void*) &dest, addr_str, 16);
+    if (conv) {
+        printf("Address: %s\n", conv);
+        return;
+    }
+    printf("Hostname could not be resolved\n");
+}
+
+/*
+ * Get HTTP data from a remote host
+ * Parameter:
+ * hostname
+ * path (optional)
+ */
+void cmd_http(char* line) {
+    in_addr_t ip_address;
+    struct in_addr in;
+    struct sockaddr_in faddr;    
+    struct hostent* he;
+    char* host;
+    char* path;
+    char* url;
+    int fd;
+    char write_buffer[256];
+    char read_buffer[256];
+    int b;
+    int tries = 0;
+    /*
+      * Get  argument - url
+      */
+    if (0 == (url = strtok(line, " \n\t"))) {
+         printf("No host name specified, syntax is http <URL> \n");
+         return;
+    }
+    /*
+     * Strip off leading http://
+     */
+    if (0 == strcmp(url, "http://")) {
+        url = url + 7;
+    }    
+    host = strtok(url, "/");
+    path = strtok(NULL, "/");
+    /*
+     * Create socket
+     */
+    fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (fd < 0) {
+        printf("Could not create socket");
+        return;
+    }
+    /*
+     * Resolve hostname
+     */
+    if (0 == (he = gethostbyname(host))) {
+        printf("Could not resolve host name %s\n", host);
+        return;
+    }
+    ip_address = *((unsigned int *) he->h_addr_list[0]);
+    in.s_addr = ip_address;    
+     /*
+     * Connect socket
+     */
+    faddr.sin_addr = in;
+    faddr.sin_family = AF_INET;
+    faddr.sin_port = htons(80);
+    if (-1 == connect(fd, (struct sockaddr*) &faddr, sizeof(struct sockaddr_in))) {
+        perror("Could not connect socket");
+        return;
+    }
+    printf("Connection established, now sending GET request\n");
+    b = sprintf(write_buffer, "GET /%s HTTP/1.1\r\n", path);
+    b+= sprintf(write_buffer + b, "Host: %s\r\n", host);
+    b+= sprintf(write_buffer + b, "User-Agent: ctOS\r\n");
+    b+= sprintf(write_buffer + b, "Accept: */*\r\n");
+    /*
+     * Do not forget to complete request with an empty line
+     */
+    sprintf(write_buffer + b, "\r\n");
+    printf("%s", write_buffer);    
+    b = send(fd, write_buffer, strlen(write_buffer), 0);
+    printf("\n\nNow waiting for data to come in\n");
+    /*
+     *  Put socket into non-blocking mode
+     */
+    if (fcntl(fd, F_SETFL, O_NONBLOCK)) {
+        printf("Warning: could not set socket into non-blocking mode\n");
+    }
+    while (tries < 5) {
+        b = read(fd,read_buffer,256);
+        if (b > 0) {
+            write(1,read_buffer,b);
+        }
+        else {
+            tries += 1;
+            sleep(1);
+        }
+	}
 }
 
 

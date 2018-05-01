@@ -130,7 +130,7 @@ sudo ./bin/run.sh qemu-tap
 Note that creating a tap device requires root privileges, therefore we use sudo to run this. Next, open a terminal on the host and bring up the tap device and the testserver:
 
 ```bash
-sudo ifconfig eth0 10.0.2.21
+sudo ifconfig tap0 10.0.2.21
 ./tools/testserver 10.0.2.21 30000
 ```
 This will instruct the testserver that is part of the ctOS distribution to bind itself to this address on the host, i.e. it is now listening on the tap device. In the ctOS window, we can now set up the network and start the test client as follows.
@@ -138,14 +138,80 @@ This will instruct the testserver that is part of the ctOS distribution to bind 
 ```
 @> net addr eth0 10.0.2.20
 @> cd tests
-@> run testnet 
+@> run testnet
 ```
 
-Now the test client (running in ctOS) and the test server (running on the host) will start to exchange various messages (IP, ICMP and TCP). In the ctOS window, you should see the test cases completing, on the host, the testserver will print out status information. Part of the test suite is a testcase (testcase 4) where both parties exchange 8 MB of information over a TCP connection. The output should look similar to the screenshot below.
+Now the test client (running in ctOS) and the test server (running on the host) will start to exchange various messages (IP, ICMP and TCP). In the ctOS window, you should see the test cases completing, on the host, the testserver will print out status information. Part of the test suite is a testcase (testcase 5) where both parties exchange 8 MB of information over a TCP connection. The output should look similar to the screenshot below.
 
 ![ctOS Advanced networking test][4]
 
 On this screenshot, I have also started Wireshark to dump the traffic on the tap0 device, and we can see how the messages are exchanged between the two hosts.
+
+Now let us try to connect ctOS running in QEMU with the outside world. The exact configuration depends a bit on the setup of your LAN and your exact host system, here are instructions for Ubuntu 16.04 running in a typical home network setup.
+
+Again, let us start QEMU using the tap networking configuration.
+
+```bash
+sudo ./bin/run.sh qemu-tap
+```
+
+Next we again set up the network on the Linux host first. This time, we do not only bring up a tap device, but also add some firewall (iptables) rules so that traffic is forwarded from the tap device to the local network. 
+
+```
+sudo ifconfig tap0 10.0.2.22
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo iptables -A FORWARD -o tap0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A FORWARD -i tap0 ! -o tap0 -j ACCEPT
+sudo iptables -A POSTROUTING -s 10.0.0.0/16 ! -o tap0 -j MASQUERADE -t nat
+```
+
+Instead of typing in these commands manually, you can also run the script if_up.sh in /bin.
+
+Now, in the ctOS system, we set up the local interface as 10.0.2.20 again. However, this time, we also add a default route, using the tap0 device as a gateway.
+
+```
+@> net addr eth0 10.0.2.20
+@> route add 0.0.0.0 0.0.0.0 10.0.2.22 eth0
+```
+
+Now you should be able to ping the gateway in your LAN. If, for instance, your gateway is 192.168.178.1, a 
+
+```
+@> ping 192.168.178.1
+```
+
+should work. The next setup that we need is a DNS server. Unfortunately, this now depends a bit on your setup. Most Linux machines come with a DNS server (named) set up and running, but most of them bind the DNS server to localhost only, so it is not reachable from the QEMU machine. Chances are, however, that your gateway is a router that has a built-in nameserver. So let us set this up as a nameserver for ctOS (again, replace 192.168.178.1 by your router).
+
+```
+@> dns add 192.168.178.1
+```
+
+Now a 
+
+```
+@> ping www.github.com
+```
+
+should work in the ctOS CLI. You should also be able to resolve a hostname using the built-in command `host` of the CLI, for instance
+
+```
+@> host httpbin.org
+```
+
+Finally, let us try out the embedded simple HTTP client. In the CLI, enter the command
+
+```
+@>http httpbin.org/ip
+```
+
+This will fetch the content of the URL httpbin.org/ip and print out the resulting data, producing an output similar to the one displayed in the screenshot below.
+
+![ctOS HTTP testing](https://leftasexercise.files.wordpress.com/2018/05/ctos_http_test.png)
+
+
+The first part of the output is the HTTP header that we send over the line. The second part is the HTTP header that we get back, followed by the actual HTTP data. Note that the built-in http function is simply assembling a GET request and printing out the answer including all header information and is not yet able to parse the header. In particular, it does not respect the content length in the header but does a non-blocking read and returns if no new data has arrived for five seconds.
+
+
 
 ## Debugging options
 
