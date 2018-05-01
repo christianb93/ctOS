@@ -77,6 +77,8 @@ Thus in an interrupt context (within the common handler), the stack looks as fol
 
 Note that the value stored in the field "esp" in this diagramm is the value of the stack pointer immediately after pushing cr2, i.e. it is the adress of the field labeled cr2! This structure is defined in irq.h as `ir_context_t`.
 
+Also note that if an interrupt occurs while code in ring 3 (user space) is executing, the CPU will in addition determine the location of the kernel stack using the TSS and - before pushing any of the values above - push the value of the old stack segment (SS) and old stack pointer (ESP). 
+
 After returning from the common interrupt handler, the handler needs to do the following:
 
 1. pop old value of cr3 into eax
