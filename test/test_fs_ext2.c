@@ -44,7 +44,7 @@ blk_dev_ops_t ops;
 /*
  * Size of the test hd image
  */
-#define TEST_IMAGE_SIZE 208486400
+#define TEST_IMAGE_SIZE 256000000
 /*
  * Inode of the file /test - get this with ls -li
  */
