@@ -44,6 +44,7 @@ help | ?)
     
     default:    Boot using QEMU from the CDROM image and use ramdisk as root device
     qemu-ide:   Boot directly using multiboot, attach an IDE drive and use hard disk image
+    qemu-debug: As above, but bring up QEMU in debugging mode
     qemu-net:   QEMU multiboot with IDE drive (hdimage) and a network card
     qemu-smp:   QEMU with 8 simulated CPUs
     qemu-tap:   QEMU attached to a tap networking device (must be root to run this)
@@ -74,6 +75,19 @@ qemu-ide)
     KERNEL="-kernel bin/ctOSkernel"
     APPEND="-append \"use_debug_port=1 root=769 loglevel=0\""
     ;;
+
+qemu-debug)
+    #
+    # Use QEMUs multiboot capabilities to boot the kernel directly,
+    # attach a PATA drive 
+    # Required images: kernel, hdimage
+    #
+    EMU="$QEMU -S -s"
+    HD="-drive id=disk,file=bin/hdimage,if=ide,media=disk"
+    KERNEL="-kernel bin/ctOSkernel"
+    APPEND="-append \"use_debug_port=1 root=769 loglevel=0\""
+    ;;
+
 
 qemu-net)
     #

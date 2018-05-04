@@ -215,7 +215,7 @@ The first part of the output is the HTTP header that we send over the line. The 
 
 ## Debugging options
 
-If tests fail, we need a way to debug. Some emulators, like QEMU and Bochs, have the option to attach a debugger like gdb to them and debug the execution step by step. However, in my experience, other approaches are usually more efficient
+If tests fail, we need a way to debug. Some emulators, like QEMU and Bochs, have the option to attach a debugger like gdb to them and debug the execution step by step. We will look at this at the end of the section, however, in my experience, other approaches are usually more efficient.
 
 First, there is the good old **printf-debugging** - add log statements to the code to see what is going on. QEMU and Bochs both offer a nice feature that supports this approach - all output written to a specific port (the debugging port 0xe9) is written to the standard output. I have used this a lot to be able to read output long after it has disappeared from the screen. ctOS offers some built in loglevels, see the file `params.c`.
 
@@ -252,6 +252,34 @@ So we see that we try to access the meta data structure of the ext2 file system,
 So we see that we have called `init_super` from this code location, which is part of `fs_ext2_get_superblock` and so forth. 
 
 In addition, the debugger offers a few commands to dump memory, print out register contents, CPU state, task table and scheduler information, device information etc. There is even a PCI browser that can list and examine all devices detected on the PCI bus. And if everything else fails, you can set a software breakpoint by inserting an `int 0x3` into the code which will take you to the debugger and thus slowly work your way towards the issue.
+
+Finally, if everything else fails on you (I once did break my console *AND* the QEMU / Bochs debugging port at the same time), there is still the option to single step through your code using the GDB stub built into QEMU. To do this, run QEMU with the options
+
+```
+-S -s
+```
+
+This will instruct QEMU to listen for incoming connections from GDB on port 1234 and to stop upon startup until you have connected and issued a `continue` command. So, in a separate window, start gdb asking it to connect to this remote target.
+
+```
+gdb -s bin/ctOSkernel -ex 'target remote localhost:1234'
+```
+
+Note that the flag `-s` will instruct gdb to use the symbol tables from the kernel table, so that we can use symbols instead of just line numbers and addresses, for both variables and programs.
+
+Here are some useful GDB commands.
+
+* hbreak module:symbol - set a hardware breakpoint, for instance `hbreak start.S:_start`
+* hbreak module:line - set a hardware breakpoint, for instance 'hbreak start.S:13`
+* c - continue to next breakpoint
+* bt - print backtrace
+* list - show code around current breakpoint
+* s - step into
+* n - step over
+* p - print value of a variable, for instance `p x`
+* quit - exit
+
+Of course that also works with ddd - use the commands `file` to load the symbol table and `target remote localhost:1234` to connect to the QEMU stub.
 
 [1]: https://leftasexercise.files.wordpress.com/2018/04/ctos_smp_test.png
 [2]: https://alpinelinux.org/downloads/
