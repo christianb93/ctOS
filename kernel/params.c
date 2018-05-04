@@ -61,7 +61,7 @@ static char parm_irq_watch[8];
 
 static kparm_t kparm[] = {
         { "heap_validate", parm_heap_validate, 1, "0", 0 },
-        { "use_debug_port", parm_use_debug_port, 1, "0", 0 },
+        { "use_debug_port", parm_use_debug_port, 1, "1", 1 },
         { "do_test", parm_do_test, 1, "0", 0 },
         { "root", parm_root, 6, "0x100", 0x100},
         { "apic", parm_apic, 1, "2", 2},

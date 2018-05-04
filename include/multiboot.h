@@ -29,6 +29,12 @@ typedef struct {
     u32 apm_table;
     u32 vbe_control_info;
     u32 vbe_mode_info;
+    u16 vbe_mode;
+    u16 vbe_interface_seg;
+    u16 vbe_interface_off;
+    u16 vbe_interface_len;
+    u32 framebuffer_addr_low;
+    u32 framebuffer_addr_high;
 }__attribute__ ((packed)) multiboot_info_block_t;
 
 /* The memory map entry.
@@ -66,5 +72,6 @@ typedef struct {
 #define MEM_MAP_VALID(x) (((x->flags) >> 6) & 0x1)
 #define MOD_MAP_VALID(x) (((x->flags) >> 3) & 0x1)
 #define VBE_DATA_VALID(x) (((x->flags) >> 11) & 0x1)
+#define FB_DATA_VALID(x) (((x->flags) >> 12) & 0x1)
 
 #endif /* _MULTIBOOT_H_ */

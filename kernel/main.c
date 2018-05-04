@@ -238,8 +238,9 @@ void run(u32 multiboot_ptr) {
     /*
      * Init video driver in text mode and the console driver
      */
-    vga_init(0);
+    vga_init(0, multiboot_ptr);
     cons_init();
+    MSG("Multiboot flags %x\n", ((multiboot_info_block_t*) (multiboot_ptr))->flags);
     /*
      * Init memory manager. We do this before we set up the VGA graphics
      * adapter in graphics mode as the VGA code might return to real mode
@@ -250,7 +251,7 @@ void run(u32 multiboot_ptr) {
     /*
      * Now switch to graphics mode
      */
-    vga_init(1);
+    vga_init(1, 0);
     cons_init();
     /*
      * Load TSS. We have not yet done this in the initial startup code

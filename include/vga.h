@@ -151,7 +151,7 @@ typedef struct {
 #define WIN_TITLE_HEIGHT 30
 #define WIN_BOTTOM_HEIGHT 2
 
-void vga_init(int);
+void vga_init(int, u32);
 void vga_init_win(win_t* win, u32 x_origin, u32 y_origin, u32 x_resolution, u32 y_resolution);
 void vga_enable_paging();
 void vga_debug_regs();
