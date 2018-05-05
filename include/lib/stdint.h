@@ -29,10 +29,16 @@ typedef long long int  int64_t;
 typedef long long int intmax_t;
 typedef unsigned long long int uintmax_t;
 
+#define INT64_C(c) c ## LL
+
 #define UINT64_C(c) c ## ULL
 
 #define INT32_MAX  ((int) 0x7FFFFFFF)
 #define UINT32_MAX ((unsigned int) 0xFFFFFFFF)
+
+# define INTMAX_MIN		(-__INT64_C(9223372036854775807)-1)
+/* Maximum for largest signed integral type.  */
+# define INTMAX_MAX		(__INT64_C(9223372036854775807))
 
 
 #endif /* _STDINT_H_ */
