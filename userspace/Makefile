@@ -2,7 +2,7 @@ INC = $(PREFIX)/include/lib
 CCFLAGS = -g -nostdinc -fno-stack-protector -mpush-args -Wno-packed -Wno-packed-bitfield-compat -fno-builtin -Wall -Werror -c -I$(INC) -m32
 CC = gcc $(CCFLAGS)
 LD = ld -Ttext 0x40000000 -melf_i386 -e _start
-LIBS = ../lib/std/crt0.o ../lib/std/crt.a ../lib/os/libos.a
+LIBS = ../lib/std/crt1.o ../lib/std/crt.a ../lib/os/libos.a
 
 OBJ = init.o cli.o uname.o lc.o loop.o host.o args.o
 EXEC = init cli uname lc loop args

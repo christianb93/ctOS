@@ -107,7 +107,7 @@ test_time: test_time.c ../include/lib/time.h ../lib/std/time.o kunit.o
 	
 test_write: test_write.c ../lib/std/crt.a 
 	gcc -c -o test_write.o test_write.c -iquote ../include -m32 -Wno-implicit-function-declaration
-	ld -o test_write ../lib/std/crt0.o test_write.o  ../lib/std/crt.a ../kernel/kprintf.o ../lib/linux/libos.a -e _start -melf_i386 
+	ld -o test_write ../lib/std/crt1.o test_write.o  ../lib/std/crt.a ../kernel/kprintf.o ../lib/linux/libos.a -e _start -melf_i386 
 	
 	
 test_streams: ../lib/internal/streams.o test_streams.c kunit.o

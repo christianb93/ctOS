@@ -14,6 +14,8 @@
 extern int main(int argc, char** argv);
 extern void _exit(int status);
 
+void _fini() {};
+
 extern heap_t __ctOS_heap;
 
 

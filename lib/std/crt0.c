@@ -14,6 +14,17 @@
 
 extern int main(int argc, char** argv, ...);
 extern void _exit(int status);
+extern void _init();
+
+#ifdef SKIP_INIT_CALL
+    /*
+     * We are building the version called crt1.o which will not do the GCC
+     * _init / _fini processing. However, _exit() will always call _fini. There
+     * we provide a dummy here 
+     */
+    void _fini() {}; 
+#endif
+
 
 extern heap_t __ctOS_heap;
 
@@ -105,6 +116,13 @@ void _start(int argc, char** argv, char** envp) {
         strcpy(environ[i], envp[i]);
     }
     environ[envc]=0;
+    /*
+     * Run global constructors if requested
+     */
+#ifdef SKIP_INIT_CALL
+#else
+     _init();
+#endif
     /*
      * Set locale
      */

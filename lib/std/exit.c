@@ -3,6 +3,8 @@
  *
  */
 
+extern void _fini();
+
 #include "lib/os/oscalls.h"
 #include "lib/os/streams.h"
 
@@ -35,6 +37,12 @@
  * 2) No SIGHUP is sent if the exit causes a process group to become orphaned
  */
 void _exit(int status) {
+    /*
+     * We always call _fini here, but this is either provided as a dummy by
+     * crt1.o or by the actual GCC crt stuff when we build using the 
+     * toolchain
+     */
+    _fini();
     __ctOS__exit(status);
 }
 
