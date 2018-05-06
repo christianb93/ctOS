@@ -11,3 +11,4 @@ bin/hdimage.vdi
 **/ctOS.bin.tar.gz
 **/testfile.src
 test/testfile
+bin/import/*

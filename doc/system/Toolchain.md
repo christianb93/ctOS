@@ -120,7 +120,7 @@ eelf_ctOS.c: $(srcdir)/emulparams/elf_ctOS.sh \
 
 The target eelf_ctOS.c also needs to be added to ALL_EMULATION_SOURCES in order to be included in the build process.
 
-We also need to define a location in which we place the resulting toolchain. For this guide, I will assume that you have defined an environment variable CTOS_PREFIX that points to the directory were we will locate the toolchain (for me, this is $HOME/ctOS_toolchain). Inside that directory, we will use the following structure.
+We also need to define a location in which we place the resulting toolchain. For this guide, I will assume that you have defined an environment variable CTOS_PREFIX that points to the directory were we will locate the toolchain (for me, this is $HOME/ctOS_sys). Inside that directory, we will use the following structure.
 
 ![Toolchain directories](images/ToolchainDirectories.png)
 
@@ -139,7 +139,7 @@ cd ..
 mkdir build
 mkdir build/binutils
 cd build/binutils
-../../src/binutils-2.27/configure --target=i686-pc-ctOS --prefix=$CTOS_PREFIX/install --with-sysroot=/$CTOS_PREFIX/sysroot
+../../src/binutils-2.27/configure --target=i686-pc-ctOS --prefix=$CTOS_PREFIX/sysroot --with-sysroot=/$CTOS_PREFIX/sysroot
 make
 ```
 
@@ -264,20 +264,20 @@ cp -v $CTOS_ROOT/lib/std/crtn.o ~/ctOS_toolchain/sysroot/lib/
 cp -v $CTOS_ROOT/lib/std/libc.a ~/ctOS_toolchain/sysroot/lib/
 ```
 
-In addition to the header files, we also copy the files crti.o, crtn.o and crt0.a which is needed for the initialization part, see the appendix below for more details on this, and the C library itself.
+In addition to the header files, we also copy the files crti.o, crtn.o and crt0.a which are needed for the initialization part, see the appendix below for more details on this, and the C library itself.
 
-Another point which we need to observe is that GCC has a built-in mechanism to patch some header files that it thinks are not correct. The patches are placed in $CTOS_PREFIX/install/lib/gcc/i686-pc-ctOS/5.4.0/include-fixed/. The mechanism doing this is controlled by the scripts in $CTOS_PREFIX/src/gcc-5-4-0/fixincludes. If we wanted to prevent GCC from touching our includes, we could add ctOS to the case statement in the file mkfixinc.sh. For the time being, we do not do this and let GCC do its work, but this needs to be kept in mind if header files are changed as then the changes will not automatically make it into the fixincludes directory.
+Another point which we need to observe is that GCC has a built-in mechanism to patch some header files that it thinks are not correct. The patches are placed in $CTOS_PREFIX/sysroot/lib/gcc/i686-pc-ctOS/5.4.0/include-fixed/. The mechanism doing this is controlled by the scripts in $CTOS_PREFIX/src/gcc-5-4-0/fixincludes. If we wanted to prevent GCC from touching our includes, we could add ctOS to the case statement in the file mkfixinc.sh. For the time being, we do not do this and let GCC do its work, but this needs to be kept in mind if header files are changed as then the changes will not automatically make it into the fixincludes directory.
 
 Now we are done with our preparations and can run the actual build. Again, we add a build directory, cd there and start the actual build and install.
 
 ```
 cd $CTOS_PREFIX/build/gcc
-../../src/gcc-5.4.0/configure --target=i686-pc-ctOS --prefix=$CTOS_PREFIX/install --with-sysroot=$CTOS_PREFIX/sysroot --with-gnu-as --with-gnu-ld --enable-languages=c
+../../src/gcc-5.4.0/configure --target=i686-pc-ctOS --prefix=$CTOS_PREFIX/sysroot --with-sysroot=$CTOS_PREFIX/sysroot --with-gnu-as --with-gnu-ld --enable-languages=c
 make -j 4
 make install
 ```
 
-This might take some time, depending on the number of CPUs you have. When the smoke clears, you should see a gcc executable in $CTOS_PREFIX/install. 
+This might take some time, depending on the number of CPUs you have. When the smoke clears, you should see a gcc executable in $CTOS_PREFIX/sysroot. 
 
 
 ### Appendix - creating and using patches
