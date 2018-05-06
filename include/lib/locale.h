@@ -39,6 +39,6 @@ struct lconv *localeconv(void);
 #define LC_TIME 2
 #define LC_MONETARY 4
 #define LC_ALL 6
-
+#define LC_CTYPE 7
 
 #endif /* _LOCALE_H_ */
