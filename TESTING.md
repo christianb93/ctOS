@@ -12,7 +12,7 @@ cd tools
 ./init_test_images.sh
 ```
 
-You have to do this only once, then the files can be reused for any subsequent test (they are not modified), as long as the test cases do not change substantially.
+You have to do this only once, then the files can be reused for any subsequent test (they are not modified), as long as the test cases do not change substantially. Note that this script assumes that you have the e2fs tools installed that allow us to manipulate harddisk images without having to mount them (which requires root privileges).
 
 After these preparations, run the tests by going back to the ctOS root and executing the make target tests.
 
