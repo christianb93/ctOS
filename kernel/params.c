@@ -14,6 +14,7 @@
 #include "lib/stdlib.h"
 #include "debug.h"
 
+static char cmd_line[MULTIBOOT_MAX_CMD_LINE];
 
 /*
  * This table is used to hold the kernel parameters. At boot time, the values
@@ -82,14 +83,17 @@ static kparm_t kparm[] = {
 
 /*
  * Parse command line and set up default values
- * Parameter:
- * @cmd_line - the command line
  */
-void params_parse(char* cmd_line) {
+void params_parse() {
     char* token;
     char* ptr;
     int i;
     char* endptr;
+    /*
+     * Get command line from the multiboot module
+     * and create a local copy
+     */
+    strncpy(cmd_line, multiboot_get_cmdline(), MULTIBOOT_MAX_CMD_LINE - 1);
     /*
      * First set up all default values
      */

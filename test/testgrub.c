@@ -133,7 +133,7 @@ void run(u32 multiboot_ptr) {
     vbe_info_block_t* vbe_info;
     vbe_mode_info_t* vbe_mode;
     u16* videoModePtr = 0;
-    vga_init(0, 0);
+    vga_init(0);
     u16 good_mode = 0;
     u8 last_bpp = 0;
     int i;

@@ -126,8 +126,6 @@ static vga_mode_t valid_modes[] = {
 static vbe_mode_info_t current_mode;
 static vbe_mode_info_t* vbe_mode = 0;
 static u32 frame_buffer_base = 0;
-static u32 multiboot_fb_addr_low = 0;
-static u32 multiboot_fb_addr_high = 0;
 
 
 /****************************************************************************************
@@ -1029,14 +1027,7 @@ static int vbe_switch_mode() {
  * Parameter:
  * @mode_switch - set this to one to locate a graphics mode and switch to it
  */
-void vga_init(int mode_switch, u32 multiboot_ptr) {
-    multiboot_info_block_t* multiboot_info_block = (multiboot_info_block_t*) multiboot_ptr;
-    if (multiboot_info_block) {
-        if (FB_DATA_VALID(multiboot_info_block)) {
-            multiboot_fb_addr_low = multiboot_info_block->framebuffer_addr_low;
-            multiboot_fb_addr_high = multiboot_info_block->framebuffer_addr_high;
-        }
-    }
+void vga_init(int mode_switch) {
     /*
      * If no VGA mode is requested, return
      */
@@ -1104,8 +1095,6 @@ void vga_debug_regs() {
     PRINT("General VGA information\n");
     PRINT("-----------------------------------------------------\n");
     PRINT("Mode:                                 %x\n", mode);
-    PRINT("Multiboot framebuffer address - low:  %x\n", multiboot_fb_addr_low);
-    PRINT("Multiboot framebuffer address - high: %x\n", multiboot_fb_addr_high);
     PRINT("VGA registers\n");
     PRINT("-----------------------------------------------------\n");
     /*

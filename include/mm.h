@@ -76,10 +76,6 @@ typedef struct {
     spinlock_t st_lock; // lock to protect the free kernel stack pages of the process
 } mem_locks_t;
 
-/*
- * Types of entries in the memory map passed by the boot loader
- */
-#define MMAP_ENTRY_TYPE_FREE 1
 
 /*
  * Page size
@@ -230,7 +226,7 @@ typedef struct {
 
 
 
-void mm_init(u32 info_block_ptr);
+void mm_init();
 void mm_init_heap();
 void mm_release_page_tables(u32 pid);
 void* kmalloc_aligned(u32 size, u32 alignment);

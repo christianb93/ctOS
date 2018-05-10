@@ -109,7 +109,7 @@ void spinlock_init(spinlock_t* lock) {
  * Testcase 1: init screen and print one character
  */
 int testcase1() {
-    vga_init(0, 0);
+    vga_init(0);
     cons_init();
     kputchar('a');
     ASSERT(myscreen[0][0]=='a');
@@ -120,7 +120,7 @@ int testcase1() {
  * Testcase 2: init screen and print two characters
  */
 int testcase2() {
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     kputchar('a');
     kputchar('b');
@@ -133,7 +133,7 @@ int testcase2() {
  * Testcase 3: init screen and print an entire line
  */
 int testcase3() {
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     int i;
     for (i=0;i<80;i++)
@@ -149,7 +149,7 @@ int testcase3() {
  * Testcase 4: Process ESC sequence ESC [nC - parameter provided
  */
 int testcase4() {
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     /*
      * Cursor should be at 0,0 now. Move it five characters to the right
@@ -170,7 +170,7 @@ int testcase4() {
  * Testcase 5: Process ESC sequence ESC [nC - parameter not provided
  */
 int testcase5() {
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     /*
      * Cursor should be at 0,0 now. Move it one character to the right
@@ -191,7 +191,7 @@ int testcase5() {
  */
 int testcase6() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     /*
      * Print three characters first
@@ -220,7 +220,7 @@ int testcase6() {
  */
 int testcase7() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     /*
      * Set cursor to position row 5, col 3, i.e. row 4, col 2 in our zero-based
@@ -245,7 +245,7 @@ int testcase7() {
  */
 int testcase8() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     /*
      * Print something
@@ -270,7 +270,7 @@ int testcase8() {
  */
 int testcase9() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     /*
      * Fill entire screen
@@ -327,7 +327,7 @@ int testcase9() {
  */
 int testcase10() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     /*
      * Fill entire screen
@@ -385,7 +385,7 @@ int testcase10() {
  */
 int testcase11() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     /*
      * Set cursor to position row 2, col 1
@@ -416,7 +416,7 @@ int testcase11() {
  */
 int testcase12() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     /*
      * Set cursor to position row 2, col 1
@@ -447,7 +447,7 @@ int testcase12() {
  */
 int testcase13() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     /*
      * Set cursor to position row 2, col 1
@@ -478,7 +478,7 @@ int testcase13() {
  */
 int testcase14() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     /*
      * Set cursor to position row 2, col 8
@@ -509,7 +509,7 @@ int testcase14() {
  */
 int testcase15() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     kputchar('x');
     kputchar('y');
@@ -538,7 +538,7 @@ int testcase15() {
  */
 int testcase16() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     kputchar('1');
     kputchar('2');
@@ -575,7 +575,7 @@ int testcase16() {
  */
 int testcase17() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     kputchar('1');
     kputchar('2');
@@ -614,7 +614,7 @@ int testcase17() {
  */
 int testcase18() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     kputchar('1');
     kputchar('2');
@@ -656,7 +656,7 @@ int testcase18() {
  */
 int testcase19() {
    int i,j;
-   vga_init(0,0);
+   vga_init(0);
    cons_init();
    kputchar('1');
    kputchar('2');
@@ -695,7 +695,7 @@ int testcase19() {
  */
 int testcase20() {
    int i,j;
-   vga_init(0,0);
+   vga_init(0);
    cons_init();
    kputchar('1');
    kputchar('2');
@@ -735,7 +735,7 @@ int testcase20() {
  */
 int testcase21() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     kputchar('1');
     kputchar('2');
@@ -767,7 +767,7 @@ int testcase21() {
  */
 int testcase22() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     kputchar('1');
     kputchar('2');
@@ -805,7 +805,7 @@ int testcase22() {
  */
 int testcase23() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     kputchar('1');
     kputchar('2');
@@ -837,7 +837,7 @@ int testcase23() {
  */
 int testcase24() {
     int i,j;
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     kputchar('1');
     kputchar('2');
@@ -874,7 +874,7 @@ int testcase24() {
  * Testcase 25: Print a character with standard attributes
  */
 int testcase25() {
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     kputchar('1');
     ASSERT('1'==myscreen[0][0]);
@@ -886,7 +886,7 @@ int testcase25() {
  * Testcase 26: Set foreground color to red and print a character
  */
 int testcase26() {
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     kputchar('\33');
     kputchar('[');
@@ -903,7 +903,7 @@ int testcase26() {
  * Testcase 27: Set background color to red and print a character
  */
 int testcase27() {
-    vga_init(0,0);
+    vga_init(0);
     cons_init();
     kputchar('\33');
     kputchar('[');

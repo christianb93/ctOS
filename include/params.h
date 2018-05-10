@@ -15,7 +15,7 @@ typedef struct _kparm_t {
     u32 int_value;
 } kparm_t;
 
-void params_parse(char* line);
+void params_parse();
 char* params_get(char* name);
 u32 params_get_int(char* name);
 

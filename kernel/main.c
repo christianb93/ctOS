@@ -219,7 +219,7 @@ static void go_idle() {
      * Load init program
      */
     MSG("Starting /bin/init\n");
-    KASSERT(0==do_exec("/bin/init", 0, 0, 0));
+    KASSERT(0 == do_exec("/bin/init", 0, 0, 0));
     KASSERT(0);
 }
 
@@ -227,31 +227,36 @@ static void go_idle() {
  * This is the main entry point to the kernel, invoked by the
  * bootstrap code in start.S
  * Parameter:
+ * @magic - the magic value of EAX
  * @multiboot_ptr - physical address of the GRUB2 multiboot information structure
  */
-void run(u32 multiboot_ptr) {
+void run(u32 magic, u32 multiboot_ptr) {
+    /*
+     * Parse multiboot information
+     */
+    multiboot_init(multiboot_ptr, magic);
     /*
      * Parse kernel command line
      */
-    params_parse((char*) ((multiboot_info_block_t*) (multiboot_ptr))->cmdline);
+    params_parse();
     cpu_init();
     /*
      * Init video driver in text mode and the console driver
      */
-    vga_init(0, multiboot_ptr);
+    vga_init(0);
     cons_init();
-    MSG("Multiboot flags %x\n", ((multiboot_info_block_t*) (multiboot_ptr))->flags);
+    MSG("Multiboot flags %x\n", ((mb1_info_block_t*) (multiboot_ptr))->flags);
     /*
      * Init memory manager. We do this before we set up the VGA graphics
      * adapter in graphics mode as the VGA code might return to real mode
      * and potentially overwrites data stored by GRUB there as part of the multiblock
      * information structure which is required by the memory manager
      */
-    mm_init(multiboot_ptr);
+    mm_init();
     /*
      * Now switch to graphics mode
      */
-    vga_init(1, 0);
+    vga_init(1);
     cons_init();
     /*
      * Load TSS. We have not yet done this in the initial startup code

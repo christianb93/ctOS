@@ -176,8 +176,8 @@ testgrub.o: testgrub.c
 	$(CC) -o testgrub.o testgrub.c -m32
 	
 	
-testgrub: teststart.o ../hw/gdt.o ../lib/std/string.o testgrub.o  ../kernel/kprintf.o ../hw/io.o ../hw/vga.o ../kernel/locks.o ../hw/util.o ../lib/std/ctype.o ../kernel/params.o ../lib/std/stdlib.o ../lib/std/errno.o ../driver/console.o ../hw/rm.o 
-	ld -o testgrub -Ttext 0x100000 teststart.o ../hw/gdt.o ../lib/std/string.o testgrub.o  ../kernel/kprintf.o ../hw/io.o  ../hw/vga.o ../kernel/locks.o ../hw/util.o ../lib/std/ctype.o ../kernel/params.o ../lib/std/stdlib.o ../lib/std/errno.o  ../driver/console.o ../hw/rm.o  -melf_i386
+testgrub: teststart.o ../kernel/multiboot.o ../hw/gdt.o ../lib/std/string.o testgrub.o  ../kernel/kprintf.o ../hw/io.o ../hw/vga.o ../kernel/locks.o ../hw/util.o ../lib/std/ctype.o ../kernel/params.o ../lib/std/stdlib.o ../lib/std/errno.o ../driver/console.o ../hw/rm.o 
+	ld -o testgrub -Ttext 0x100000 teststart.o ../kernel/multiboot.o ../hw/gdt.o ../lib/std/string.o testgrub.o  ../kernel/kprintf.o ../hw/io.o  ../hw/vga.o ../kernel/locks.o ../hw/util.o ../lib/std/ctype.o ../kernel/params.o ../lib/std/stdlib.o ../lib/std/errno.o  ../driver/console.o ../hw/rm.o  -melf_i386
 	
 
 clean:

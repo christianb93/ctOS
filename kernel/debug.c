@@ -75,6 +75,7 @@
 #include "eth.h"
 #include "net_if.h"
 #include "ip.h"
+#include "multiboot.h"
 
 extern int (*mm_page_mapped)(u32);
 
@@ -451,6 +452,7 @@ static void print_usage() {
     PRINT("if - print network interfaces\n");
     PRINT("route - print routing table\n");
     PRINT("pir - print PIR BIOS table\n");
+    PRINT("multiboot - print multiboot information\n");
 }
 
 /*
@@ -969,6 +971,9 @@ void debug_main(ir_context_t* ir_context) {
         }
         else if (0 == strncmp("pir", cmd, 3)) {
             irq_print_pir_table();
+        }
+        else if (0 == strncmp("multiboot", cmd, 9)) {
+            multiboot_print_info();
         }
         else {
             print_usage(line);

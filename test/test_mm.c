@@ -73,6 +73,15 @@ void debug_getline(void* c, int n) {
 
 }
 
+
+int multiboot_get_next_mmap_entry(memory_map_entry_t* next) {
+    return 0;
+}
+
+int multiboot_locate_ramdisk(multiboot_ramdisk_info_block_t* ramdisk_info_block)  {
+    return 0;
+}
+
 /*
  * Stub for pm functions
  */

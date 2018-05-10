@@ -245,12 +245,8 @@ static int access_allowed(u32 virtual_address, pte_t* ptd, int sv, int rw);
 
 /*
  * Initialize the structure describing the layout of physical memory
- * from the multiboot information structure provided by the bootloader
- * Parameter:
- * @info_block_ptr - physical address of multiboot information structure
  */
-static void phys_mem_layout_init(u32 info_block_ptr) {
-    KASSERT(info_block_ptr);
+static void phys_mem_layout_init() {
     phys_mem_layout.kernel_end = ((u32) &_end) - 1;
     phys_mem_layout.kernel_start = (u32) &_start;
     phys_mem_layout.ramdisk_start = 0;
@@ -286,9 +282,8 @@ u32 (*mm_get_bss_end)() = mm_get_bss_end_impl;
  * Parameters:
  * @multiboot_info_block - pointer to the multiboot information block
  */
-static void walk_memory_map(multiboot_info_block_t* multiboot_info_block) {
-    memory_map_entry_t* memory_map_entry;
-    memory_map_entry = (memory_map_entry_t*) multiboot_info_block->mmap_addr;
+static void walk_memory_map() {
+    memory_map_entry_t memory_map_entry;
     u32 start;
     u32 size;
     u32 end;
@@ -296,16 +291,15 @@ static void walk_memory_map(multiboot_info_block_t* multiboot_info_block) {
     u32 last_page;
     u32 i;
     phys_mem_layout.mem_end = 0;
-    while (((u32) (memory_map_entry) - multiboot_info_block->mmap_addr)
-            < multiboot_info_block->mmap_length) {
-        start = memory_map_entry->base_addr_low;
-        size = memory_map_entry->length_low - 1;
+    while (multiboot_get_next_mmap_entry(&memory_map_entry)) {
+        start = memory_map_entry.base_addr_low;
+        size = memory_map_entry.length_low - 1;
         end = start + size;
         /*
          * Ignore entries above the physical 32 bit address space
          */
-        if ((memory_map_entry->base_addr_high)
-                || (memory_map_entry->length_high) || (size > ~start)) {
+        if ((memory_map_entry.base_addr_high)
+                || (memory_map_entry.length_high) || (size > ~start)) {
             /*
              * Skip entry
              */
@@ -319,7 +313,7 @@ static void walk_memory_map(multiboot_info_block_t* multiboot_info_block) {
             /*
              * If area is marked as free, release pages within that area which are above 1M
              */
-            if ((MMAP_ENTRY_TYPE_FREE == memory_map_entry->type) && (end >= (MM_HIGH_MEM_START
+            if ((MB_MMAP_ENTRY_TYPE_FREE == memory_map_entry.type) && (end >= (MM_HIGH_MEM_START
                     + MM_PAGE_SIZE))) {
                 first_page = MM_PAGE(start) + 1;
                 last_page = MM_PAGE(end) - 1;
@@ -337,8 +331,6 @@ static void walk_memory_map(multiboot_info_block_t* multiboot_info_block) {
                 }
             }
         }
-        memory_map_entry = (memory_map_entry_t*) (((u32) memory_map_entry)
-                + memory_map_entry->size + sizeof(memory_map_entry->size));
     }
 }
 
@@ -352,25 +344,16 @@ static void walk_memory_map(multiboot_info_block_t* multiboot_info_block) {
  * Parameter:
  * @multiboot_info_block - a pointer to the GRUB2 information block
  */
-static void locate_ramdisk(multiboot_info_block_t* multiboot_info_block) {
+static void locate_ramdisk() {
+    multiboot_ramdisk_info_block_t rd_info;
     int page;
-    module_entry_t* mod_entry;
-    if (!(MOD_MAP_VALID(multiboot_info_block))) {
-        MSG("No valid module information in multiboot header\n");
+    have_ramdisk = multiboot_locate_ramdisk(&rd_info);
+    if (0 == have_ramdisk)
         return;
-    }
-    if (multiboot_info_block->mods_count > 1) {
-        ERROR("More than one module passed, cannot determine ramdisk\n");
-        return;
-    }
-    if (0 == multiboot_info_block->mods_count)
-        return;
-    mod_entry = ((module_entry_t*) (multiboot_info_block->mods_addr));
-    phys_mem_layout.ramdisk_start = mod_entry->mod_start;
-    phys_mem_layout.ramdisk_end = mod_entry->mod_end;
-    have_ramdisk = 1;
-    for (page = MM_PAGE(mod_entry->mod_start); page
-            <=MM_PAGE(mod_entry->mod_end); page++) {
+    phys_mem_layout.ramdisk_start = rd_info.start;
+    phys_mem_layout.ramdisk_end = rd_info.end;
+    MSG("Found ramdisk at %x\n", rd_info.start);
+    for (page = MM_PAGE(rd_info.start); page <=MM_PAGE(rd_info.end); page++) {
         phys_mem_layout.available--;
         BITFIELD_SET_BIT(phys_mem,page);
     }
@@ -381,12 +364,9 @@ static void locate_ramdisk(multiboot_info_block_t* multiboot_info_block) {
  * Parameters:
  * @info_block_ptr - address of multiboot information block
  */
-static void phys_mem_init(u32 info_block_ptr) {
+static void phys_mem_init() {
     int i;
     u32 j;
-    KASSERT(info_block_ptr);
-    multiboot_info_block_t* multiboot_info_block =
-            (multiboot_info_block_t*) info_block_ptr;
     /*
      * First we set everything to 1
      * and initialize the lock
@@ -399,8 +379,7 @@ static void phys_mem_init(u32 info_block_ptr) {
      * boot loader and mark all pages as available which
      * are entirely within a free RAM area (type=1)
      */
-    KASSERT(MEM_MAP_VALID(multiboot_info_block));
-    walk_memory_map(multiboot_info_block);
+    walk_memory_map();
     /*
      * Now we have also marked the pages which the kernel itself contains as available
      * Fix this
@@ -417,7 +396,7 @@ static void phys_mem_init(u32 info_block_ptr) {
      * Finally process the list of modules to determine the location of the
      * intial RAM disk - if any
      */
-    locate_ramdisk(multiboot_info_block);
+    locate_ramdisk();
 }
 
 /*
@@ -1008,7 +987,7 @@ void mm_init_address_spaces() {
  * @info_block_ptr - address of multiboot information structure
  */
 void mm_init(u32 info_block_ptr) {
-    phys_mem_layout_init(info_block_ptr);
+    phys_mem_layout_init();
     phys_mem_init(info_block_ptr);
     mm_init_locks();
     mm_init_address_spaces();

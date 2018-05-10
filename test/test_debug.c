@@ -34,6 +34,10 @@ void net_if_print() {
 
 }
 
+void multiboot_print_info() {
+    
+}
+
 int mm_validate() {
     return 0;
 }

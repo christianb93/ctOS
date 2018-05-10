@@ -8,8 +8,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "multiboot.h"
 
+/*
+ * Dummy for multiboot_get_cmdline()
+ */
 
+static char cmdline[MULTIBOOT_MAX_CMD_LINE];
+
+const char* multiboot_get_cmdline() {
+    return (const char*) cmdline;
+}
 
 /*
  * Stub for win_putchar
@@ -23,12 +32,11 @@ void win_putchar(win_t* win, u8 c) {
  * Test parsing of string value
  */
 int testcase1() {
-    char cmd_line[255];
     int i;
     for (i=0;i<255;i++)
-        cmd_line[i]=0;
-    strcpy(cmd_line, "heap_validate=0");
-    params_parse(cmd_line);
+        cmdline[i]=0;
+    strcpy(cmdline, "heap_validate=0");
+    params_parse();
     ASSERT(strcmp(params_get("heap_validate"), "0")==0);
     return 0;
 }
@@ -49,12 +57,11 @@ int testcase2() {
  * Testcase: test parsing of integer values
  */
 int testcase3() {
-    char cmd_line[255];
     int i;
     for (i=0;i<255;i++)
-        cmd_line[i]=0;
-    strcpy(cmd_line, "heap_validate=5");
-    params_parse(cmd_line);
+        cmdline[i]=0;
+    strcpy(cmdline, "heap_validate=5");
+    params_parse();
     ASSERT(strcmp(params_get("heap_validate"), "5")==0);
     ASSERT(params_get_int("heap_validate")==5);
     return 0;
@@ -67,12 +74,11 @@ int testcase3() {
  * Testcase: test parsing of command line with more than one argument
  */
 int testcase4() {
-    char cmd_line[255];
     int i;
     for (i=0;i<255;i++)
-        cmd_line[i]=0;
-    strcpy(cmd_line, "heap_validate=5 use_debug_port=0");
-    params_parse(cmd_line);
+        cmdline[i]=0;
+    strcpy(cmdline, "heap_validate=5 use_debug_port=0");
+    params_parse();
     ASSERT(strcmp(params_get("heap_validate"), "5")==0);
     ASSERT(params_get_int("heap_validate")==5);
     ASSERT(strcmp(params_get("use_debug_port"), "0")==0);
