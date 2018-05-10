@@ -26,6 +26,8 @@ int __bc_loglevel = 0;
 #define BC_DEBUG(...) do {if (__bc_loglevel > 0 ) { kprintf("DEBUG at %s@%d (%s): ", __FILE__, __LINE__, __FUNCTION__); \
         kprintf(__VA_ARGS__); }} while (0)
 
+
+
 /*
  * Initialize block cache
  */
@@ -57,6 +59,7 @@ static ssize_t bc_read_impl(dev_t dev, ssize_t blocks, ssize_t first_block,
     }
     return ops->read(MINOR(dev), blocks, first_block, buffer);
 }
+
 ssize_t
 (*bc_read)(dev_t dev, ssize_t blocks, ssize_t first_block, void* buffer) =
         bc_read_impl;
@@ -240,4 +243,74 @@ int bc_write_bytes(u32 block, u32 bytes, void* buffer, dev_t device, u32 offset)
     }
     kfree(tmp);
     return 0;
+}
+
+
+/***************************************************************
+ * Everything below this line is for debugging only            *
+ **************************************************************/
+
+
+/*
+ * A testcase designed to test cross-page boundary reads from a disk
+ */
+void bc_test_cross_page_read() {
+    void* pages;
+    void* cmp;
+    int i, j;
+    unsigned char old, new;
+    int offset = 3896;
+    int block = 8197;
+    PRINT("Testing cross-page boundary read. Let me first get a few pages in memory\n");
+    pages = kmalloc_aligned(8192, 4096);
+    if (0 == pages) {
+        PANIC("Could not get pages\n");
+    }
+    /*
+     * Fill up with something different from zero
+     */
+    memset(pages, 1, 8192);
+    /*
+     * We first do an aligned read
+     */ 
+    cmp = kmalloc(1024);
+    if (0 == cmp) {
+        PANIC("Could not get memory for compare buffer\n");
+    }
+    PRINT("Reading logical block %d into page aligned buffer at %x\n", block, pages);
+    if (1024 != bc_read_impl(DEVICE(3,1), 1, block, pages)) {
+        PANIC("Could not read from device\n");
+    }
+    /*
+     * Copy results into compare buffer
+     */
+    memcpy(cmp, pages, 1024);
+    PRINT("Now doing second, unaligned read at %x\n", pages + offset);
+    memset(pages, 2, 8192);
+    PRINT("Before read: pages[4096] = %x\n", ((char*) pages)[4096]);
+    if (1024 != bc_read_impl(DEVICE(3,1), 1, block, pages + offset)) {
+        PANIC("Could not read from device\n");
+    }
+    PRINT("After read: pages[4096] = %x\n", ((char*) pages)[4096]);
+    /*
+     * Compare
+     */
+    PRINT("Comparing results\n");
+    for (i = 0; i < 1024; i++) {
+        old = ((unsigned char*) cmp)[i];
+        new = ((unsigned char*) (pages + offset))[i];
+        /* PRINT("i = %d, old = %x, new = %x\n", i, old, new); */
+        if (old != new) {
+            for (j = ((i >= 8) ? i-8 : 0); j <= ((i + 8) < 1024 ? i+8 : 1024); j++) {
+                PRINT("i = %d, old = %x, new = %x\n", j, ((unsigned char*) cmp)[j], ((unsigned char*) (pages + offset))[j]);
+                if (0 == (((u32) pages + offset + j) % 4096)) {
+                    PRINT("------------------------------\n");
+                }
+            }
+            PANIC("Test failed at index %d, old = %x, new = %x\n", i, old, new);
+
+        }
+    }
+    kfree(cmp);
+    kfree(pages);
 }

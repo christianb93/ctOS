@@ -65,6 +65,10 @@ void spinlock_init(spinlock_t* spinlock) {
 
 }
 
+void* kmalloc_aligned(u32 size, u32 alignment) {
+    return 0;
+}
+
 /*
  * Stub for read from device
  */

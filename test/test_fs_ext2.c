@@ -119,6 +119,10 @@ void rw_lock_init(rw_lock_t* rw_lock) {
 
 }
 
+void* kmalloc_aligned(u32 size, u32 alignment) {
+    return 0;
+}
+
 uid_t do_geteuid() {
     return 0;
 }

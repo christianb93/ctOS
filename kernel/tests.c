@@ -30,7 +30,7 @@
 #include "eth.h"
 #include "net_if.h"
 #include "ip.h"
-
+#include "blockcache.h"
 
 #ifdef DO_SMP_TEST
 extern pte_t* (*mm_get_pt_address)(pte_t* ptd, int ptd_offset, int pg_enabled);
@@ -227,6 +227,10 @@ void do_pre_init_tests() {
 #endif
 }
 
+
+
+
+
 /*
  * These tests are executed after the INIT process has been
  * spawned, the file system has been established and STDIN
@@ -235,6 +239,9 @@ void do_pre_init_tests() {
 void do_post_init_tests() {
     int rc;
     if (params_get_int("do_test")) {
+#ifdef DO_CROSS_PAGE_READ_TEST
+        bc_test_cross_page_read();
+#endif
 #ifdef DO_FS_TEST
         int fd;
         char hdata[6];

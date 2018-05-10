@@ -1971,7 +1971,7 @@ static ssize_t fs_ext2_inode_rw(struct _inode_t* inode, ssize_t bytes,
     ext2_metadata_t* ext2_meta = ((ext2_inode_data_t*) inode->data)->ext2_meta;
     ext2_superblock_t* ext2_super = ext2_meta->ext2_super;
     u32 block_group_nr = 0;
-    int blocklist_dirty;
+    int blocklist_dirty = 0;
     KASSERT(ext2_inode);
     /*
      * Validate parameters
@@ -2260,6 +2260,11 @@ int fs_ext2_get_direntry(struct _inode_t* inode, off_t index,
                 return EIO;
             }
             read++;
+        }
+        else {
+            if (0 == ext2_direntry.rec_len) {
+                PANIC("Got invalid directory inode entry with length and inode zero- can this be true?\n");
+            }
         }
         /*
          * Advance to next entry

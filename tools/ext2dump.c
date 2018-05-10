@@ -81,6 +81,10 @@ void trap() {
 
 }
 
+void* kmalloc_aligned(u32 size, u32 alignment) {
+    return 0;
+}
+
 void spinlock_get(spinlock_t* spinlock, u32* eflags) {
 
 }

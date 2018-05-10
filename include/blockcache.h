@@ -13,5 +13,6 @@ int bc_open(dev_t dev);
 int bc_close(dev_t dev);
 int bc_read_bytes(u32 block, u32 bytes, void* buffer, dev_t device, u32 offset);
 int bc_write_bytes(u32 block, u32 bytes, void* buffer, dev_t device, u32 offset);
+void bc_test_cross_page_read();
 
 #endif /* _BLOCKCACHE_H_ */

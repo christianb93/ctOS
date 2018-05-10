@@ -154,6 +154,9 @@ int net_socket_cancel_select(socket_t* socket, semaphore_t* sem) {
     return 0;
 }
 
+void* kmalloc_aligned(u32 size, u32 alignment) {
+    return 0;
+}
 /*
  * Stubs for kmalloc/kfree
  */

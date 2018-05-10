@@ -29,9 +29,11 @@
 #define DO_PATA_TEST
 #define DO_AHCI_TEST
 #define DO_TTY_TEST
+#define DO_8139_TEST
+
 */
 
-#define DO_8139_TEST
+#define DO_CROSS_PAGE_READ_TEST
 
 #endif /* _TESTS_H_ */
 
