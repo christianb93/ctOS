@@ -1,6 +1,7 @@
 #!/bin/bash
 
 QEMU="qemu-system-i386 -k de  -debugcon stdio -m 512"
+BOCHS="bochs -qf bin/bochs.rc"
 CDROM=""
 BOOT=""
 HD=""
@@ -8,6 +9,19 @@ NET=""
 SMP=""
 APPEND=""
 KERNEL=""
+
+#
+# To unregister a device with Vbox, we first have to 
+# unregister all virtual machines using it
+#
+function cleanUpVbox() {
+    vboxmanage unregistervm ctOS-ahci --delete
+    vboxmanage unregistervm ctOS-ich9 --delete
+    vboxmanage unregistervm ctOS-ide --delete
+    vboxmanage closemedium disk bin/hdimage.vdi
+ 	rm -f hdimage.vdi
+}
+
 
 #
 # Are we in the right directory?
@@ -51,10 +65,15 @@ help | ?)
     qemu-ahci:  QEMU with an emulated AHCI drive
     vbox-ahci:  VirtualBox with an AHCI drive and the PIIX3 chipset
     vbox-ich9:  VirtualBox with an AHCI drive and the Intel ICH9  chipset 
+    vbox-ide:   VirtualBox with an IDE drive
+    bochs:      Run ctOS on the Bochs emulator
     
     
 EOF
+    exit
     ;;
+    
+    
 default)
     #
     # Default configuration - use QEMU to boot from CDROM
@@ -142,8 +161,7 @@ vbox-ahci)
     #
     # Use Virtualbox with the PIIX3 chipset and AHCI
     #
-	vboxmanage unregistervm ctOS-ahci --delete
-	rm -f hdimage.vdi
+    cleanUpVbox
 	vboxmanage convertfromraw bin/hdimage bin/hdimage.vdi --format=vdi
 	vboxmanage createvm --name "ctOS-ahci" --ostype "Other" --register
 	vboxmanage modifyvm "ctOS-ahci" --memory 512  --cpus 1   --boot1 dvd --chipset piix3
@@ -154,8 +172,7 @@ vbox-ahci)
     ;;
     
 vbox-ich9)
-	vboxmanage unregistervm ctOS-ich9 --delete
-	rm -f hdimage.vdi
+    cleanUpVbox
 	vboxmanage convertfromraw bin/hdimage bin/hdimage.vdi --format=vdi
 	vboxmanage createvm --name "ctOS-ich9" --ostype "Other" --register
 	vboxmanage modifyvm "ctOS-ich9" --memory 512  --cpus 1   --boot1 dvd --apic on --chipset ich9
@@ -163,6 +180,27 @@ vbox-ich9)
 	vboxmanage storageattach "ctOS-ich9" --storagectl "AHCI" --port 0 --device 0 --medium `pwd`/bin//hdimage.vdi --type hdd
 	vboxmanage storageattach "ctOS-ich9" --storagectl "AHCI" --port 1 --device 0 --medium `pwd`/bin/cdimage.iso --type dvddrive
     EMU="vboxmanage startvm ctOS-ich9"
+    ;;
+
+vbox-ide)
+    cleanUpVbox
+	vboxmanage convertfromraw bin/hdimage bin/hdimage.vdi --format=vdi
+	vboxmanage createvm --name "ctOS-ide" --ostype "Other" --register
+	vboxmanage modifyvm "ctOS-ide" --memory 512  --cpus 1   --boot1 dvd --apic on --chipset ich9
+	vboxmanage storagectl "ctOS-ide" --add ide --name "IDE"
+	vboxmanage storageattach "ctOS-ide" --storagectl "IDE" --port 0 --device 0 --medium `pwd`/bin//hdimage.vdi --type hdd
+	vboxmanage storageattach "ctOS-ide" --storagectl "IDE" --port 1 --device 0 --medium `pwd`/bin/cdimage.iso --type dvddrive
+    EMU="vboxmanage startvm ctOS-ide"
+    ;;
+
+    
+bochs)
+    EMU=$BOCHS
+    ;;
+    
+*)
+    echo "Unrecognized run target, please use the run target ? or help to get a full list"
+    exit 1
     ;;
 
 esac
