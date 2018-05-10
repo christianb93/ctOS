@@ -11,7 +11,7 @@ So I invested some time to dig out the old source code and find my way through t
 
 Currently, the following features have been implemented:
 
-* Boot using GRUBs multiboot configuration
+* Boot using GRUBs multiboot configuration (has support for multiboot and multiboot2)
 * Built-in kernel debugger to inspect CPU state, memory contents, threads, kernel configuration etc. (launch with F1)
 * 32 bit protected mode (64 bit not supported and unlikely that I will ever find the time to port it)
 * Virtual memory and multi-tasking
