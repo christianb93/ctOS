@@ -139,5 +139,6 @@ void multiboot_print_info();
 const char* multiboot_get_cmdline();
 int multiboot_get_next_mmap_entry(memory_map_entry_t* next);
 int multiboot_locate_ramdisk(multiboot_ramdisk_info_block_t* multiboot_ramdisk_info_block);
+void multiboot_clone();
 
 #endif /* _MULTIBOOT_H_ */

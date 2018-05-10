@@ -91,7 +91,7 @@ qemu-ide)
     #
     EMU=$QEMU
     HD="-drive id=disk,file=bin/hdimage,if=ide,media=disk"
-    KERNEL="-kernel bin/ctOSkernel"
+    KERNEL="-kernel bin/ctOSkernel1"
     APPEND="-append \"use_debug_port=1 root=769 loglevel=0\""
     ;;
 
@@ -103,7 +103,7 @@ qemu-debug)
     #
     EMU="$QEMU -S -s"
     HD="-drive id=disk,file=bin/hdimage,if=ide,media=disk"
-    KERNEL="-kernel bin/ctOSkernel"
+    KERNEL="-kernel bin/ctOSkernel1"
     APPEND="-append \"use_debug_port=1 root=769 loglevel=0\""
     ;;
 
@@ -116,7 +116,7 @@ qemu-net)
     #
     EMU=$QEMU
     HD="-drive id=disk,file=bin/hdimage,if=ide,media=disk"
-    KERNEL="-kernel bin/ctOSkernel"
+    KERNEL="-kernel bin/ctOSkernel1"
     APPEND="-append \"use_debug_port=1 root=769 loglevel=0\""
     NET="-net nic,vlan=1,macaddr=00:00:00:00:11:11,model=rtl8139 -net socket,vlan=1,listen=127.0.0.1:9030"
     ;;
@@ -129,7 +129,7 @@ qemu-smp)
     #
     EMU=$QEMU
     HD="-drive id=disk,file=bin/hdimage,if=ide,media=disk"
-    KERNEL="-kernel bin/ctOSkernel"
+    KERNEL="-kernel bin/ctOSkernel1"
     SMP="-smp sockets=8,threads=1 -enable-kvm"
     APPEND="-append \"use_debug_port=1 root=769 loglevel=0 vga=1\""
     ;;
@@ -141,7 +141,7 @@ qemu-tap)
     #
     EMU=$QEMU
     HD="-drive id=disk,file=bin/hdimage,if=ide,media=disk"
-    KERNEL="-kernel bin/ctOSkernel"
+    KERNEL="-kernel bin/ctOSkernel1"
     NET="-net nic,vlan=1,macaddr=00:00:00:00:11:11,model=rtl8139 -net dump,vlan=1,file=qemu_vlan1.pcap -net tap,vlan=1,script=no,downscript=no"
     APPEND="-append \"use_debug_port=1 root=769 loglevel=0\""
     ;;
@@ -153,7 +153,7 @@ qemu-ahci)
     #
     EMU=$QEMU
     HD="-drive id=disk,file=bin/hdimage,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0"
-    KERNEL="-kernel bin/ctOSkernel"
+    KERNEL="-kernel bin/ctOSkernel1"
     APPEND="-append \"use_debug_port=1 root=1025 loglevel=0 vga=1\""
     ;;
     

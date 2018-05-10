@@ -68,6 +68,17 @@ void multiboot_init(u32 multiboot_info_ptr, u32 __magic) {
 
 
 /*
+ * This function is called by the kernel mainline to indicate that
+ * the memory occupied by the multiboot information structure could
+ * be reused and therefore the multiboot module should save any information
+ * it needs. The kernel will make sure that when this is called, a working
+ * implementation of kmalloc exists
+ */
+ void multiboot_clone() {
+     __multiboot_stage = MB_STAGE_DONE;
+ }
+
+/*
  * Parse multiboot information structure 
  */
 static void parse_multiboot(u32 multiboot_info_ptr) {

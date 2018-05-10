@@ -254,6 +254,11 @@ void run(u32 magic, u32 multiboot_ptr) {
      */
     mm_init();
     /*
+     * Tell multiboot module that we now have a working 
+     * kmalloc
+     */
+    multiboot_clone();
+    /*
      * Now switch to graphics mode
      */
     vga_init(1);
