@@ -3,11 +3,11 @@
 
 This document serves as a guide to using GRUB2 to run a multiboot compatible kernel. We will look briefly at the multiboot specification to understand the minimum requirements a kernel must fulfill to be booted by GRUB2. We will then look at different ways to install GRUB2 and a custom kernel on various boot media, like a CD-ROM image for use with emulators like Bochs and QEMU or real hardware, a hard disk image for Bochs and QEMU and an USB stick for use with real hardware.
 
-Relevant information from the multiboot specification# 
+## Relevant information from the multiboot specification
 
 
-To load and execute a piece of code via GRUB2, this piece of code needs to be compliant with the [multiboot specification](https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html). Essentially, GRUB2 will load of ELF binaries as long as they contain a data structure called the **multiboot header**. This header must be contained entirely within the first 8192 bytes of the image.
-The multiboot header has only three mandatory fields which are described in the following table.
+To load and execute a piece of code via GRUB2, this piece of code needs to be compliant with the [multiboot2 specification](https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html) (GRUB2 is also able to work with the older multiboot version 1 specification, but ctOS uses multiboot2 in all releases after 0.2). Essentially, GRUB2 will load of ELF binaries as long as they contain a data structure called the **multiboot header**. This header must be contained entirely within the first 8192 bytes of the image.
+The multiboot header has four  mandatory fields which are described in the following table.
 
 <table>
 <thead>
@@ -30,19 +30,29 @@ The multiboot header has only three mandatory fields which are described in the 
 </td>
 <td>Magic cookie<br />
 </td>
-<td>A string which is scanned for by the boot loader to detect the multiboot header. By definition, this is 0x1BADB002</td>
+<td>A string which is scanned for by the boot loader to detect the multiboot header. By definition, this is 0xe85250d6</td>
 </tr>
 <tr class="even">
 <td>4<br />
 </td>
 <td>Fullword<br />
 </td>
-<td>Flags<br />
+<td>Architecture<br />
 </td>
-<td>Several flags - see below for a full description<br />
+<td>This field defines the target architecture for the boot process. 0x0 is i386 (32 bit)<br />
 </td>
 </tr>
 <tr class="odd">
+<td>4<br />
+</td>
+<td>Fullword<br />
+</td>
+<td>Header length<br />
+</td>
+<td>Length of the full header<br />
+</td>
+</tr>
+<tr class="even">
 <td>8<br />
 </td>
 <td>Fullword<br />
@@ -55,17 +65,11 @@ The multiboot header has only three mandatory fields which are described in the 
 </tbody>
 </table>
 
-The most important bits of the flags field are as follows.
+This structure is followed by a list of **tags** which contain additional information and which are optional. Each tag has a type and a size, and the list of tags is concluded by a tag with type 0. 
 
--   Bit 0 indicates whether the OS wishes alignment on 4096 byte boundaries
--   Bit 1 indicates whether the OS wishes to retrieve information on the memory layout of the system in the multiboot information structure
--   Bit 2 indicates whether the OS wishes to retrieve information on the video mode table from the multiboot information structure
-
-The checksum is a 32 bit unsigned value which, if added to the first two fields, gives a sum of zero.
-Additional, optional fields in the header allow the kernel to specify where it is placed in memory by the boot loader. However, this is not necessary if using images in ELF format as the bootloader will load the kernel to the location specified there.
 At boot time, the bootloader hands over the system in the following state to the OS.
 
--   EAX contains the magic value <span class="samp">0x2BADB002</span> to signal to the OS that is has been loaded by a multiboot compliant loader
+-   EAX contains the magic value <span class="samp">0x36d76289</span> to signal to the OS that is has been loaded by a multiboot compliant loader
 -   EBX contains the physical address of the so-called **multiboot information structure**
 -   All segment register point to a read/write code segment with offset 0x0
 -   the system is in protected mode, paging is turned off
@@ -76,29 +80,26 @@ So basically, the first module linked into your kernel needs to be something lik
 
 ```
 _start:
-    cli
-    /* Skip over multiboot header */
-    jmp go
-    /****************************************
-    * This is the multiboot header which    *
-    * the bootloader (GRUB) will search for *
-    ****************************************/
-    .align 4
-    .long MULTIBOOT_HEADER_MAGIC
-    .long 0x1
-    .long -(MULTIBOOT_HEADER_MAGIC + 0x1)
-go:
-    /*******************************************
-    * According to the multiboot specification *
-    * we cannot assume %ESP to be valid, so    *
-    * we set up our own stack                  *
-    *******************************************/
-    mov $(stack + STACK_SIZE), %esp
-    /*******************************************
-    * Save pointer to multiboot information    *
-    * structure                                *
-    *******************************************/
-    push %ebx
+	cli
+	/* Skip over multiboot header */
+	jmp go
+	/****************************************
+	* This is the multiboot2 header which   *
+	* the bootloader (GRUB) will search for *
+	****************************************/
+	.align 8
+multiboot_header:    
+    # The first 4 bytes are the magic number
+    .long MULTIBOOT2_HEADER_MAGIC
+    # Next field is the architecture field. We ask
+    # to be loaded in 32bit protected mode, i.e. 0
+    .long 0
+    # Next field is the length of the header
+    .long go - multiboot_header
+    # Next field is the checksum. This should be such that
+    # all magic fields (i.e. the first four fields including
+    # the checksum itself) sum up to zero
+    .long -(MULTIBOOT2_HEADER_MAGIC + (go  - multiboot_header))
 ```
 
 These are actually the first few lines from start.S in the ctOS source code.
@@ -185,7 +186,7 @@ ls (cd)/boot/grub/i386-pc/
 reveals that grub-mkrescue has placed all available modules in this directory. However, all your other hard drives are available as well and you can use the CLI commands to boot any multiboot compliant kernel located on any of these drives. If, for instance, your kernel is called mykernel and located in the root directory of the first partition on your first hard drive, you can use the following commands to boot
 
 ```
-multiboot (hd0,msdos1)/mykernel
+multiboot2 (hd0,msdos1)/mykernel
 boot
 ```
 
@@ -204,7 +205,7 @@ grub-mkrescue -o cdimage iso
 If you now set up a loopback device pointing to that image and mount it, you will see that in addition to the directory boot created by grub-mkrescue, the file `ctOSkernel` has been placed in the root directory of the image. You can now boot from that image as before, but now enter
 
 ```
-multiboot (cd)/ctOSkernel
+multiboot2 (cd)/ctOSkernel
 boot
 ```
 
@@ -215,7 +216,7 @@ Now thats nice - but still we have to enter all these commands manually after bo
 ```
 mkdir iso/boot
 mkdir iso/boot/grub
-echo "multiboot (cd)/ctOSkernel ; boot" > iso/boot/grub/grub.cfg
+echo "multiboot2 (cd)/ctOSkernel ; boot" > iso/boot/grub/grub.cfg
 grub-mkrescue -o cdimage iso
 ```
 
@@ -223,7 +224,7 @@ If you now boot from that image, you will be taken directly to our kernel. Unfor
 
 ```
 cp my.ramdisk ./iso/ramdisk.img
-echo "multiboot (cd)/ctOSkernel ; module (cd)/ramdisk.img ; boot" > iso/boot/grub/grub.cfg
+echo "multiboot2 (cd)/ctOSkernel ; module2 (cd)/ramdisk.img ; boot" > iso/boot/grub/grub.cfg
 grub-mkrescue -o cdimage iso
 ```
 
@@ -313,7 +314,7 @@ and replace the value above by the output.
 After all these preparations, we are now ready to create our image. To create the core image including needed modules and place it in our disk image right after the MBR, run
 
 ```
-$ grub-mkimage -O i386-pc search normal ls multiboot ext2 part_msdos  biosdisk elf configfile -c boot.cfg > core.img
+$ grub-mkimage -O i386-pc search normal ls multiboot multiboot2 ext2 part_msdos  biosdisk elf configfile -c boot.cfg > core.img
 $ sudo dd if=core.img seek=1 of=/dev/loop0
 ```
 
@@ -327,9 +328,9 @@ Finally, we create a config file grub.cfg with the following data and place it i
 
 ```
 menuentry "ctOS" {
-    insmod multiboot
-    multiboot ($root)/grub2/ctOSkernel
-    module ($root)/grub2/ramdisk.img
+    insmod multiboot2
+    multiboot2 ($root)/grub2/ctOSkernel
+    module2 ($root)/grub2/ramdisk.img
     boot
 }
 ```
@@ -400,14 +401,14 @@ Note: sometimes fdisk makes problems when trying to partition an USB stick if th
 
 In addition to the main kernel image, GRUB2 offers the option to load arbitrary files called **modules** at boot time. In contrast to the main image, these files are not supposed to be binary ELF files or to contain a multiboot header, any file can be used. The boot loader will place these files somewhere in memory and - as part of the multiboot information structure - inform the operating system kernel about their location.
 
-To load a module, use the c ommand module inside your GRUB2 configuration file, similar to the following example.
+To load a module, use the command `module2` inside your GRUB2 configuration file, similar to the following example.
 
 ```
 menuentry "Own OS" {           
     insmod ext2           
-    insmod multiboot           
-    multiboot  (hd0,msdos6)/ctOS/kernel/mykernel
-    module     (hd0,msdos6)/ctOS/ramdisk.img       }
+    insmod multiboot2           
+    multiboot2  (hd0,msdos6)/ctOS/kernel/mykernel
+    module2     (hd0,msdos6)/ctOS/ramdisk.img       }
 ```
 
 This will load the file /ctOS/ramdisk.img located on the same device as the kernel itself. Additional parameters can be added after the file name which will then be accessible for the operating system kernel as part of the "module string" saved in the multiboot information structure. Note, however, that different implementations of the multiboot specification handle this differently: while GRUB2 places only the part after the file name in the module string, QEMU places the entire command including the filename in the module string.
@@ -509,7 +510,7 @@ $ sudo grub-mkimage \
        -o mnt/EFI/BOOT/bootx64.efi \
        -p /EFI/BOOT \
        -O x86_64-efi \
-       search search_label normal ls multiboot ext2 fat \
+       search search_label normal ls multiboot multiboot2 ext2 fat \
        efifwsetup efi_gop efi_uga \
        part_gpt part_msdos boot elf configfile
 ```
