@@ -47,6 +47,7 @@ The binary distribution (see the [release page][2]) comes as a GZIPPED TAR files
 
 ```bash
 gzip -d ctOS.bin.tar.gz
+tar xvf ctOS.bin.tar
 ./bin/run.sh
 ```
 
