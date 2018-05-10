@@ -245,7 +245,6 @@ void run(u32 magic, u32 multiboot_ptr) {
      */
     vga_init(0);
     cons_init();
-    MSG("Multiboot flags %x\n", ((mb1_info_block_t*) (multiboot_ptr))->flags);
     /*
      * Init memory manager. We do this before we set up the VGA graphics
      * adapter in graphics mode as the VGA code might return to real mode

@@ -7,10 +7,10 @@ KERNEL_OBJ = $(OBJ)  $(LIB_OBJ) $(HW_OBJ) $(DRIVER_OBJ)
 all: start.o startmb1.o $(OBJ) kernel kernelmb1
 
 start.o: start.S
-	$(AS) -o start.o start.S
+	$(AS) -o start.o start.S 
     
 startmb1.o: startmb1.S
-	$(AS) -o startmb1.o startmb1.S
+	$(AS) -o startmb1.o startmb1.S 
 
 %.o: %.c
 	$(CC) -o $@ $<

@@ -3,8 +3,9 @@
 
 /*
  * Magic cookie according to multiboot specification
+ * Note that this is the magic cookie for multiboot2!
  */
-#define MULTIBOOT_HEADER_MAGIC 	0x1BADB002
+#define MULTIBOOT2_HEADER_MAGIC  0xe85250d6
 
 	.section .text
 	.global _start
@@ -15,33 +16,53 @@ _start:
 	/* Skip over multiboot header */
 	jmp go
 	/****************************************
-	* This is the multiboot header which    *
+	* This is the multiboot2 header which   *
 	* the bootloader (GRUB) will search for *
 	****************************************/
-	.align 4
-    .long MULTIBOOT_HEADER_MAGIC
-    # Set bit 0 (aligment), bit 1 (memory map) and bit 2 (graphics)
-    .long 0x7
-    .long -(MULTIBOOT_HEADER_MAGIC + 0x7)
-    # Header address - not used
-    .long 0x0
-    # Load address - not used
-    .long 0x0
-    # Load end address - not used
-    .long 0x0
-    # BSS end address - not used
-    .long 0x0
-    # Address of entry point - not used
-    .long 0x0
-    # VBE mode type requested, 0 for graphics, 1 for text
-    # we ask GRUB to start us in text mode and switch ourselves
-    .long 1
-    # Requested width
-    .long 80
-    # Requested height
-    .long 25
-    # VBE requested depth
+	.align 8
+multiboot_header:    
+    # The first 4 bytes are the magic number
+    .long MULTIBOOT2_HEADER_MAGIC
+    # Next field is the architecture field. We ask
+    # to be loaded in 32bit protected mode, i.e. 0
     .long 0
+    # Next field is the length of the header
+    .long go - multiboot_header
+    # Next field is the checksum. This should be such that
+    # all magic fields (i.e. the first four fields including
+    # the checksum itself) sum up to zero
+    .long -(MULTIBOOT2_HEADER_MAGIC + (go  - multiboot_header))
+    #
+    # The second part of the multiboot header (the tags)
+    # starts here. It seems that GRUB2 expects ALL tags to be aligned
+    # on an 8-byte boundary
+    #
+    #
+    # Module alignment tag. Type = 6, size = 8
+    #
+    .long 6
+    .long 8
+    #
+    # Multiboot2 information request tag
+    # Type = 1
+    # We ask for the tag types command line (1),
+    # modules (3) and memory map (6)
+    # It seems that this needs to end with type 0
+    #
+mbi_tag_start:
+    .long 0x1
+    .long mbi_tag_end - mbi_tag_start
+    .long 1
+    .long 3
+    .long 6
+    .long 0
+mbi_tag_end:
+    #
+    # Terminating tag - size 8, type 0
+    #
+    .align 8
+    .long 0
+    .long 8
 go:
 	/*******************************************
 	* According to the multiboot specification *

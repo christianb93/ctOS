@@ -92,7 +92,63 @@ typedef struct {
 #define FB_DATA_VALID(x) (((x->flags) >> 12) & 0x1)
 #define CMD_LINE_VALID(x) (((x->flags) >> 2) & 0x1)
 
+/*
+ * The header of the Multiboot2 
+ * information structure
+ */
+typedef struct {
+    u32 total_size;  
+    u32 reserved;
+} mb2_mbi_header_t;
 
+/*
+ * A multiboot2 tag in the MBI
+ */
+ typedef struct {
+     u32 type;
+     u32 size;
+ } mb2_mbi_tag_t;
+
+/*
+ * A multiboot2 command line tag
+ */
+ typedef struct {
+     u32 type;
+     u32 size;
+     char cmdline;
+ } mb2_mbi_tag_cmdline_t;
+
+/*
+ * A multiboot2 memory map tag
+ */
+ typedef struct {
+     u32 type;
+     u32 size;
+     u32 entry_size;
+     u32 entry_version;
+ } mb2_mbi_tag_mmap_t;
+
+/* Structure of a multiboot 2 memory map entry.
+ */
+typedef struct {
+    u32 base_addr_low;
+    u32 base_addr_high;
+    u32 length_low;
+    u32 length_high;
+    u32 type;
+    u32 reserved;
+} mb2_memory_map_entry_t;
+
+/*
+ * A multiboot2 module tag
+ */
+ typedef struct {
+     u32 type;
+     u32 size;
+     u32 start;
+     u32 end;
+     unsigned char* name;
+ } mb2_mbi_tag_module_t;
 
 
 /*******************************************
