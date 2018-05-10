@@ -35,7 +35,7 @@ Currently, the following features have been implemented:
 * A simple user-space command line utility
 * A basic POSIX compatible C library
 
-I did also port a few tools (dash, wget, elvis) in that past, but this requires a cross-build toolchain and I have not yet found the time to set this up again, so I will probably make this available in a separate repository at a later point in time. The screenshot below, by the way, shows elvis running in ctOS on an QEMU emulator and editing `main.c` of the kernel code.
+I did also port a few userspace tools (dash, wget, elvis) to work with ctOS. For licensing reasons, the required patches and build scripts are not contained in this repository but in a [separate repository](https://github.com/christianb93/ctOS_ports) - please have a look at the respective [documentation](https://github.com/christianb93/ctOS_ports/blob/master/README.md) on how to build the ports. The screenshot below, by the way, shows elvis running in ctOS on an QEMU emulator and editing `main.c` of the kernel code.
 
 ![ctOS Elvis][4]
 
@@ -47,8 +47,6 @@ The binary distribution (see the [release page][2]) comes as a GZIPPED TAR files
 
 ```bash
 gzip -d ctOS.bin.tar.gz
-tar xvf ctOS.bin.tar
-chmod 700 ./bin/run.sh
 ./bin/run.sh
 ```
 
@@ -58,7 +56,17 @@ This should bring up a QEMU window with a GRUB menu inside. Select the first opt
 @>
 ```
 
-from the user space command line interface. Entering 'help' gives you a list of available commands and you can start to play around. The file [TESTING.md][5] contains a few advanced scenarios that you can try out.
+from the user space command line interface. Entering 'help' gives you a list of available commands and you can start to play around. 
+
+## Additional run targets and tests
+
+The run script that comes with ctOS supports different **run targets** which are combinations of emulators and settings. Currently, run targets for [QEMU](https://www.qemu.org/), [VirtualBox](https://www.virtualbox.org/) and [Bochs](http://bochs.sourceforge.net) are included, covering different configurations (attached drives, CPUs, networking). You can get a full list of supported targets by running
+
+```
+./bin/run.sh help
+```
+
+The file [TESTING.md][5] contains a few advanced scenarios that you can try out.
 
 ## Building
 
