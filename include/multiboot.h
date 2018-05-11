@@ -7,6 +7,7 @@
 #define _MULTIBOOT_H_
 
 #include "ktypes.h"
+#include "vga.h"
 
 /*
  * Magic values
@@ -142,15 +143,41 @@ typedef struct {
 /*
  * A multiboot2 module tag
  */
- typedef struct {
-     u32 type;
-     u32 size;
-     u32 start;
-     u32 end;
-     unsigned char* name;
+typedef struct {
+    u32 type;
+    u32 size;
+    u32 start;
+    u32 end;
+    unsigned char* name;
  } mb2_mbi_tag_module_t;
 
 
+/*
+ * A multiboot2 framebuffer tag
+ * This is only valid if the framebuffer type is 1
+ * Note that the reserved field is 2 bytes in contrast
+ * to the multiboot spec as GRUB2 will align the fields
+ * starting at redFieldPosition on a 64-bit boundary
+ */
+typedef struct {
+    u32 type;
+    u32 size;
+    u32 fb_addr_low;
+    u32 fb_addr_high;
+    u32 bytesPerScanline;
+    u32 width;
+    u32 height;
+    u8 bitsPerPixel;
+    u8 fb_type;
+    u16 reserved;
+    u8 redFieldPosition;
+    u8 redMaskSize;
+    u8 greenFieldPosition;
+    u8 greenMaskSize;
+    u8 blueFieldPosition;
+    u8 blueMaskSize;
+} __attribute__ ((packed)) mb2_mbi_tag_fb_t;
+ 
 /*******************************************
  * These structures are not protocol specific
  *******************************************/
@@ -196,5 +223,6 @@ const char* multiboot_get_cmdline();
 int multiboot_get_next_mmap_entry(memory_map_entry_t* next);
 int multiboot_locate_ramdisk(multiboot_ramdisk_info_block_t* multiboot_ramdisk_info_block);
 void multiboot_clone();
+int multiboot_probe_video_mode(fb_desc_t* fb_desc);
 
 #endif /* _MULTIBOOT_H_ */

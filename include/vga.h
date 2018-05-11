@@ -1,7 +1,6 @@
 #ifndef _VGA_H
 #define _VGA_H
 
-#include "multiboot.h"
 #include "locks.h"
 #include "console.h"
 

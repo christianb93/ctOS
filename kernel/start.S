@@ -7,6 +7,8 @@
  */
 #define MULTIBOOT2_HEADER_MAGIC  0xe85250d6
 
+#define USE_GFXMODE 1
+
 	.section .text
 	.global _start
 	.global stack
@@ -57,6 +59,18 @@ mbi_tag_start:
     .long 6
     .long 0
 mbi_tag_end:
+#ifdef USE_GFXMODE
+    # 
+    # Framebuffer tag - this will ask the boot loader
+    # to bring us up with a linear FB
+    #
+    .align 8
+    .long 0x5
+    .long 20
+    .long 1024
+    .long 768
+    .long 24
+#endif
     #
     # Terminating tag - size 8, type 0
     #

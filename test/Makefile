@@ -136,7 +136,7 @@ test_env: test_env.c kunit.o ../lib/std/env.o
 test_pipes: test_pipes.c ../kernel/fs_pipe.o kunit.o
 	gcc -o test_pipes test_pipes.c ../kernel/fs_pipe.o kunit.o ../kernel/kprintf.o -fno-builtin -iquote../include -m32 -Wno-implicit-function-declaration
 	
-test_vga: test_vga.c ../hw/vga.o kunit.o ../driver/console.o
+test_vga: test_vga.c ../hw/vga.o kunit.o ../driver/console.o 
 	gcc -o test_vga test_vga.c ../hw/fonts.o ../hw/vga.o kunit.o ../hw/io.o  ../driver/console.o -fno-builtin -iquote../include -m32 -Wno-implicit-function-declaration
 	
 test_memorder: test_memorder.c

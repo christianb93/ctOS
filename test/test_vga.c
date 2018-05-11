@@ -68,7 +68,9 @@ void kprintf(char* template, ...) {
 
 }
 
-
+int multiboot_probe_video_mode(fb_desc_t* fb_desc) {
+    return 0;
+}
 
 /*
  * Copy content and attributes of location (c1, l1) to

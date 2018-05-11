@@ -18,6 +18,7 @@
 #include "kprintf.h"
 #include "lib/string.h"
 #include "io.h"
+#include "vga.h"
 
 /*
  * Forward declarations
@@ -45,6 +46,8 @@ static u32 mb2_rd_end = 0;
 static mb2_memory_map_entry_t* mb2_memory_map_entry_start = 0;
 static int mb2_memory_map_entries = 0;
 static int mb2_memory_map_index = 0;
+static int mb2_have_fb = 0;
+static mb2_mbi_tag_fb_t mb2_fb_tag;
 static int vbe_startup_mode = -1;
 
 /*
@@ -118,6 +121,7 @@ static void parse_multiboot(u32 multiboot_info_ptr) {
  */
 void parse_multiboot2(u32 multiboot_info_ptr) {
     mb2_mbi_tag_t* mbi_tag = (mb2_mbi_tag_t*)(multiboot_info_ptr + sizeof(mb2_mbi_header_t));
+    mb2_mbi_tag_fb_t* fb_tag = 0;
     char* cmdline_start;
     u32 next_addr;
     /*
@@ -143,6 +147,17 @@ void parse_multiboot2(u32 multiboot_info_ptr) {
                 // Memory map
                 mb2_memory_map_entry_start =  (mb2_memory_map_entry_t*)(((u32) mbi_tag) + sizeof(mb2_mbi_tag_mmap_t));
                 mb2_memory_map_entries = (((mb2_mbi_tag_mmap_t*) mbi_tag)->size - 32) / sizeof(mb2_memory_map_entry_t);
+                break;
+            case 8:
+                // Framebuffer information
+                fb_tag = (mb2_mbi_tag_fb_t*) mbi_tag;
+                if (fb_tag->fb_type == 1) {
+                    /*
+                     * We have a framebuffer as we need it (linear / RGB)
+                     */
+                    mb2_have_fb = 1; 
+                    memcpy(&mb2_fb_tag, (void*) fb_tag, sizeof(mb2_fb_tag));
+                }
                 break;
         }
         /*
@@ -272,6 +287,45 @@ int multiboot_locate_ramdisk(multiboot_ramdisk_info_block_t* ramdisk_info_block)
         return 1;
     }
 }
+
+/*
+ * This function will try to figure out whether we haven been
+ * placed in text mode by the boot loader or in graphics mode
+ * If we are in text mode, 0 is returned
+ * If we are in graphics mode, 1 is returned and the structure
+ * fb_desc is filled
+ */
+ int multiboot_probe_video_mode(fb_desc_t* fb_desc) {
+     if (1 == multiboot_version) {
+         /*
+          * For multiboot1, we do not support startup in graphics mode
+          * and assume that have been brought up in text mode
+          * This is a hack, but multiboot1 is only used by QEMU these days and
+          * QEMU does not have VBE support anyway
+          */
+          return 0;
+     }
+     if (0 == mb2_have_fb)
+         return 0;
+    /*
+     * We have a framebuffer tag of type 1, so we are in graphics mode
+     */
+    fb_desc->bitsPerPixel = mb2_fb_tag.bitsPerPixel;
+    fb_desc->bytesPerScanLine = mb2_fb_tag.bytesPerScanline;
+    fb_desc->xResolution = mb2_fb_tag.width;
+    fb_desc->yResolution = mb2_fb_tag.height;
+    fb_desc->bitsPerPixel = mb2_fb_tag.bitsPerPixel;
+    fb_desc->type = FB_TYPE_RGB;
+    fb_desc->redMaskSize = mb2_fb_tag.redMaskSize;
+    fb_desc->redFieldPosition = mb2_fb_tag.redFieldPosition;
+    fb_desc->greenMaskSize = mb2_fb_tag.greenMaskSize;
+    fb_desc->greenFieldPosition = mb2_fb_tag.greenFieldPosition;
+    fb_desc->blueMaskSize = mb2_fb_tag.blueMaskSize;
+    fb_desc->blueFieldPosition = mb2_fb_tag.blueFieldPosition;
+    fb_desc->physBasePtr = mb2_fb_tag.fb_addr_low;
+    KASSERT(0 == mb2_fb_tag.fb_addr_high);
+    return 1;
+ }
 
 /***************************************************************
  * Everything below this line is for debugging only            *

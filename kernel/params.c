@@ -13,6 +13,7 @@
 #include "lib/string.h"
 #include "lib/stdlib.h"
 #include "debug.h"
+#include "multiboot.h"
 
 static char cmd_line[MULTIBOOT_MAX_CMD_LINE];
 

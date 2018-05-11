@@ -74,6 +74,7 @@
 #include "console.h"
 #include "rm.h"
 #include "fonts.h"
+#include "multiboot.h"
 
 
 /*
@@ -1044,30 +1045,7 @@ static int vbe_switch_mode() {
     return 1;
 }
 
-/*
- * TODO: this function should
- * - use multiboot2 to figure out whether we are already in graphics mode
- * - if yes, fill current_mode and make vbe_mode point to it
- * - can we get the full vbe_mode_info from GRUB2?
- * - we need
- *     vbe_mode->xResolution
- *     vbe_mode->yResolution
- *     vbe_mode->bitsPerPixel
- *     vbe_mode->physBasePtr
- *     vbe_mode->bytesPerScanLine
- *     vbe_mode->memoryModel
- *     vbe_mode->redMaskSize + blue + green
- *     vbe_mode->XXXFieldPosition
- * - frame_buffer_base will be set when we set up paging
- * - the best approach would be to get this from the framebuffer info if
- *   that is present, otherwise from the VBE info
- * We should probably move the entire function into multiboot.c and ask it to fill a vbe_mode
- * We should also have a function that tells us whether it is safe to use the VBE BIOS
- */
- int probe_current_mode() {
-     /* TODO */
-     return 0;
- }
+
 
 /*
  * Do all the necessary initializations to set up graphics mode
@@ -1089,15 +1067,35 @@ static void init_graphics_mode() {
  * @mode_switch - set this to one to locate a graphics mode and switch to it
  */
 void vga_init(int mode_switch) {
+    int boot_mode;
+    if (0 == mode_switch) {
+        /*
+        * We are called for the first time.
+        * Try to figure out current mode
+        */
+        boot_mode = multiboot_probe_video_mode(&__fb_desc);
+        if (1 == boot_mode) {
+            /*
+             * We are in graphics mode
+             */
+             __fb_desc_ptr = &__fb_desc;
+             frame_buffer_base = __fb_desc.physBasePtr;
+             init_graphics_mode();
+        }
+        return;
+    }
     /*
-     * If no VGA mode is requested, return
+     * If we get to this point, we are called for the second time
+     * and switch to the final mode. If no VGA mode is requested, return
      */
     if (0 == evaluate_kparm())
         return;
-    if (mode_switch && (mode == VGA_MODE_TEXT)) {
-        if (0 == vbe_switch_mode()) {
-            init_graphics_mode();
-        }
+    /*
+     * Try to switch to the requested mode
+     * TODO: should check whether we have VBE BIOS
+     */
+    if (0 == vbe_switch_mode()) {
+        init_graphics_mode();
     }
 }
 
