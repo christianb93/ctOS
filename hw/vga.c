@@ -946,9 +946,10 @@ static int vbe_switch_mode() {
     int last_priority = 255;
     vbe_info_block_t* vbe_info;
     /*
-     * Get font data first
+     * Get font data first if that is requested
      */
-    bios_read_font();
+    if (1 == params_get_int("use_bios_font"))
+        bios_read_font();
     /*
      * Get VBE info block
      */

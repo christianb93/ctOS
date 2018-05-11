@@ -1,4 +1,4 @@
-EXE = ext2dump ext2samples dumpconstants timesamples dumpargs testargs streamsamples waitsamples ttysamples dumpchars escsamples dumptty dumptermcap testenv ipsamples testserver testclient tcpsamples udpsamples  testlocale httpclient
+EXE = ext2dump ext2samples dumpconstants timesamples dumpargs testargs streamsamples waitsamples ttysamples dumpchars escsamples dumptty dumptermcap testenv ipsamples testserver testclient tcpsamples udpsamples  testlocale httpclient convertbdf
 
 all: $(EXE)
 
@@ -44,6 +44,8 @@ testclient: testclient.c
 httpclient: httpclient.c
 	gcc -o httpclient httpclient.c 
 
+convertbdf: convertbdf.c
+	gcc -o convertbdf convertbdf.c
 
 streamsamples: streamsamples.c
 	gcc -o streamsamples streamsamples.c 

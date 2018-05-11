@@ -36,6 +36,7 @@ static char parm_net_loglevel[2];
 static char parm_eth_loglevel[2];
 static char parm_tcp_disable_cc[2];
 static char parm_irq_watch[8];
+static char parm_use_bios_font[2];
 
 
 /*
@@ -55,6 +56,7 @@ static char parm_irq_watch[8];
  * irq_watch: define a vector for which all IRQs will be logged
  * eth_loglevel: enable logging in eth layer
  * tcp_disable_cc: disable tcp congestion control
+ * use_bios_font: use VGA bios font 
  */
  
  
@@ -77,6 +79,7 @@ static kparm_t kparm[] = {
         { "eth_loglevel", parm_eth_loglevel, 1, "0", 0},
         { "tcp_disable_cc", parm_tcp_disable_cc, 1, "0", 0},
         { "use_vbox_port", parm_use_vbox_port, 1, "0", 0 },
+        { "use_bios_font", parm_use_bios_font, 1, "0", 0 },
 };
 
 #define NR_KPARM (sizeof(kparm) / sizeof(kparm_t))
