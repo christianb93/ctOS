@@ -1,7 +1,7 @@
 #ifndef _FONTS_H
 #define _FONTS_H
 
-#define MAX_CHARS 256
+#define FONTS_MAX_CHARS 256
 
 #include "ktypes.h"
 

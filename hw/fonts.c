@@ -17,7 +17,7 @@
  /*
  * Font data from a VGA BIOS
  */
-static u8 __bios_font_data[MAX_CHARS*16];
+static u8 __bios_font_data[FONTS_MAX_CHARS*16];
 static u8 __have_bios_data = 0;
 
 
@@ -258,7 +258,7 @@ int __bdf_font_indices__[] = {
  
 void fonts_store_bios_font(u8* bios_font_data) {
     int i;
-    for (i = 0; i < MAX_CHARS*16; i++) {
+    for (i = 0; i < FONTS_MAX_CHARS*16; i++) {
         __bios_font_data[i] = (bios_font_data)[i];
     }
     __have_bios_data = 1;
@@ -271,7 +271,7 @@ void fonts_store_bios_font(u8* bios_font_data) {
  */
 u8* fonts_get_char_ptr(int c) {
     int index;
-    if (c < MAX_CHARS) {
+    if (c < FONTS_MAX_CHARS) {
         if (__have_bios_data) {
             return __bios_font_data + c*16;
         }

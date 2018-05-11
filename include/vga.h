@@ -69,10 +69,30 @@ typedef struct {
     u32 y_resolution;                       // y resolution
     int bpp;                                // Bits per pixel = color depth
     u32 framebuffer_base;                   // physical base address of frame pointer
-    int vbe_mode_number;                    // 16 bit VBE mode number, -1 if not supported
     int choice;                             // priority, 0 = highest, 255 = lowest
 } vga_mode_t;
 
+/*
+ * Description of a frame buffer
+ */
+ 
+ typedef struct {
+    u16 bytesPerScanLine;
+    u16 xResolution;
+    u16 yResolution;
+    u8 bitsPerPixel;
+    u8 type;
+    u8 redMaskSize;
+    u8 redFieldPosition;
+    u8 greenMaskSize;
+    u8 greenFieldPosition;
+    u8 blueMaskSize;
+    u8 blueFieldPosition;
+    u32 physBasePtr;     
+ } fb_desc_t;
+ 
+#define FB_TYPE_RGB 6
+ 
 /*
  * VGA text mode colors from the standard palette. The decoding is as follows.
  *
@@ -142,7 +162,7 @@ typedef struct {
 /*
  * Determine offset of a pixel within the linear framebuffer
  */
-#define VGA_OFFSET(x, y, win)  ((y + win->y_origin) * vbe_mode->bytesPerScanLine + (x + win->x_origin) * (vbe_mode->bitsPerPixel / 8))
+#define VGA_OFFSET(x, y, win)  ((y + win->y_origin) * __fb_desc_ptr->bytesPerScanLine + (x + win->x_origin) * (__fb_desc_ptr->bitsPerPixel / 8))
 
 /*
  * Frames around windows

@@ -107,20 +107,27 @@ static int use_mmx = 0;
  *
  */
 static vga_mode_t valid_modes[] = {
-        {1, 1024, 768, 24, 0, -1, 1},
-        {2, 1024, 768, 32, 0, -1, 2},
-        {3, 1024, 768, 16, 0, -1, 3},
-        {4, 1280, 1024, 16, 0, -1, 4},
-        {5, 1280, 800, 32, 0, -1, 5},
-        {6, 1280, 720, 32, 0, -1, 6},
-        {7, 1360, 768, 32, 0, -1, 7}
+        {1, 1024, 768, 24, 0, 1},
+        {2, 1024, 768, 32, 0, 2},
+        {3, 1024, 768, 16, 0, 3},
+        {4, 1280, 1024, 16, 0, 4},
+        {5, 1280, 800, 32, 0, 5},
+        {6, 1280, 720, 32, 0, 6},
+        {7, 1360, 768, 32, 0, 7}
 };
 
 /*
  * VBE information
  */
-static vbe_mode_info_t current_mode;
-static vbe_mode_info_t* vbe_mode = 0;
+/*
+ * Storage for frame buffer data
+ */
+static fb_desc_t __fb_desc;
+/*
+ * This is set during mode switching
+ * to point to our current framebuffer
+ */
+static fb_desc_t* __fb_desc_ptr = 0;
 static u32 frame_buffer_base = 0;
 
 
@@ -138,11 +145,11 @@ static u32 frame_buffer_base = 0;
 static void mem_put_pixel(u32 offset, u32 color) {
     /*
      * The processing depends on the color depth:
-     * - 8 bits per pixel is nos supported
+     * - 8 bits per pixel is not supported
      * - for 15 or 16 bits per pixel, we write an unsigned short at a time
      * - for 24 bits per pixel, we write an unsigned short and a byte
      */
-    switch(vbe_mode->bitsPerPixel) {
+    switch(__fb_desc_ptr->bitsPerPixel) {
         case 15:
         case 16:
             *((u16*) (offset + shadow)) = color & 0xFFFF;;
@@ -216,7 +223,7 @@ static u32 vga_get_pixel(win_t* win, u32 x, u32 y) {
      * - for 15 or 16 bits per pixel, we read an unsigned short at a time
      * - for 24 bits per pixel, we read an unsigned short and a byte
      */
-    switch(vbe_mode->bitsPerPixel) {
+    switch(__fb_desc_ptr->bitsPerPixel) {
         case 8:
             rgb = *((u8*) (address + shadow));
             break;
@@ -274,12 +281,12 @@ static void vga_draw_rectangle(win_t* win, u32 x1, u32 y1, u32 width, u32 height
          */
         for (x = x1; x < x1 + width; x++) {
             mem_put_pixel(line_start_address + line_offset, color);
-            line_offset += vbe_mode->bitsPerPixel >> 3;
+            line_offset += __fb_desc_ptr->bitsPerPixel >> 3;
         }
         /*
          * Advance line start address
          */
-        line_start_address += vbe_mode->bytesPerScanLine;
+        line_start_address += __fb_desc_ptr->bytesPerScanLine;
     }
 }
 
@@ -301,24 +308,24 @@ u32 vga_vesa_color(u8 red, u8 green, u8 blue) {
     /*
      * Do nothing in text mode
      */
-    if ((VGA_MODE_TEXT == mode) || (0 == vbe_mode))
+    if ((VGA_MODE_TEXT == mode) || (0 == __fb_desc_ptr))
         return 0;
     /*
      * If memory model is not 6 (direct vga_vesa_color) give up
      * as we do not know the palette
      */
-    if (VESA_DIRECT_COLOR != vbe_mode->memoryModel)
+    if (FB_TYPE_RGB != __fb_desc_ptr->type)
         return 0xff;
     /*
      * For each color, we shift the input as far as needed to
-     * fit into vbe_mode->xxxMaskSize bits
+     * fit into __fb_desc_ptr->xxxMaskSize bits
      */
-    _red = (red >> (8 - vbe_mode->redMaskSize));
-    _green = (green >> (8 - vbe_mode->greenMaskSize));
-    _blue = (blue >> (8 - vbe_mode->blueMaskSize));
-    color = _red << vbe_mode->redFieldPosition;
-    color = color + (_green << vbe_mode->greenFieldPosition);
-    color = color + (_blue << vbe_mode->blueFieldPosition);
+    _red = (red >> (8 - __fb_desc_ptr->redMaskSize));
+    _green = (green >> (8 - __fb_desc_ptr->greenMaskSize));
+    _blue = (blue >> (8 - __fb_desc_ptr->blueMaskSize));
+    color = _red << __fb_desc_ptr->redFieldPosition;
+    color = color + (_green << __fb_desc_ptr->greenFieldPosition);
+    color = color + (_blue << __fb_desc_ptr->blueFieldPosition);
     return color;
 }
 
@@ -626,10 +633,10 @@ static void vid_copy_impl_graphics(win_t* win, u32 c1, u32 l1, u32 c2, u32 l2) {
      * We first compute the source and target address for the upper left corner of the character,
      * first byte
      */
-    src_offset = (l1 * VGA_FONT_HEIGHT + _win->y_origin) * vbe_mode->bytesPerScanLine +
-            (c1 * VGA_FONT_WIDTH + _win->x_origin) * (vbe_mode->bitsPerPixel / 8);
-    target_offset = (l2 * VGA_FONT_HEIGHT + _win->y_origin) * vbe_mode->bytesPerScanLine +
-            (c2 * VGA_FONT_WIDTH + _win->x_origin) * (vbe_mode->bitsPerPixel / 8);
+    src_offset = (l1 * VGA_FONT_HEIGHT + _win->y_origin) * __fb_desc_ptr->bytesPerScanLine +
+            (c1 * VGA_FONT_WIDTH + _win->x_origin) * (__fb_desc_ptr->bitsPerPixel / 8);
+    target_offset = (l2 * VGA_FONT_HEIGHT + _win->y_origin) * __fb_desc_ptr->bytesPerScanLine +
+            (c2 * VGA_FONT_WIDTH + _win->x_origin) * (__fb_desc_ptr->bitsPerPixel / 8);
     src = (unsigned char*) (src_offset + frame_buffer_base);
     target = (unsigned char*) (target_offset + frame_buffer_base);
     src_shadow = (unsigned char*) (src_offset + shadow);
@@ -638,7 +645,7 @@ static void vid_copy_impl_graphics(win_t* win, u32 c1, u32 l1, u32 c2, u32 l2) {
      * Now copy the data, update shadow as well as real video mem
      */
     for (line = 0; line < VGA_FONT_HEIGHT; line ++) {
-        for (byte = 0; byte < vbe_mode->bitsPerPixel; byte++) {
+        for (byte = 0; byte < __fb_desc_ptr->bitsPerPixel; byte++) {
             *target = *src_shadow;
             *target_shadow = *src_shadow;
             target++;
@@ -646,14 +653,14 @@ static void vid_copy_impl_graphics(win_t* win, u32 c1, u32 l1, u32 c2, u32 l2) {
             src++;
             src_shadow++;
         }
-        target -= vbe_mode->bitsPerPixel;
-        target += vbe_mode->bytesPerScanLine;
-        src -= vbe_mode->bitsPerPixel;
-        src += vbe_mode->bytesPerScanLine;
-        target_shadow -= vbe_mode->bitsPerPixel;
-        target_shadow += vbe_mode->bytesPerScanLine;
-        src_shadow -= vbe_mode->bitsPerPixel;
-        src_shadow += vbe_mode->bytesPerScanLine;
+        target -= __fb_desc_ptr->bitsPerPixel;
+        target += __fb_desc_ptr->bytesPerScanLine;
+        src -= __fb_desc_ptr->bitsPerPixel;
+        src += __fb_desc_ptr->bytesPerScanLine;
+        target_shadow -= __fb_desc_ptr->bitsPerPixel;
+        target_shadow += __fb_desc_ptr->bytesPerScanLine;
+        src_shadow -= __fb_desc_ptr->bitsPerPixel;
+        src_shadow += __fb_desc_ptr->bytesPerScanLine;
     }
 }
 void (*vga_vid_copy)(win_t*, u32, u32, u32, u32) = vid_copy_impl_text;
@@ -687,8 +694,8 @@ static void vid_copy_line_impl_graphics(win_t* win, u32 l1, u32 l2) {
     if (win)
         _win = win;
     vga_hide_cursor(_win);
-    target_offset = (l2 * VGA_FONT_HEIGHT + _win->y_origin) * vbe_mode->bytesPerScanLine + _win->x_origin * vbe_mode->bitsPerPixel / 8;
-    src_offset = (l1 * VGA_FONT_HEIGHT + _win->y_origin) * vbe_mode->bytesPerScanLine + _win->x_origin * vbe_mode->bitsPerPixel / 8;
+    target_offset = (l2 * VGA_FONT_HEIGHT + _win->y_origin) * __fb_desc_ptr->bytesPerScanLine + _win->x_origin * __fb_desc_ptr->bitsPerPixel / 8;
+    src_offset = (l1 * VGA_FONT_HEIGHT + _win->y_origin) * __fb_desc_ptr->bytesPerScanLine + _win->x_origin * __fb_desc_ptr->bitsPerPixel / 8;
     target_addr =  target_offset + frame_buffer_base;
     src_addr_shadow =  src_offset + ((u32) shadow);
     target_addr_shadow = target_offset + ((u32) shadow);
@@ -698,7 +705,7 @@ static void vid_copy_line_impl_graphics(win_t* win, u32 l1, u32 l2) {
      * We get the number of bits by multiplying this by the bits per pixel value specific
      * to the VBE mode and finally divide by the number of bits in a quad word
      */
-    qwords_per_line = _win->char_width  * VGA_FONT_WIDTH * vbe_mode->bitsPerPixel / (sizeof(long long int) * 8);
+    qwords_per_line = _win->char_width  * VGA_FONT_WIDTH * __fb_desc_ptr->bitsPerPixel / (sizeof(long long int) * 8);
     /*
      * Copy source to target, one qword at a time. Use shadow as source
      * and update it as well. If available, use non-temporal SSE store instructions if USE_SSE is defined
@@ -719,9 +726,9 @@ static void vid_copy_line_impl_graphics(win_t* win, u32 l1, u32 l2) {
             else
                 asm("movq %0, %%mm0 ; movntq %%mm0, %1" : : "m" (src_shadow[i]) , "m" (target[i]));
         }
-        target_addr += vbe_mode->bytesPerScanLine;
-        src_addr_shadow += vbe_mode->bytesPerScanLine;
-        target_addr_shadow += vbe_mode->bytesPerScanLine;
+        target_addr += __fb_desc_ptr->bytesPerScanLine;
+        src_addr_shadow += __fb_desc_ptr->bytesPerScanLine;
+        target_addr_shadow += __fb_desc_ptr->bytesPerScanLine;
     }
 }
 void (*vga_vid_copy_line)(win_t*, u32, u32) = vid_copy_line_impl_text;
@@ -945,6 +952,7 @@ static int vbe_switch_mode() {
     static u16 vbeMode[512];
     int last_priority = 255;
     vbe_info_block_t* vbe_info;
+    vbe_mode_info_t* vbe_mode;
     /*
      * Get font data first if that is requested
      */
@@ -970,54 +978,109 @@ static int vbe_switch_mode() {
         return 1;
     }
     i = 0;
-     while (videoModePtr[i] != 0xFFFF) {
-         if (i < 512)
-             vbeMode[i] = videoModePtr[i];
-         i++;
-     }
-     if (i < 512)
-         vbeMode[i]=0xFFFF;
-     /*
-       * Now determine supported modes
-       */
-      i = 0;
-      while (vbeMode[i] != 0xFFFF) {
-          *((u16*)(0x10002)) = vbeMode[i];
-          call_bios(BIOS_VBE_GET_MODE);
-          vbe_mode = (vbe_mode_info_t*) (0x10004);
-          /*
-           * If the mode is supported, add mode number and physical base pointer to our
-           * internal list
-           */
-          if ((vga_mode = mode_supported(vbe_mode))) {
-              vga_mode->vbe_mode_number = videoModePtr[i];
-              /*
-               * If this mode has a higher priority than the previously
-               * detected mode, use it
-               */
-              if (vga_mode->choice < last_priority) {
-                  good_mode = vbeMode[i];
-                  current_mode = *vbe_mode;
-                  last_priority = vga_mode->choice;
-                  frame_buffer_base = vbe_mode->physBasePtr;
-              }
-          }
-          i++;
-      }
-      if (good_mode) {
-          vbe_mode = &current_mode;
-          /*
-           * Write mode plus frame buffer bit at address 0x10002
-           */
-          *((u16*) 0x10002) = (good_mode & 0x1FF) + (1 << 14);
-          /*
-           * and call real mode function
-           */
-          if (0 == call_bios(BIOS_VBE_SELECT_MODE))
-              return 0;
-          ERROR("Switch to video mode %w failed\n", good_mode);
-      }
-      return 1;
+    while (videoModePtr[i] != 0xFFFF) {
+        if (i < 512)
+            vbeMode[i] = videoModePtr[i];
+        i++;
+    }
+    if (i < 512)
+        vbeMode[i]=0xFFFF;
+    /*
+     * Now determine supported modes
+     */
+    i = 0;
+    while (vbeMode[i] != 0xFFFF) {
+        *((u16*)(0x10002)) = vbeMode[i];
+        call_bios(BIOS_VBE_GET_MODE);
+        vbe_mode = (vbe_mode_info_t*) (0x10004);
+        /*
+         * If the mode is supported, add mode number and physical base pointer to our
+         * internal list
+         */
+        if ((vga_mode = mode_supported(vbe_mode))) {
+            /*
+             * If this mode has a higher priority than the previously
+             * detected mode, use it
+             */
+            if (vga_mode->choice < last_priority) {
+                good_mode = vbeMode[i];
+                /*
+                * Set up frame buffer description according to this mode
+                */
+                __fb_desc.bytesPerScanLine = vbe_mode->bytesPerScanLine;
+                __fb_desc.xResolution = vbe_mode->xResolution;
+                __fb_desc.yResolution = vbe_mode->yResolution;
+                __fb_desc.bitsPerPixel = vbe_mode->bitsPerPixel;
+                /*
+                 * We only support RGB / direct color
+                 */
+                __fb_desc.type = FB_TYPE_RGB;
+                __fb_desc.redMaskSize = vbe_mode->redMaskSize;
+                __fb_desc.redFieldPosition = vbe_mode->redFieldPosition;
+                __fb_desc.greenMaskSize = vbe_mode->greenMaskSize;
+                __fb_desc.greenFieldPosition = vbe_mode->greenFieldPosition;
+                __fb_desc.blueMaskSize = vbe_mode->blueMaskSize;
+                __fb_desc.blueFieldPosition = vbe_mode->blueFieldPosition;
+                __fb_desc.physBasePtr = vbe_mode->physBasePtr;
+                last_priority = vga_mode->choice;
+                frame_buffer_base = vbe_mode->physBasePtr;
+            }
+        }
+        i++;
+    }
+    if (good_mode) {
+        __fb_desc_ptr = &__fb_desc;
+        /*
+        * Write mode plus frame buffer bit at address 0x10002
+        */
+        *((u16*) 0x10002) = (good_mode & 0x1FF) + (1 << 14);
+        /*
+        * and call real mode function
+        */
+        if (0 == call_bios(BIOS_VBE_SELECT_MODE))
+            return 0;
+        ERROR("Switch to video mode %w failed\n", good_mode);
+    }
+    return 1;
+}
+
+/*
+ * TODO: this function should
+ * - use multiboot2 to figure out whether we are already in graphics mode
+ * - if yes, fill current_mode and make vbe_mode point to it
+ * - can we get the full vbe_mode_info from GRUB2?
+ * - we need
+ *     vbe_mode->xResolution
+ *     vbe_mode->yResolution
+ *     vbe_mode->bitsPerPixel
+ *     vbe_mode->physBasePtr
+ *     vbe_mode->bytesPerScanLine
+ *     vbe_mode->memoryModel
+ *     vbe_mode->redMaskSize + blue + green
+ *     vbe_mode->XXXFieldPosition
+ * - frame_buffer_base will be set when we set up paging
+ * - the best approach would be to get this from the framebuffer info if
+ *   that is present, otherwise from the VBE info
+ * We should probably move the entire function into multiboot.c and ask it to fill a vbe_mode
+ * We should also have a function that tells us whether it is safe to use the VBE BIOS
+ */
+ int probe_current_mode() {
+     /* TODO */
+     return 0;
+ }
+
+/*
+ * Do all the necessary initializations to set up graphics mode
+ */
+static void init_graphics_mode() {
+    mode = VGA_MODE_GRAPHICS;
+    vga_set_hw_cursor = set_hw_cursor_impl_graphics;
+    vga_hide_hw_cursor = hide_hw_cursor_impl_graphics;
+    vga_setchar = setchar_impl_graphics;
+    vga_vid_copy = vid_copy_impl_graphics;
+    vga_vid_copy_line = vid_copy_line_impl_graphics;
+    vga_init_win(&root_win, 0, 0, __fb_desc_ptr->xResolution, __fb_desc_ptr->yResolution);
+    vga_clear_win(&root_win, 32, 0, 32);
 }
 
 /*
@@ -1033,14 +1096,7 @@ void vga_init(int mode_switch) {
         return;
     if (mode_switch && (mode == VGA_MODE_TEXT)) {
         if (0 == vbe_switch_mode()) {
-            mode = VGA_MODE_GRAPHICS;
-            vga_set_hw_cursor = set_hw_cursor_impl_graphics;
-            vga_hide_hw_cursor = hide_hw_cursor_impl_graphics;
-            vga_setchar = setchar_impl_graphics;
-            vga_vid_copy = vid_copy_impl_graphics;
-            vga_vid_copy_line = vid_copy_line_impl_graphics;
-            vga_init_win(&root_win, 0, 0, vbe_mode->xResolution, vbe_mode->yResolution);
-            vga_clear_win(&root_win, 32, 0, 32);
+            init_graphics_mode();
         }
     }
 }
@@ -1051,8 +1107,8 @@ void vga_init(int mode_switch) {
  */
 void vga_enable_paging() {
     if (VGA_MODE_GRAPHICS == mode) {
-        u32 frame_buffer_size = vbe_mode->yResolution * vbe_mode->bytesPerScanLine + vbe_mode->xResolution * (vbe_mode->bitsPerPixel / 8);
-        u32 virt_frame_buffer = mm_map_memio(vbe_mode->physBasePtr, frame_buffer_size);
+        u32 frame_buffer_size = __fb_desc_ptr->yResolution * __fb_desc_ptr->bytesPerScanLine + __fb_desc_ptr->xResolution * (__fb_desc_ptr->bitsPerPixel / 8);
+        u32 virt_frame_buffer = mm_map_memio(__fb_desc_ptr->physBasePtr, frame_buffer_size);
         if (0 == virt_frame_buffer) {
             PANIC("Could not map frame buffer into virtual memory\n");
         }
@@ -1072,11 +1128,11 @@ void vga_enable_paging() {
  * 0 if we are in text mode
  */
 int vga_get_mode(u32* x_resolution, u32* y_resolution, u32* bpp) {
-    if (0 == vbe_mode)
+    if (0 == __fb_desc_ptr)
         return 0;
-    *x_resolution = vbe_mode->xResolution;
-    *y_resolution = vbe_mode->yResolution;
-    *bpp = vbe_mode->bitsPerPixel;
+    *x_resolution = __fb_desc_ptr->xResolution;
+    *y_resolution = __fb_desc_ptr->yResolution;
+    *bpp = __fb_desc_ptr->bitsPerPixel;
     return 1;
 }
 
@@ -1115,17 +1171,18 @@ void vga_debug_regs() {
     PRINT("Enable line graphics character:     %d\n", (reg >> 2) & 0x1);
     PRINT("Enable blinking:                    %d\n", (reg >> 3) & 0x1);
     PRINT("\nVBE information:\n");
-    if (0 == vbe_mode) {
+    if (0 == __fb_desc_ptr) {
         PRINT("Not in graphics mode\n");
     }
     else {
-        PRINT("Resolution:                         %d x %d @ %d bpp\n", vbe_mode->xResolution, vbe_mode->yResolution,
-                vbe_mode->bitsPerPixel);
-        PRINT("Physical frame buffer:              %x\n", vbe_mode->physBasePtr);
-        PRINT("Red mask size and field position:   %d / %d\n", vbe_mode->redMaskSize, vbe_mode->redFieldPosition);
-        PRINT("Green mask size and field position: %d / %d\n", vbe_mode->greenMaskSize, vbe_mode->greenFieldPosition);
-        PRINT("Blue mask size and field position:  %d / %d\n", vbe_mode->blueMaskSize, vbe_mode->blueFieldPosition);
-        PRINT("Memory model:                       %d\n", vbe_mode->memoryModel);
+        PRINT("Resolution:                         %d x %d @ %d bpp\n", __fb_desc_ptr->xResolution, 
+                                                                        __fb_desc_ptr->yResolution,
+                                                                        __fb_desc_ptr->bitsPerPixel);
+        PRINT("Physical frame buffer:              %x\n", __fb_desc_ptr->physBasePtr);
+        PRINT("Red mask size and field position:   %d / %d\n", __fb_desc_ptr->redMaskSize, __fb_desc_ptr->redFieldPosition);
+        PRINT("Green mask size and field position: %d / %d\n", __fb_desc_ptr->greenMaskSize, __fb_desc_ptr->greenFieldPosition);
+        PRINT("Blue mask size and field position:  %d / %d\n", __fb_desc_ptr->blueMaskSize, __fb_desc_ptr->blueFieldPosition);
+        PRINT("Type:                               %d\n", __fb_desc_ptr->type);
     }
 }
 
