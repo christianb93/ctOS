@@ -364,8 +364,8 @@ Copying our generated image to the stick is now as easy as unmount the file syst
 ```
 $ umount /media/76398c6a-fa6e-4a81-a523-0d8aedf63992
 $ sudo dd if=hdimage of=/dev/sdb
-``
-`
+```
+
 Again, note that this will **overwrite the partition table and the start of the filesystem, effectively wiping all previous data from the disk**.
 
 Now unplug the stick and plug it in again. You should now see a partition being mounted which contains our grub2 folder. So the MBR which we have just copied on our stick is recognized and the first and only partition in it is found and mounted.
@@ -520,8 +520,8 @@ In the same partition, we also place a minimal configuration file which essentia
 ```
 $ cat <<EOF > boot.cfg
 search.fs_uuid ff64f2a8-61ea-49f3-878d-d5cb75dc5a3e root
-set prefix=($root)/grub2
-configfile ($root)/grub2/grub.cfg
+set prefix=(\$root)/grub2
+configfile (\$root)/grub2/grub.cfg
 EOF
 $ sudo cp boot.cfg mnt/EFI/BOOT/grub.cfg
 $ sudo umount mnt
@@ -545,8 +545,7 @@ Now we can test our installation. We will use the 64 bit version of QEMU and ask
 qemu-system-x86_64 --bios /usr/share/qemu/OVMF.fd -drive id=disk,file=efiimage,if=ide,media=disk -m 512 -debugcon stdio
 ```
 
-When you run this with the current version of ctOS, you will see debugging output flying by and can even enter commands and run tests as usual, but the screen will remain blank - this is because ctOS currently either boots in text mode (which is usually not there any more when we have booted via EFI) or uses the BIOS to switch to a graphical mode (which is not there any more either). I plan to fix this in a future release that will fully support EFI.
-
+Note that the current version of ctOS runs on EFI with a ramdisk, but does not yet recognize a GPT and still depends on the BIOS to detect non-trivial interrupt routings, so mounting a hard-disk will not work.
 
 
 Further reading

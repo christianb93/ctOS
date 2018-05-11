@@ -77,8 +77,8 @@ exec tail -n +3 $0
 # menu entries you want to add after this comment.  Be careful not to change
 # the 'exec tail' line above.
 menuentry "ctOS (RAMDISK)" {
-  multiboot /boot/ctOSkernel use_debug_port=1 root=256 loglevel=0 do_test=0 
-  module /boot/ctOS.ramdisk.img
+  multiboot2 /boot/ctOSkernel use_debug_port=1 root=256 loglevel=0 do_test=0 
+  module2 /boot/ctOS.ramdisk.img
 }
 ```
 This assumes that you have copied the current kernel to `/boot/ctOSkernel` and the ramdisk to `/boot/ctOS.ramdisk.img`. Then regenerate the GRUB2 configuration file using

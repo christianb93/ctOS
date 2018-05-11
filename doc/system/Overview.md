@@ -45,7 +45,7 @@ This component contains common code which is used throughout the kernel and impl
 * System monitoring
 * Timing services
 
-ctOS offers several options to log debugging output. Modules can log information, errors and exceptions ("panic") which are enriched by location information and sent directly to the console. In addition, the logging service optionally sends all debugging information in addition to the debugging port used by the emulators Bochs and QEMU. Output which goes to this port can be redirected into a file on the host system to reconstruct a session.
+ctOS offers several options to log debugging output. Modules can log information, errors and exceptions ("panic") which are enriched by location information and sent directly to the console. In addition, the logging service optionally sends all debugging information in addition to the debugging ports used by the emulators Bochs, VirtualBox and QEMU. Output which goes to this port can be redirected into a file on the host system to reconstruct a session.
 
 To facilitate the diagnosis of exceptions and panic conditions, ctOS offers an internal debugger which is invoked each time the kernel panics but can also be started at any time using the hotkey F1. Using this debugger, it is possible to inspect register contents, memory contents and internal data structures of the kernel like page tables, tasks, runnables and so forth.
 
@@ -55,7 +55,7 @@ When operating in graphical mode, ctOS displays two additional windows in additi
 
 A dedicated module contains all timer related code and offers a unified interface for other parts of the kernel to access timers like the CMOS based real-time clock (RTC), the PIC and the local APIC timer. The timer module is also the owner of the timer interrupt and is responsible for forwarding "ticks" to other parts of the kernel like the process manager and the scheduler.
 
-Finally, the common services library contains code to parse kernel command line parameters which are passed to the kernel at boot time.
+Finally, the common services library contains code to parse kernel command line parameters which are passed to the kernel at boot time and the code that deals with the multiboot/multiboot2 protocols.
 
 Modules:
 
@@ -63,6 +63,7 @@ Modules:
 * kprintf.c
 * locks.c
 * params.c
+* multiboot.c
 * sysmon.c
 * timer.c
 
