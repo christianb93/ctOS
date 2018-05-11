@@ -73,6 +73,7 @@
 #include "sched.h"
 #include "console.h"
 #include "rm.h"
+#include "fonts.h"
 
 
 /*
@@ -85,11 +86,6 @@ static int mode = 0;
  */
 static win_t root_win;
 
-
-/*
- * Font data
- */
-static u8 font_data[256*16];
 
 /*
  * Shadow of VIDEO RAM. We expect at most 1024x768 bytes with 32bpp
@@ -436,11 +432,14 @@ static void setchar_win(win_t* win, u32 x_org, u32 y_org, u8 c, int transparent,
     if (win)
         _win = win;
     /*
-     * When initializing the adapter, we have read the VGA BIOS font data into the array font_data. For each
-     * character, there is one entry. Each byte of this entry describes one of 16 lines, where a set bit is a
+     * When initializing the adapter, we have read the VGA BIOS font data and handed it over to the fonts module
+     * Now get the entry for this character. Each byte of this entry describes one of 16 lines, where a set bit is a
      * set pixel and a clear bit is a cleared pixel
      */
-    char_bitmap = font_data + c*16;
+    char_bitmap = fonts_get_char_ptr(c);
+    if (0 == char_bitmap) {
+        PANIC("Do not have font data for this character, what went wrong???");
+    }
     x = x_org;
     y = y_org;
     for (_y = y; _y < y + VGA_FONT_HEIGHT; _y++) {
@@ -919,7 +918,6 @@ static int evaluate_kparm() {
  * Read font data from VGA BIOS
  */
 static void bios_read_font() {
-    int i;
     /*
      * Call BIOS using our real mode stub. This will
      * copy the font data to the linear address 0x10006
@@ -927,10 +925,9 @@ static void bios_read_font() {
     call_bios(BIOS_VGA_GET_FONT);
     /*
      * Copy the data from 0x10006 to our font data array
+     * managed by the font module
      */
-    for (i = 0; i < 256*16; i++) {
-        font_data[i] = ((u8*) 0x10006)[i];
-    }
+    fonts_store_bios_font((u8*) 0x10006); 
 }
 
 /*

@@ -137,7 +137,7 @@ test_pipes: test_pipes.c ../kernel/fs_pipe.o kunit.o
 	gcc -o test_pipes test_pipes.c ../kernel/fs_pipe.o kunit.o ../kernel/kprintf.o -fno-builtin -iquote../include -m32 -Wno-implicit-function-declaration
 	
 test_vga: test_vga.c ../hw/vga.o kunit.o ../driver/console.o
-	gcc -o test_vga test_vga.c ../hw/vga.o kunit.o ../hw/io.o  ../driver/console.o -fno-builtin -iquote../include -m32 -Wno-implicit-function-declaration
+	gcc -o test_vga test_vga.c ../hw/fonts.o ../hw/vga.o kunit.o ../hw/io.o  ../driver/console.o -fno-builtin -iquote../include -m32 -Wno-implicit-function-declaration
 	
 test_memorder: test_memorder.c
 	gcc -O0 -o test_memorder test_memorder.c -lpthread -m32 -Wno-implicit-function-declaration
@@ -176,8 +176,8 @@ testgrub.o: testgrub.c
 	$(CC) -o testgrub.o testgrub.c -m32
 	
 	
-testgrub: teststart.o ../kernel/multiboot.o ../hw/gdt.o ../lib/std/string.o testgrub.o  ../kernel/kprintf.o ../hw/io.o ../hw/vga.o ../kernel/locks.o ../hw/util.o ../lib/std/ctype.o ../kernel/params.o ../lib/std/stdlib.o ../lib/std/errno.o ../driver/console.o ../hw/rm.o 
-	ld -o testgrub -Ttext 0x100000 teststart.o ../kernel/multiboot.o ../hw/gdt.o ../lib/std/string.o testgrub.o  ../kernel/kprintf.o ../hw/io.o  ../hw/vga.o ../kernel/locks.o ../hw/util.o ../lib/std/ctype.o ../kernel/params.o ../lib/std/stdlib.o ../lib/std/errno.o  ../driver/console.o ../hw/rm.o  -melf_i386
+testgrub: teststart.o ../kernel/multiboot.o ../hw/gdt.o ../lib/std/string.o testgrub.o  ../kernel/kprintf.o ../hw/io.o ../hw/fonts.o ../hw/vga.o ../kernel/locks.o ../hw/util.o ../lib/std/ctype.o ../kernel/params.o ../lib/std/stdlib.o ../lib/std/errno.o ../driver/console.o ../hw/rm.o 
+	ld -o testgrub -Ttext 0x100000 teststart.o ../kernel/multiboot.o ../hw/gdt.o ../lib/std/string.o testgrub.o  ../kernel/kprintf.o ../hw/io.o  ../hw/fonts.o ../hw/vga.o ../kernel/locks.o ../hw/util.o ../lib/std/ctype.o ../kernel/params.o ../lib/std/stdlib.o ../lib/std/errno.o  ../driver/console.o ../hw/rm.o  -melf_i386
 	
 
 clean:

@@ -1,4 +1,4 @@
-OBJ = vga.o keyboard.o idt.o gdt.o gates.o util.o pic.o pagetables.o io.o reboot.o pit.o apic.o rtc.o sigreturn.o smp.o trampoline.o cpu.o  rm.o
+OBJ = fonts.o vga.o keyboard.o idt.o gdt.o gates.o util.o pic.o pagetables.o io.o reboot.o pit.o apic.o rtc.o sigreturn.o smp.o trampoline.o cpu.o  rm.o
 
 all: $(OBJ)
 
