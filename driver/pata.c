@@ -268,25 +268,23 @@ static int pata_reset_channel(pata_channel_t* channel) {
  * for use with READ or WRITE command
  * Parameters:
  * @channel - the channel to use
- * @lba - 32 bit LBA address
+ * @lba - 64 bit LBA address
  * @use_48bit_lba - whether we want to use 48 bit LBA
  * @sc - sector count
  * @master_slave - 0 for master, 1 for slave
  * We do not check whether the drive actually supports
  * 48 bit LBA, caller needs to do this
  */
-static void pata_setup_params(pata_channel_t* channel, u32 lba,
+static void pata_setup_params(pata_channel_t* channel, u64 lba,
         int use_48bit_lba, u16 sc, int master_slave) {
     if (use_48bit_lba) {
         /*
-         * Write upper parts of LBA low, LBA mid and LBA high. As we only support
-         * up to 32 bits, LBA mid and LBA high upper parts are zero, LBA low is
-         * bits 24 - 31
+         * Write upper parts of LBA low, LBA mid and LBA high
          */
         outb((lba >> 24) & 0xff, channel->ata_command_block
                 + IDE_LBA_LOW_REGISTER);
-        outb(0x0, channel->ata_command_block + IDE_LBA_MID_REGISTER);
-        outb(0x0, channel->ata_command_block + IDE_LBA_HIGH_REGISTER);
+        outb((lba >> 32) & 0xff, channel->ata_command_block + IDE_LBA_MID_REGISTER);
+        outb((lba >> 40) & 0xff, channel->ata_command_block + IDE_LBA_HIGH_REGISTER);
         outb(sc >> 8, channel->ata_command_block + IDE_SECTOR_COUNT_REGISTER);
     }
     outb(lba & 0xff, channel->ata_command_block + IDE_LBA_LOW_REGISTER);
@@ -330,7 +328,7 @@ static void pata_setup_params(pata_channel_t* channel, u32 lba,
  * -EIO if a timeout occurred
  * -EINVAL if 48 bit LBA is not supported but needed
  */
-static int pata_read_sector(minor_dev_t minor, u32 lba, void* buffer) {
+static int pata_read_sector(minor_dev_t minor, u64 lba, void* buffer) {
     u8 status;
     u8 cmd;
     pata_channel_t* channel;
@@ -894,7 +892,7 @@ static void pata_init_queue(hd_request_queue_t* request_queue) {
 static int pata_rw(minor_dev_t minor, ssize_t blocks, ssize_t first_block,
         void* buffer, int rw) {
     u32 hd_blocks;
-    u32 hd_first_block;
+    u64 hd_first_block;
     int rc;
     hd_request_queue_t* request_queue;
     if (0 == pata_device_valid(minor)) {
@@ -1090,9 +1088,10 @@ void pata_print_devices() {
     PRINT("-----------------------------------------------------------------\n");
     for (i = 0; i < PATA_MAX_CNTL * 4 * PATA_PART_DRIVE; i++) {
         if (partitions[i].used) {
+            /* TODO: print proper 64 bit values here and below */
             PRINT("%h   %h   %h    %h           %x     %x    %d\n",
                     i/(PATA_PART_DRIVE*4), (i >> 5) & 0x1, (i >> 4) & 0x1, i % PATA_PART_DRIVE,
-                    partitions[i].first_sector, partitions[i].last_sector,
+                    (u32) partitions[i].first_sector, (u32) partitions[i].last_sector,
                     (partitions[i].last_sector+1-partitions[i].first_sector)/2048);
         }
     }
@@ -1117,7 +1116,7 @@ void pata_print_queue() {
                 PRINT("------------------------------------------\n");
                 for (j = queue->head; j < queue->tail; j++) {
                     request = &queue->queue[j % HD_QUEUE_SIZE];
-                    PRINT("%h   %h      %x     %d\n", j % HD_QUEUE_SIZE, request-> rw, request->blocks, request->first_block);
+                    PRINT("%h   %h      %x     %d\n", j % HD_QUEUE_SIZE, request-> rw, request->blocks, (u32) request->first_block);
                 }
             }
         }

@@ -52,7 +52,7 @@ void hd_fix_ata_string(char* string, int length) {
  * @buffer - address of buffer
  */
 static void init_request(hd_request_t* request, minor_dev_t minor_dev,
-        u32 first_block, ssize_t blocks, int rw, u32 buffer) {
+        u64 first_block, ssize_t blocks, int rw, u32 buffer) {
     request->blocks = blocks;
     request->buffer = buffer;
     request->first_block = first_block;
@@ -84,7 +84,7 @@ static void init_request(hd_request_t* request, minor_dev_t minor_dev,
  * EIO if any other read/write error occurred
  */
 static int hd_put_request(hd_request_queue_t* queue, minor_dev_t minor_dev,
-        u32 first_block, ssize_t blocks, int rw, void* data) {
+        u64 first_block, ssize_t blocks, int rw, void* data) {
     hd_request_t* request;
     u32 eflags;
     int rc = 0;
@@ -153,7 +153,7 @@ static int hd_put_request(hd_request_queue_t* queue, minor_dev_t minor_dev,
  * -ENOMEM if no buffer could be allocated
  * -EIO of the operation failed
  */
-static int hd_rw_chunk(u32 chunk_start, u32 chunk_blocks, void* buffer,
+static int hd_rw_chunk(u64 chunk_start, u32 chunk_blocks, void* buffer,
         hd_request_queue_t* request_queue, minor_dev_t minor, int rw) {
     void* chunk_buffer;
     int need_to_copy;
@@ -218,11 +218,11 @@ static int hd_rw_chunk(u32 chunk_start, u32 chunk_blocks, void* buffer,
  * -EIO if I/O operation failed
  * -ENOMEM if no memory could be allocated for a temporary buffer
  */
-int hd_rw(hd_request_queue_t* request_queue, u32 sectors, u32 first_sector, int rw, void* buffer, minor_dev_t minor) {
+int hd_rw(hd_request_queue_t* request_queue, u32 sectors, u64 first_sector, int rw, void* buffer, minor_dev_t minor) {
     u32 chunk;
     u32 nr_of_chunks;
     u32 chunk_blocks;
-    u32 chunk_start;
+    u64 chunk_start;
     int rc;
     /*
      * Split the request into chunks and call hd_put_request once
@@ -345,14 +345,14 @@ void hd_handle_irq(hd_request_queue_t* queue, int rc) {
  */
 static int hd_read_logical_partitions(hd_partition_t* partitions,
         int table_size, int* lcount, part_table_entry_t partition,
-        minor_dev_t minor, int(*read_sector)(minor_dev_t minor, u32 lba,
+        minor_dev_t minor, int(*read_sector)(minor_dev_t minor, u64 lba,
                 void* buffer)) {
     part_table_entry_t ext_partition;
     int cont = 1;
     mbr_t mbr;
     int rc;
     *lcount = 0;
-    u32 next = partition.first_sector;
+    u64 next = partition.first_sector;
     /* Read the linked list of partitions */
     while (1 == cont) {
         /* Read the next partition table from disk */
@@ -415,7 +415,7 @@ static int hd_read_logical_partitions(hd_partition_t* partitions,
  * -EIO if an error occurred
  */
 int hd_read_partitions(hd_partition_t* partitions, minor_dev_t minor,
-        int(*read_sector)(minor_dev_t minor, u32 lba,  void* buffer),
+        int(*read_sector)(minor_dev_t minor, u64 lba,  void* buffer),
         int table_size) {
     mbr_t mbr;
     part_table_entry_t partition;

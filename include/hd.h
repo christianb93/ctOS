@@ -16,7 +16,7 @@
 
 typedef struct {
     dev_t minor_device;                  // minor device number of device on which we operate
-    u32 first_block;                     // start of read/write operation
+    u64 first_block;                     // start of read/write operation
     ssize_t blocks;                      // blocks to read/write
     int rw;                              // 0 = read, 1 = write
     u32 buffer;                          // address of buffer (virtual address)
@@ -73,8 +73,8 @@ typedef struct {
  */
 typedef struct {
     int used;                            // is this entry in the list of partitions used
-    u32 first_sector;                    // first sector of partition
-    u32 last_sector;                     // last sector of partition
+    u64 first_sector;                    // first sector of partition
+    u64 last_sector;                     // last sector of partition
 } hd_partition_t;
 
 /*
@@ -113,10 +113,10 @@ typedef struct {
 #define PART_TYPE_WIN95_EXT_LBA 0xf
 #define PART_TYPE_WIN95_FAT32_LBA 0xc
 
-int hd_rw(hd_request_queue_t* request_queue, u32 sectors, u32 first_sector, int rw, void* buffer, minor_dev_t minor);
+int hd_rw(hd_request_queue_t* request_queue, u32 sectors, u64 first_sector, int rw, void* buffer, minor_dev_t minor);
 void hd_handle_irq(hd_request_queue_t* queue, int rc);
 int hd_read_partitions(hd_partition_t* partitions, minor_dev_t minor,
-        int (*read_sector)(minor_dev_t minor, u32 lba,  void* buffer),
+        int (*read_sector)(minor_dev_t minor, u64 lba,  void* buffer),
         int table_size);
 void hd_fix_ata_string(char* string, int length);
 

@@ -1,6 +1,7 @@
 ctOS.project
 test/rdimage*
 bin/ramdisk.img
+bin/efiimage
 bin/hdimage
 bin/iso/ramdisk.img
 bin/cdimage.iso

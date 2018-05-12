@@ -365,9 +365,9 @@ static void ahci_setup_cmd_header(ahci_command_header_t* header, int write,
  * @sector_count - number of sectors
  */
 static void ahci_setup_cmd_fis(ahci_command_table_t* command_table,
-        int ata_cmd, u32 lba, u16 sector_count) {
+        int ata_cmd, u64 lba, u16 sector_count) {
     if (__ahci_log)
-        PRINT("ata_cmd=%x, lba=%x, sector_count=%x\n", ata_cmd, lba, sector_count);
+        PRINT("ata_cmd=%x, lba_low=%x, lba_high=%x, sector_count=%x\n", ata_cmd,(u32) lba, (u32)(lba >> 32), sector_count);
     /*
      * FIS type is always Host to device for our purposes
      */
@@ -394,8 +394,8 @@ static void ahci_setup_cmd_fis(ahci_command_table_t* command_table,
     command_table->cfis.lba_high = (lba >> 16);
     command_table->cfis.device = IDE_DEVICE_LBA;
     command_table->cfis.lba_low_ext = (lba >> 24);
-    command_table->cfis.lba_mid_ext = 0;
-    command_table->cfis.lba_high_ext = 0;
+    command_table->cfis.lba_mid_ext = (lba >> 32);
+    command_table->cfis.lba_high_ext = (lba >> 40);
     command_table->cfis.feature_ext = 0;
     command_table->cfis.sector_count = sector_count;
     command_table->cfis.sector_count_ext = sector_count >> 8;
@@ -417,7 +417,7 @@ static void ahci_setup_cmd_fis(ahci_command_table_t* command_table,
  * 0 upon success
  */
 static int ahci_issue_sync_cmd(ahci_port_t* port, int ata_cmd, int write,
-        u32 lba, u16 sector_count, void* buffer) {
+        u64 lba, u16 sector_count, void* buffer) {
     u32 temp;
     ahci_command_table_t* command_table = port->command_tables;
     /*
@@ -517,7 +517,7 @@ static ahci_port_t* ahci_get_port(minor_dev_t minor) {
  * -ENOMEM if buffer is not aligned and a new buffer could not be reserved
  * -EIO if the operation timed out
  */
-static int ahci_read_sector(minor_dev_t minor, u32 lba,
+static int ahci_read_sector(minor_dev_t minor, u64 lba,
         void* buffer) {
     ahci_port_t* port;
     void* mybuffer = buffer;
@@ -639,6 +639,7 @@ static void ahci_prepare_request(hd_request_queue_t* request_queue,
      * First determine buffer boundaries and let first chunk start at start of buffer
      */
     buffer_start = request->buffer;
+    /* TODO: should we have an upper limit on request->blocks to avoid overflow here? */
     buffer_end = buffer_start + request->blocks * ATA_BLOCK_SIZE - 1;
     chunk_start = buffer_start;
     while (1) {
@@ -1099,7 +1100,7 @@ static int ahci_close(minor_dev_t device) {
 ssize_t ahci_rw(minor_dev_t minor, ssize_t blocks, ssize_t first_block,
         void* buffer, int rw) {
     u32 hd_blocks;
-    u32 hd_first_block;
+    u64 hd_first_block;
     ahci_port_t* port;
     int rc;
     hd_request_queue_t* request_queue;
@@ -1256,9 +1257,10 @@ void ahci_print_ports() {
     LIST_FOREACH(ahci_port_list_head, port) {
         for (i = 1; i <= AHCI_MAX_PARTITIONS; i++) {
             if (port->partitions[i].used == 1) {
+                /* TODO: print proper 64 bit values here */
                 PRINT("%h    %h           %x     %x    %d\n",
                         (port->minor) / AHCI_MAX_PARTITIONS, i,
-                        port->partitions[i].first_sector, port->partitions[i].last_sector,
+                        (u32) port->partitions[i].first_sector, (u32) port->partitions[i].last_sector,
                         (port->partitions[i].last_sector+1-port->partitions[i].first_sector)/2048);
             }
         }
@@ -1282,8 +1284,9 @@ void ahci_print_queue() {
             PRINT("---------------------------------------------------------------------\n");
             for (j = queue->head; j < queue->tail; j++) {
                 request = &queue->queue[j % HD_QUEUE_SIZE];
+                /* TODO: print proper 64 bit values here */
                 PRINT("%h     %h    %x     %w    %x     %d    %d  %d\n", j % HD_QUEUE_SIZE, request-> rw, request->blocks, request->task_id,
-                        request->semaphore, request->status, request->submitted_by_irq, request->first_block);
+                        request->semaphore, request->status, request->submitted_by_irq, (u32) request->first_block);
             }
         }
     }
