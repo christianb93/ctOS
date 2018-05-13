@@ -131,10 +131,6 @@ static io_apic_t* io_apic_list_tail = 0;
 static irq_routing_t* routing_list_head = 0;
 static irq_routing_t* routing_list_tail = 0;
 
-/*
- * This is the local APIC id of the BSP
- */
-static u32 bsp_apic_id = 0;
 
 /*
  * Interrupt counter per CPU
@@ -574,7 +570,6 @@ static void mp_table_build_bus_list(mp_table_header_t* mp_table_header) {
                  * Check BSP flag
                  */
                 if ((cpu_entry->cpu_flags) & 0x2) {
-                    bsp_apic_id = cpu_entry->local_apic_id;
                     cpu_add(cpu_entry->local_apic_id, 1, cpu_entry->local_apic_version);
                 }
                 else
