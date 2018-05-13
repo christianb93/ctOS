@@ -547,6 +547,7 @@ int hd_read_partitions(hd_partition_t* partitions, minor_dev_t minor,
      * MBR partition table
      */
     for (i = 0; i < 4; i++) {
+        partition = mbr.partition_table[i];
         if (partition.type != PART_TYPE_EMPTY) {
             if ((PART_TYPE_WIN95_EXT_LBA == partition.type) || (PART_TYPE_EXTENDED == partition.type)) {
                 /*
