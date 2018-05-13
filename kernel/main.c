@@ -241,7 +241,7 @@ void run(u32 magic, u32 multiboot_ptr) {
     params_parse();
     cpu_init();
     /*
-     * Init video driver in text mode and the console driver
+     * Init video driver in boot mode and the console driver
      */
     vga_init(0);
     cons_init();
