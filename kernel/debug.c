@@ -63,6 +63,7 @@
 #include "pci.h"
 #include "pata.h"
 #include "irq.h"
+#include "mptables.h"
 #include "ahci.h"
 #include "fs.h"
 #include "vga.h"
@@ -435,9 +436,9 @@ static void print_usage() {
     PRINT("cpulist - list all known CPUs\n");
     PRINT("Hit ENTER to see next page\n");
     debug_getline(c, 1);
-    PRINT("irqr - print IRQ routing table\n");
-    PRINT("apics - print I/O APICs\n");
-    PRINT("apicc - print APIC routing table entries\n");
+    PRINT("irqr - print IRQ routing MP table\n");
+    PRINT("mpapics - print I/O APICs from MP tables\n");
+    PRINT("apicc - print configuration of first I/O APIC\n");
     PRINT("irqstat - print IRQ statistic\n");
     PRINT("ahci - print AHCI ports\n");
     PRINT("reboot - reboot machine\n");
@@ -910,19 +911,19 @@ void debug_main(ir_context_t* ir_context) {
             pata_print_queue();
         }
         else if (0 == strncmp("buslist", cmd, 7)) {
-            irq_print_bus_list();
+            mptables_print_bus_list();
         }
         else if (0 == strncmp("cpulist", cmd, 7)) {
             cpu_print_list();
         }
         else if (0 == strncmp("irqr", cmd, 4)) {
-            irq_print_routing_list();
+            mptables_print_routing_list();
         }
-        else if (0 == strncmp("apics", cmd, 5)) {
-            irq_print_io_apics();
+        else if (0 == strncmp("mpapics", cmd, 5)) {
+            mptables_print_io_apics();
         }
         else if (0 == strncmp("apicc", cmd, 5)) {
-            irq_print_apic_conf();
+            mptables_print_apic_conf();
         }
         else if (0 == strncmp("irqstat", cmd, 7)) {
             irq_print_stats();
@@ -970,7 +971,7 @@ void debug_main(ir_context_t* ir_context) {
             ip_print_routing_table();
         }
         else if (0 == strncmp("pir", cmd, 3)) {
-            irq_print_pir_table();
+            mptables_print_pir_table();
         }
         else if (0 == strncmp("multiboot", cmd, 9)) {
             multiboot_print_info();

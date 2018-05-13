@@ -227,11 +227,11 @@ Thus the signal handling code can force a restart of the currently processed sys
 
 ## Initialization
 
-Having discussed the actual interrupt processing, let us now take a short   look at the initialization phase. At startup, the function `irq_init` in the interrupt manager is called. The processing in this function depends on the value of the kernel parameter `apic`. If this is set, the function first tries to locate an MP configuration table in memory. If that table exists, the APIC will be initialized, otherwise the PIC will be used.
+Having discussed the actual interrupt processing, let us now take a short   look at the initialization phase. At startup, the function `irq_init` in the interrupt manager is called. The processing in this function depends on the value of the kernel parameter `apic`. If this is set, the function first tries to locate an I/O APIC, using either the MP tables (as previously parsed by mptables.) or APCI. If an APIC could be find, the APIC will be initialized, otherwise the PIC will be used.
 
 If the PIC is to be used, the functinon `pic_init` in the PIC driver is called. In this case, the mapping of interrupts to vectors is trivial - the base address is hard coded to be 0x20, so that the PIC input line n is mapped to the vector 0x20 + n. Then all interrupts are enabled.
 
-If the APIC is used, the PIC will be set up as well, but all interrupts will be disabled in the PIC. In this case, the MP configuration table is build up first in `mp_table_init` and then the APIC setup in `apic_init_bsp` is invoked which will set up the local APIC for the boot processor. At this poin in time, no redirection entries are set up in the IO APIC yet.
+If the APIC is used, the PIC will be set up as well, but all interrupts will be disabled in the PIC. 
 
 Now suppose a PCI device is in its setup phase. The device will then call `irq_add_handler_pci` in the interrupt manager. Depending on the mode set in `pic_init`, the input of the interrupt controller to which the device is connected will either be determined using the entry in the PCI configuration space (PIC) or the MP table configuration (APIC). In APIC mode, a new redirection entry will be added to the APIC configuration, in PIC mode, only the assignment of a vector to the IRQ number will be done. In both cases, the interrupt handler will be associated with the vector so that it will be executed by the kernel whenever the interrupt is raised.
 

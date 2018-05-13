@@ -163,6 +163,7 @@ Functions offered by the interrupt manager are
 Modules:
 
 * irq.c
+* mptables.c
 
 ## PCI bus driver
 

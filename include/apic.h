@@ -14,7 +14,6 @@
 typedef struct _io_apic_t {
     u8 apic_id;
     char apic_version;
-    char apic_flags;
     u32 base_address;          // Note that this is the virtual base address!
     struct _io_apic_t* next;
     struct _io_apic_t* prev;

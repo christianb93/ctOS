@@ -157,6 +157,7 @@
 #include "arp.h"
 #include "net.h"
 #include "wq.h"
+#include "mptables.h"
 
 
 static int __errno = 0;
@@ -281,6 +282,7 @@ void run(u32 magic, u32 multiboot_ptr) {
      */
     vga_enable_paging();
     mm_init_heap();
+    mptables_init();
     irq_init();
     MSG("Initializing keyboard\n");
     kbd_init();

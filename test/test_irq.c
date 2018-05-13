@@ -6,6 +6,7 @@
 
 #include "kunit.h"
 #include "irq.h"
+#include "mptables.h"
 #include "vga.h"
 #include "locks.h"
 #include <stdio.h>

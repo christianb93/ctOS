@@ -50,7 +50,7 @@ void timer_print_cpu_ticks() {
 
 }
 
-void irq_print_pir_table() {
+void mptables_print_pir_table() {
 }
 
 void cpuid(u32 eax, u32* ebx, u32* ecx, u32* edx) {
@@ -181,20 +181,20 @@ u32 kmalloc(u32 size) {
     return (u32) malloc(size);
 }
 
-void irq_print_bus_list() {
+void mptables_print_bus_list() {
 
 }
 u8 rtc_read_register(u8 index) {
     return 0;
 }
 
-void irq_print_routing_list() {
+void mptables_print_routing_list() {
 
 }
-void irq_print_io_apics() {
+void mptables_print_io_apics() {
 
 }
-void irq_print_apic_conf() {
+void mptables_print_apic_conf() {
 
 }
 
