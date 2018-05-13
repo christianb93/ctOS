@@ -11,6 +11,8 @@
 #include "lib/string.h"
 #include "mm.h"
 
+static char* __module = "HD    ";
+
 
 /*
  * According to the ATA/ATAPI specification, ASCII strings are transferred
@@ -396,6 +398,90 @@ static int hd_read_logical_partitions(hd_partition_t* partitions,
 }
 
 /*
+ * Read a GPT from disk. Please refer to the documentation of the function
+ * hd_read_partitions below for detaisl
+ */
+static int hd_read_partitions_gpt(hd_partition_t* partitions, minor_dev_t minor,
+        int(*read_sector)(minor_dev_t minor, u64 lba,  void* buffer),
+        int table_size) {
+    u8 buffer[512];
+    gpt_header_t* gpt_header;
+    gpt_entry_t* gpt_entry;
+    int count = 0;
+    u32 part_table_size = 0;
+    void* part_table = 0;
+    int blocks = 0;
+    int i;
+    int used = 0;
+    /*
+     * Read LBA 1 - this should be the GPT header
+     */ 
+    if (read_sector(minor, 1, buffer) < 0) {
+        ERROR("Could not read from disk\n");
+        return -EIO;
+    }
+    gpt_header = (gpt_header_t*) buffer;
+    /*
+     * Check signature
+     */
+    if (gpt_header->signature != GPT_SIGNATURE) {
+        ERROR("Wrong signature in GPT header, giving up\n");
+        return -EIO;
+    }
+    DEBUG("Partition table starts at LBA %D and has %d entries of size %d\n", 
+            gpt_header->part_table_first_lba, 
+            gpt_header->part_table_entries,
+            gpt_header->part_table_entry_size);
+    /*
+     * Now go through all the entries sequentially. We first read all the required blocks 
+     */
+    part_table_size = gpt_header->part_table_entries * gpt_header->part_table_entry_size;
+    if (0 == (part_table = kmalloc(part_table_size))) {
+        ERROR("Could not allocate enough memory for partition table\n");
+    }
+    /*
+     * We read the entire table into memory. This is not very efficient, but easy, and
+     * we have kmalloc at this point in time
+     */ 
+    blocks = part_table_size / 512;
+    if (part_table_size % 512)
+        blocks +=1;
+    DEBUG("Reading %d blocks from disk, partition table size = %d\n", blocks, part_table_size);
+    for (i = 0; i < blocks; i++) {
+        if (read_sector(minor, i + gpt_header->part_table_first_lba, part_table + i*512) < 0) {
+            ERROR("Could not read sector %D from disk\n", i + gpt_header->part_table_first_lba);
+            kfree(part_table);
+            return -EIO;
+        }
+    }
+    /*
+     * Now we go through the entries in memory one by one
+     */
+    for (i = 0; i < gpt_header->part_table_entries; i++) {
+        gpt_entry = (gpt_entry_t*) (part_table + i*gpt_header->part_table_entry_size);
+        /*
+         * See whether it is used
+         */
+        used = 0;
+        for (int j = 0; j < GPT_GUID_LENGTH; j++) {
+            if (0 != gpt_entry->part_type_guid[j])
+                used = 1;
+        }
+        if (0 == used)
+            continue;
+        DEBUG("Found used partition %d\n", i);
+        count++;
+        if (count >= table_size)
+            break;
+        partitions[count].first_sector = gpt_entry->first_lba;
+        partitions[count].last_sector = gpt_entry->last_lba;
+        partitions[count].used = 1;
+    }
+    kfree(part_table);
+    return count;
+}
+
+/*
  * This function will read a partition table from disk and fill the
  * provided partition list accordingly. The first parameter is a pointer
  * to an array of partitions which will be filled with the partitions found.
@@ -445,8 +531,22 @@ int hd_read_partitions(hd_partition_t* partitions, minor_dev_t minor,
         ERROR("This is not a valid MBR\n");
         return -EIO;
     }
+    /*
+     * See whether we are dealing with a protective GPT - if yes
+     * delegate to the function for that
+     */
     for (i = 0; i < 4; i++) {
         partition = mbr.partition_table[i];
+        if (partition.type == PART_TYPE_GPT) {
+            MSG("Found protective GPT\n");
+            return hd_read_partitions_gpt(partitions, minor, read_sector, table_size);
+        }
+    }
+    /*
+     * If we get to this point, we are assuming an 
+     * MBR partition table
+     */
+    for (i = 0; i < 4; i++) {
         if (partition.type != PART_TYPE_EMPTY) {
             if ((PART_TYPE_WIN95_EXT_LBA == partition.type) || (PART_TYPE_EXTENDED == partition.type)) {
                 /*

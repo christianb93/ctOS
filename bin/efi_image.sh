@@ -75,7 +75,7 @@ EOF
 sudo losetup /dev/loop0 efiimage
 sudo partprobe /dev/loop0
 sudo mkfs.fat -F32 /dev/loop0p1
-sudo mkfs -t ext2  /dev/loop0p2
+sudo mkfs -t ext2 -O none /dev/loop0p2
 
 #
 # Prepare the EFI partition
@@ -126,7 +126,7 @@ menuentry "ctOS" {
     boot
 }
 menuentry "ctOS (IDE HD)" {
-  multiboot2 (\$root)/grub2/ctOSkernel use_debug_port=1 root=769 loglevel=0 do_test=0
+  multiboot2 (\$root)/grub2/ctOSkernel use_debug_port=1 root=770 loglevel=0 do_test=0
   boot
 }
 EOF

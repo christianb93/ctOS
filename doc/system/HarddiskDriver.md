@@ -384,7 +384,7 @@ following definitions for the request and the request queue structure.\
 ```
 typedef struct {
     dev_t minor_device;                  // minor device number of device on which we operate
-    u32 first_block;                     // start of read/write operation
+    u64 first_block;                     // start of read/write operation
     ssize_t blocks;                      // blocks to read/write
     int rw;                              // 0 = read, 1 = write
     u32 buffer;                          // address of buffer (virtual address)
@@ -426,8 +426,8 @@ hd.h which describes one partition.
 ```
 typedef struct {
     int used;                // is this entry in the list of partitions used
-    u32 first_sector;        // first sector of partition
-    u32 last_sector;         // last sector of partition
+    u64 first_sector;        // first sector of partition
+    u64 last_sector;         // last sector of partition
 } hd_partition_t;
 ```
 
@@ -446,6 +446,9 @@ is an extended partition which in turn contains two logical partitions,
 the primary partitions will be stored at index 1, 2 and 3, index 4 is
 left empty and the two logical partitions will be stored at index 5 and
 6.
+
+In case this function detects an entry in the partition table which indicates that a
+GPT partionining scheme is used ("protective MBR"), it continues to locate and parse the GPT and disregards all further entries in the MBR itself. This implies that in case of an hybrid MBR, only the GPT information is actually used.
 
 ### Public interface functions of the common HD driver utilities
 

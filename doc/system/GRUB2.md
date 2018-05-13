@@ -496,7 +496,7 @@ Now we mount our newly created partitions and create the file systems.
 $ sudo losetup /dev/loop0 efiimage
 $ sudo partprobe /dev/loop0
 $ sudo mkfs.fat -F32 /dev/loop0p1
-$ sudo mkfs -t ext2 -L "root" /dev/loop0p2
+$ sudo mkfs -t ext2 -O none -L "root" /dev/loop0p2
 ```
 
 Next, we will prepare the EFI partition. Inside the EFI partition, we will create a directory /EFI/BOOT. By convention, EFI will try to detect a file called bootx64.efi in that directory and load it is it exists. So we create a GRUB2 image and place it in that directory on the EFI partition.
@@ -544,8 +544,6 @@ Now we can test our installation. We will use the 64 bit version of QEMU and ask
 ```
 qemu-system-x86_64 --bios /usr/share/qemu/OVMF.fd -drive id=disk,file=efiimage,if=ide,media=disk -m 512 -debugcon stdio
 ```
-
-Note that the current version of ctOS runs on EFI with a ramdisk, but does not yet recognize a GPT and still depends on the BIOS to detect non-trivial interrupt routings, so mounting a hard-disk will not work.
 
 
 Further reading

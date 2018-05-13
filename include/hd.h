@@ -88,6 +88,43 @@ typedef struct {
     u16 magic;
 }__attribute__ ((packed)) mbr_t;
 
+#define GPT_SIGNATURE 0x5452415020494645ULL
+#define GPT_GUID_LENGTH 16
+#define GPT_PART_NAME_LENGTH 72
+
+
+/*
+ * A GPT header
+ */
+typedef struct {
+    u64 signature;
+    u32 revision;
+    u32 header_size;
+    u32 chksum_header;
+    u32 reserved;
+    u64 current_lba;
+    u64 backup_lba;
+    u64 first_usable_lba;
+    u64 last_usable_lba;
+    u8  disk_guid[GPT_GUID_LENGTH];
+    u64 part_table_first_lba; 
+    u32 part_table_entries;
+    u32 part_table_entry_size;
+    u32 chksum_part_table;
+}__attribute__ ((packed)) gpt_header_t;
+
+/*
+ * A GPT entry
+ */
+typedef struct {
+    char part_type_guid[GPT_GUID_LENGTH];
+    char part_guid[GPT_GUID_LENGTH];
+    u64  first_lba;
+    u64  last_lba;
+    u64  attributes;
+    char part_name[GPT_PART_NAME_LENGTH];
+}__attribute__ ((packed)) gpt_entry_t;
+
 /*
  * Request type (read or write)
  */
@@ -112,6 +149,8 @@ typedef struct {
 #define PART_TYPE_LINUX_NATIVE 0x83
 #define PART_TYPE_WIN95_EXT_LBA 0xf
 #define PART_TYPE_WIN95_FAT32_LBA 0xc
+#define PART_TYPE_GPT 0xee
+
 
 int hd_rw(hd_request_queue_t* request_queue, u32 sectors, u64 first_sector, int rw, void* buffer, minor_dev_t minor);
 void hd_handle_irq(hd_request_queue_t* queue, int rc);
