@@ -48,7 +48,7 @@ fi
 # - the last part will be an ext2 image
 # - finally we add a few sectors at the end as gdisk will add a GPT backup
 #
-dd if=/dev/zero of=efiimage bs=512 count=$((204800 + 2048 + 21185 + 33))
+dd if=/dev/zero of=efiimage bs=512 count=$((204800 + 2048 + 42370 + 33))
 ls -l efiimage
 
 #

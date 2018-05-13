@@ -65,7 +65,6 @@ sudo mount /dev/loop7 mnt
 #
 source prepare_image.sh
 
-
 #
 # Clean up
 #
@@ -97,12 +96,7 @@ echo "Will now build a HD image"
 dd if=/dev/zero of=hdimage bs=512 count=2048
 dd if=ramdisk.img of=hdimage oflag=append conv=notrunc
 
-sudo losetup /dev/loop7 hdimage
-sudo sfdisk --no-reread /dev/loop7 << EOF
+sfdisk --no-reread hdimage << EOF
 2048,,83
 EOF
 
-#
-# Clean up
-#
-sudo losetup -d /dev/loop7
