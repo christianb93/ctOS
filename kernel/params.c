@@ -39,6 +39,7 @@ static char parm_tcp_disable_cc[2];
 static char parm_irq_watch[8];
 static char parm_use_bios_font[2];
 static char parm_use_acpi[2];
+static char parm_use_msi[2];
 
 
 /*
@@ -60,6 +61,7 @@ static char parm_use_acpi[2];
  * tcp_disable_cc: disable tcp congestion control
  * use_bios_font: use VGA bios font 
  * use_acpi: use ACPI as leading configuration source
+ * use_msi: use MSI whenever a device supports this
  */
  
  
@@ -84,6 +86,7 @@ static kparm_t kparm[] = {
         { "use_vbox_port", parm_use_vbox_port, 1, "0", 0 },
         { "use_bios_font", parm_use_bios_font, 1, "0", 0 },
         { "use_acpi", parm_use_acpi, 1, "0", 0 },
+        { "use_msi", parm_use_msi, 1, "0", 0 },
 };
 
 #define NR_KPARM (sizeof(kparm) / sizeof(kparm_t))

@@ -19,6 +19,12 @@ typedef struct _pci_bus_t {
     struct _pci_bus_t* prev;
 } pci_bus_t;
 
+/* Entry in a table of capabilities */
+typedef struct {
+    u8 id;
+    char* name;
+} capability_t;
+
 
 /*
  * This is the internal data structure which we use to
@@ -38,6 +44,8 @@ typedef struct _pci_dev_t {
     u8 header;
     u16 status;
     u16 command;
+    u8 msi_support;
+    u8 msi_cap_offset;
     /* These fields are only valid for bridges */
     u8 primary_bus;
     u8 secondary_bus;
@@ -59,6 +67,20 @@ typedef struct {
     u8 prog_if;
     char* desc;
 } pci_class_t;
+
+/*
+ * This structure represents an MSI configuration
+ */
+typedef struct {
+    u32 msg_address;
+    u32 msg_address_upper;
+    u16 msg_data;
+    int msg_cap;
+    int msg_enabled;
+    int msi_enabled;
+    int is64;
+    int masking;
+} msi_config_t;
 
 /*
  * I/O register to use for access
@@ -126,6 +148,18 @@ typedef struct {
 /* Capability list present */
 #define PCI_STATUS_CAP_LIST 0x10
 
+/* Some capabilities */
+#define PCI_CAPABILITY_MSI 0x5
+#define PCI_CAPABILITY_MSIX 0x11
+
+/*
+ * MSI specific stuff
+ */
+#define PCI_MSI_CNTL_ENABLED 0x1
+#define PCI_MSI_MASKING_SUPP (1 << 8) 
+#define PCI_MSI_64_SUPP (1<<7)
+ 
+
 /* Bit masks for BARs */
 /* This flag determines whether the device
  * is mapped into I/O space or memory space
@@ -165,5 +199,6 @@ void pci_query_by_class(pci_query_callback_t callback, u8 base_class, u8 sub_cla
 u16 pci_get_status(pci_dev_t* pci_dev);
 u16 pci_get_command(pci_dev_t* pci_dev);
 void pci_enable_bus_master_dma(pci_dev_t* pci_dev);
+void pci_config_msi(pci_dev_t* pci_dev, int vector);
 
 #endif /* _PCI_H_ */

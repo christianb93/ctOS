@@ -13,6 +13,7 @@
 #include "lists.h"
 #include "keyboard.h"
 #include "vga.h"
+#include "cpu.h"
 
 static char* __module = "IDE   ";
 
@@ -124,7 +125,26 @@ static pci_class_t pci_class_codes[] = { {
         0x03,
         0x30,
         "USB XHCI" }, { 0x0C, 0x5, 0xff, "SMBus" } };
+        
+/*
+ * Valid capabilities
+ */
 
+static capability_t capabilities[] = { 
+            { 1, "Power Management" }, 
+            { 2, "AGP" },
+            { 3, "VPD" }, 
+            { 4, "Slot" }, 
+            { 5, "MSI" },
+            { 6, "Compact PCI Hot Swap" }, 
+            { 7, "PCI-X" }, 
+            { 0xc, "PCI HotPlug" },
+            {0x10, "PCI Express"}, 
+            {0x11, "MSI-X"}, 
+            {0x12, "SATA"}} ;        
+
+
+#define CAPABILITY_LIST_SIZE (sizeof(capabilities) / sizeof(capability_t))
 #define PCI_CLASS_CODE_SIZE (sizeof(pci_class_codes) / sizeof(pci_class_t))
 
 /*
@@ -184,7 +204,31 @@ static u32 pci_get_dword_config(u8 bus, u8 device, u8 function, u8 offset) {
 }
 
 /*
- * Get an individual byte from an individual register
+ * Get an individual word from an individual register
+ * as opposed to the full 32-bit dword (4 registers) returned
+ * by the function pci_get_dword_config
+ * Parameter:
+ * @bus: bus specifying the device to read from
+ * @device: device number to read from
+ * @function: function number to read from
+ * @offset: offset into 256-byte config space (sometimes called register),
+ * Return value:
+ * a word containing the content of the register
+
+ */
+static u16 pci_get_word_config(u8 bus, u8 device, u8 function, u8 offset) {
+    u32 dword_pci_value;
+    /*
+     * Position of word we are looking for in 32-bit dword
+     * returned by pci_get_dword_config
+     */
+    int position = offset % 4;
+    dword_pci_value = pci_get_dword_config(bus, device, function, offset);
+    return (u16) (dword_pci_value >> (8 * position));
+}
+
+/*
+ * Get an individual word from an individual register
  * as opposed to the full 32-bit dword (4 registers) returned
  * by the function pci_get_dword_config
  * Parameter:
@@ -199,15 +243,13 @@ static u32 pci_get_dword_config(u8 bus, u8 device, u8 function, u8 offset) {
 static u8 pci_get_byte_config(u8 bus, u8 device, u8 function, u8 offset) {
     u32 dword_pci_value;
     /*
-     * Position of byte we are looking for in 32-bit dword
+     * Position of word we are looking for in 32-bit dword
      * returned by pci_get_dword_config
      */
     int position = offset % 4;
     dword_pci_value = pci_get_dword_config(bus, device, function, offset);
     return (u8) (dword_pci_value >> (8 * position));
 }
-
-
 /*
  * Write four bytes to the PCI configuration space
  * Parameter:
@@ -247,7 +289,30 @@ static void pci_put_dword_config(u8 bus, u8 device, u8 function, u8 offset, u32 
     return;
 }
 
-
+/* Put an individual word into an individual register
+ * as opposed to the full 32-bit dword (4 registers) written
+ * by the function pci_put_dword_config
+ * Note that offset needs to be even for this to work!
+ */
+static void pci_put_word_config(u8 bus, u8 device, u8 function, u8 offset, u16 value) {
+    u32 dword_pci_value;
+    /* 
+     * Position of byte we are looking for in 32-bit dword
+     * returned by pci_get_dword_config
+     */
+    int position = offset % 4;
+    /* 
+     * First read old value 
+     */
+    dword_pci_value = pci_get_dword_config(bus, device, function,
+            offset);
+    /* 
+     * Now patch requested byte into value 
+     */
+    dword_pci_value = dword_pci_value & ~(0xffff << (8*position));
+    dword_pci_value = dword_pci_value | (((u32)value) << (8*position));
+    pci_put_dword_config(bus, device, function, offset, dword_pci_value);
+}
 
 /*
  * Locate bus by id in internal table
@@ -281,6 +346,8 @@ static void pci_scan_device(u8 bus_id, u8 device, u8 function,
     u32 vendor_device_id;
     u8 primary_bus;
     u8 secondary_bus;
+    u8 cap_pointer;
+    u8 cap_id;
     int i = 0;
     /*
      * Fill structure. This is not very efficient, as we read several
@@ -300,6 +367,7 @@ static void pci_scan_device(u8 bus_id, u8 device, u8 function,
             PCI_HEADER_PROGIF_REG);
     pci_dev->header = pci_get_byte_config(bus_id, device, function,
             PCI_HEADER_TYPE_REG);
+    pci_dev->msi_support = 0;
     /*
      * Read command and status register
      * We access these registers as one double word at offset 0x4
@@ -320,6 +388,25 @@ static void pci_scan_device(u8 bus_id, u8 device, u8 function,
             PCI_HEADER_IRQ_LINE_REG);
     pci_dev->irq_pin = pci_get_byte_config(bus_id, device, function,
             PCI_HEADER_IRQ_PIN_REG);
+    /*
+     * If there is a capability list, read it
+     */
+    if (pci_dev->status & PCI_STATUS_CAP_LIST) {
+        cap_pointer = pci_get_byte_config(pci_dev->bus->bus_id,
+                                        pci_dev->device, 
+                                        pci_dev->function, 
+                                        PCI_HEADER_CAP_POINTER_REG);
+        while (cap_pointer) {
+            cap_id = pci_get_byte_config(pci_dev->bus->bus_id,
+                    pci_dev->device, pci_dev->function, cap_pointer);
+            if (PCI_CAPABILITY_MSI == cap_id) {
+                pci_dev->msi_support = 1;
+                pci_dev->msi_cap_offset = cap_pointer;
+            }
+            cap_pointer = pci_get_byte_config(pci_dev->bus->bus_id,
+                    pci_dev->device, pci_dev->function, cap_pointer + 1);
+        }
+    }
     if (PCI_HEADER_PCI_BRIDGE == (pci_dev->header & 0x3)) {
         /*
          * We hit upon a PCI-to-PCI bridge. Get information on primary and secondary bus
@@ -561,7 +648,132 @@ void pci_enable_bus_master_dma(pci_dev_t* pci_dev) {
     return;
 }
 
- 
+/*
+ * This function reads the MSI configuration for a given device
+ * Parameter:
+ * @dev - the device
+ * @msi_config - the MSI config structure that we fill
+ */
+static void pci_get_msi_config(pci_dev_t* dev, msi_config_t* msi_config) {
+    u16 msg_control;
+    msg_control = pci_get_dword_config(dev->bus->bus_id, 
+                                dev->device, 
+                                dev->function, dev->msi_cap_offset) >> 16;
+    msi_config->is64 = (msg_control & PCI_MSI_64_SUPP) / PCI_MSI_64_SUPP;
+    msi_config->masking = (msg_control & PCI_MSI_MASKING_SUPP) / PCI_MSI_MASKING_SUPP;
+    msi_config->msg_cap = (msg_control >> 1) & 0x7;
+    msi_config->msg_enabled=(msg_control >> 4) & 0x7;
+    msi_config->msg_address = pci_get_dword_config(dev->bus->bus_id,
+                                dev->device,
+                                dev->function,
+                                dev->msi_cap_offset + 4);
+    msi_config->msi_enabled = msg_control & PCI_MSI_CNTL_ENABLED;
+    if (msi_config->is64) {
+        msi_config->msg_address_upper = pci_get_dword_config(dev->bus->bus_id,
+                                dev->device,
+                                dev->function,
+                                dev->msi_cap_offset + 8);
+        msi_config->msg_data =  pci_get_word_config(dev->bus->bus_id,
+                                dev->device,
+                                dev->function,
+                                dev->msi_cap_offset + 12);
+    }
+    else {
+        msi_config->msg_address_upper = 0;
+        msi_config->msg_data = pci_get_word_config(dev->bus->bus_id,
+                                dev->device,
+                                dev->function,
+                                dev->msi_cap_offset + 8);
+    }
+}
+
+/*
+ * Write configuration information to a given device
+ * Out of the msi config structure passed as argument, only
+ * the fields
+ *   message address
+ *   message data
+ *   Number of messages enabled in message control register
+ *   MSI enable flag in message control register
+ * are actually written. However, the remaining fields are assumed
+ * to be valid and should be the result of a previous read operation
+ */
+static void pci_put_msi_config(pci_dev_t* dev, msi_config_t* msi_config) {
+    u8 msi_offset = dev->msi_cap_offset;
+    u16 msg_control;
+    msg_control = pci_get_dword_config(dev->bus->bus_id, 
+                                    dev->device,
+                                    dev->function, 
+                                    msi_offset) >> 16;
+    msg_control = msg_control | (msi_config->msi_enabled & 0x1);
+    msg_control = msg_control & ~(0x7 << 4);
+    msg_control = msg_control | ((msi_config->msg_enabled & 0x7) << 4);
+    pci_put_word_config(dev->bus->bus_id, dev->device, dev->function,
+                                msi_offset+2,
+                                msg_control);
+    pci_put_dword_config(dev->bus->bus_id,
+                                dev->device,
+                                dev->function,
+                                msi_offset + 4, 
+                                msi_config->msg_address);
+    if (msi_config->is64) {
+        pci_put_dword_config(dev->bus->bus_id,
+                    dev->device,
+                    dev->function,
+                    msi_offset + 8, 
+                    msi_config->msg_address_upper);
+        pci_put_word_config(dev->bus->bus_id,
+                    dev->device,
+                    dev->function,
+                    msi_offset + 12, 
+                    msi_config->msg_data);
+
+    }
+    else {
+        pci_put_word_config(dev->bus->bus_id,
+                    dev->device,
+                    dev->function,
+                    msi_offset + 8, 
+                    msi_config->msg_data);
+    }
+}
+
+/*
+ * Set up a device for MSI. We do not check any more that 
+ * the device supports this, but assume that this has been 
+ * done before
+ * Parameter:
+ * @pci_dev - the device
+ * @vector - the vector we want to use
+ * TODO: support different delivery modes
+ */
+void pci_config_msi(pci_dev_t* pci_dev, int vector) {
+    msi_config_t msi_config;
+    /*
+     * Read existing configuration first
+     */
+    pci_get_msi_config(pci_dev, &msi_config);
+    msi_config.msi_enabled = 1;
+    /*
+     * Build message address.
+     * Bits 20-31: 0xfee
+     * Bits 12-19: local APIC ID
+     * Bits 0-11: zero (use physical destination mode)
+     */
+    msi_config.msg_address = 0xfee00000 + ((cpu_get_apic_id(0) & 0xf) << 12);
+    msi_config.msg_address_upper = 0;
+    /*
+     * Build message data
+     * Bits 0-8: vector 
+     * Bits 8-10: zero for vector based delivery
+     * Bit 14: set to one
+     */
+    msi_config.msg_data = vector + (1<<14);
+    /*
+     * Write configuration data back
+     */
+    pci_put_msi_config(pci_dev, &msi_config);
+}
 
 /******************************************************************
  * The functions below this line are for debugging purpose only   *
@@ -591,6 +803,21 @@ static char* get_desc_for_cc(u8 base_class, u8 sub_class, u8 prog_if) {
         i++;
     }
     return "Unknown";
+}
+
+/*
+ * Return the name of a capability
+ */
+char* get_capability_name(u8 capability) {
+    int i = 0;
+    while (i < CAPABILITY_LIST_SIZE) {
+        if (capabilities[i].id == capability) {
+            return capabilities[i].name;
+        }
+        i++;
+    }
+    return "Unknown";
+
 }
 
 /*
@@ -629,6 +856,8 @@ static void pci_print_device_details(pci_dev_t* pci_dev) {
     u32 command_status;
     u16 command;
     u16 status;
+    u8 cap_pointer;
+    u8 cap_id;
     cls(0);
     PRINT("Details on device %h:%h.%h\n", pci_dev->bus->bus_id, pci_dev->device,
             pci_dev->function);
@@ -639,6 +868,7 @@ static void pci_print_device_details(pci_dev_t* pci_dev) {
             pci_dev->base_class, pci_dev->sub_class, pci_dev->prog_if);
     PRINT("Class description: %s\n", get_desc_for_cc(pci_dev->base_class,
                     pci_dev->sub_class, pci_dev->prog_if));
+    PRINT("MSI:             %d\n", pci_dev->msi_support);
     PRINT("IRQ line:        %h  IRQ pin:       %h\n", pci_dev->irq_line,
             pci_dev->irq_pin);
     command_status = pci_get_dword_config(pci_dev->bus->bus_id, pci_dev->device,
@@ -664,6 +894,24 @@ static void pci_print_device_details(pci_dev_t* pci_dev) {
                     & PCI_COMMAND_MEM_ENABLED) / PCI_COMMAND_MEM_ENABLED);
     PRINT("Capability list present: %h\n", (pci_dev->status
                     & PCI_STATUS_CAP_LIST) / PCI_STATUS_CAP_LIST);
+    if (pci_dev->status & PCI_STATUS_CAP_LIST) {
+        PRINT("ID      Name\n");
+        PRINT("---------------------\n");
+        cap_pointer = pci_get_byte_config(pci_dev->bus->bus_id,
+                                        pci_dev->device, 
+                                        pci_dev->function, 
+                                        PCI_HEADER_CAP_POINTER_REG);
+        while (cap_pointer) {
+            cap_id = pci_get_byte_config(pci_dev->bus->bus_id,
+                    pci_dev->device, pci_dev->function, cap_pointer);
+            PRINT("%h      %s\n", cap_id, get_capability_name(cap_id));
+            cap_pointer = pci_get_byte_config(pci_dev->bus->bus_id,
+                    pci_dev->device, pci_dev->function, cap_pointer + 1);
+        }
+    }
+    else {
+        kprintf("This device does not implement any capabilities\n");
+    }                    
     PRINT("Hit any key to return to list\n");
     early_getchar();
 }

@@ -63,12 +63,14 @@ help | ?)
     qemu-smp:   QEMU with 8 simulated CPUs
     qemu-tap:   QEMU attached to a tap networking device (must be root to run this)
     qemu-ahci:  QEMU with an emulated AHCI drive
+    qemu-msi:   Experimental MSI support
     vbox-ahci:  VirtualBox with an AHCI drive and the PIIX3 chipset
     vbox-ich9:  VirtualBox with an AHCI drive and the Intel ICH9  chipset 
     vbox-ide:   VirtualBox with an IDE drive
     bochs:      Run ctOS on the Bochs emulator
     efi:        Run ctOS on an emulated EFI platform (run efi_image.sh first)
     efi-smp:    EFI with more than one CPU
+    
     
     
 EOF
@@ -156,7 +158,19 @@ qemu-ahci)
     KERNEL="-kernel bin/ctOSkernel1"
     APPEND="-append \"use_debug_port=1 root=1025 loglevel=0 vga=1\""
     ;;
-    
+
+qemu-msi)
+    #
+    # QEMU with one CPU and an AHCI hard disk, using MSI
+    # Required images: kernel, hdimage
+    #
+    EMU=$QEMU
+    HD="-drive id=disk,file=bin/hdimage,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0"
+    KERNEL="-kernel bin/ctOSkernel1"
+    APPEND="-append \"use_debug_port=1 root=1025 loglevel=0 vga=1 use_msi=1\""
+    ;;
+
+
 vbox-ahci)
     #
     # Use Virtualbox with the PIIX3 chipset and AHCI

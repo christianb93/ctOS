@@ -43,6 +43,9 @@ void pm_handle_nm_trap() {
 
 }
 
+void pci_config_msi(pci_dev_t* pci_dev, int vector) {
+    
+}
 
 int debug_running() {
     return 0;

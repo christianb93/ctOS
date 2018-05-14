@@ -150,21 +150,24 @@ static int apic_mode = 1;
     int top;
     int bottom;
     /*
-     * First scan the table to see whether we already have
-     * assigned a vector for this IRQ previously
-     */
-    for (vector = 0; vector < IRQ_MAX_VECTOR; vector++) {
-        if (_irq == irq[vector]) {
-            *new = 0;
-            return vector;
-        }
-    }
-    /*
      * In PIC mode, the assignment is fixed
      */
     if (IRQ_MODE_PIC == irq_mode) {
         *new = 0;
         return _irq + IRQ_OFFSET_PIC;
+    }
+    /*
+     * If we get here, we are not in PIC mode and have some work ahead of us
+     * First scan the table to see whether we already have
+     * assigned a vector for this IRQ previously - but not for MSI
+     */
+    if (IRQ_MSI != _irq) {
+        for (vector = 0; vector < IRQ_MAX_VECTOR; vector++) {
+            if (_irq == irq[vector]) {
+                *new = 0;
+                return vector;
+            }
+        }
     }
     /*
      * If we get to this point, we have to define a new assignment.
@@ -200,7 +203,7 @@ static int apic_mode = 1;
  * the vector assigned for this interrupt
  * a negative number if the assignment failed
  */
- static int add_isr(int _irq, int priority, isr_t isr, int force_bsp) {
+ static int add_isr(int _irq, int priority, isr_t isr, int force_bsp, pci_dev_t* pci_dev) {
      int vector;
      int new;
      isr_handler_t* isr_handler;
@@ -212,35 +215,58 @@ static int apic_mode = 1;
       * Determine vector to use or reuse existing one
       */
     vector = assign_vector(_irq, priority, &new);
+    MSG("Using interrupt vector %d\n", vector);
     /*
+     * If this is not an MSI, we need to get some
+     * configuration information first and set up the
+     * IO APIC.
      * We need trigger, polarity and the IO APIC
      */
-    if (0 == acpi_used()) {
-        found = mptables_get_trigger_polarity(_irq, &polarity, &trigger_mode);
-        io_apic = mptables_get_primary_ioapic();
+    if (IRQ_MSI != _irq) {
+        if (0 == acpi_used()) {
+            found = mptables_get_trigger_polarity(_irq, &polarity, &trigger_mode);
+            io_apic = mptables_get_primary_ioapic();
+        }
+        else {
+            found = acpi_get_trigger_polarity(_irq, &polarity, &trigger_mode);
+            io_apic = acpi_get_primary_ioapic();
+        }
+        /*
+        * If this is the first assignment, add entry to I/O APIC
+        */
+        if ((1 == new) && (IRQ_MODE_APIC == irq_mode)) {
+            if (0 == io_apic) {
+                ERROR("Could not detect IO APIC to use\n");
+                irq[vector] = IRQ_UNUSED;
+                return -1;
+            }
+            if (found) {
+                apic_add_redir_entry(io_apic, _irq, polarity, trigger_mode,
+                        vector, ( (1 == force_bsp) ? 1 : apic_mode));
+            }
+            else {
+                ERROR("Could not locate entry in configuration tables for IRQ %d\n", _irq);
+                irq[vector] = IRQ_UNUSED;
+                return -1;
+            }
+        }
     }
     else {
-         found = acpi_get_trigger_polarity(_irq, &polarity, &trigger_mode);
-         io_apic = acpi_get_primary_ioapic();
-    }
-    /*
-     * If this is the first assignment, add entry to I/O APIC
-     */
-    if ((1 == new) && (IRQ_MODE_APIC == irq_mode)) {
-        if (0 == io_apic) {
-            ERROR("Could not detect IO APIC to use\n");
+        /* 
+         * MSI case. First make sure that we have a PCI device
+         * in this case (this function is also called for ISA 
+         * devices)
+         */
+        if (0 == pci_dev) {
+            ERROR("No PCI device specified\n");
             irq[vector] = IRQ_UNUSED;
             return -1;
         }
-        if (found) {
-            apic_add_redir_entry(io_apic, _irq, polarity, trigger_mode,
-                      vector, ( (1 == force_bsp) ? 1 : apic_mode));
-        }
-        else {
-            ERROR("Could not locate entry in configuration tables for IRQ %d\n", _irq);
-              irq[vector] = IRQ_UNUSED;
-              return -1;
-        }
+        /*
+         * Now ask the PCI bus driver to set up the MSI
+         * routing for us
+         */
+        pci_config_msi(pci_dev, vector);
     }
     /*
      * Check whether this handler has already been added to the list for this
@@ -281,32 +307,45 @@ static int apic_mode = 1;
          ERROR("Invalid argument - null handler\n");
          return EINVAL;
      }
-     /*
-      * Scan ACPI or MP table to locate IRQ for this device or get
-      * legacy IRQ from device in PIC mode
+     if (0 == pci_dev) {
+         ERROR("Invalid argument - PCI device is null\n");
+         return EINVAL;
+     }
+     /* 
+      * If we can use msi, do this
       */
-     if (IRQ_MODE_APIC == irq_mode) {
-         if (0 == acpi_used()) {
-            _irq = mptables_get_irq_pin_pci(pci_dev->bus->bus_id, pci_dev->device, pci_dev->irq_pin);
-            MSG("Got IRQ %d from configuration tables\n", _irq);
-         }
-         else {
-             ERROR("Not yet implemented!\n");
-         }
-     }
-     else {
-         _irq = pci_dev->irq_line;
-         DEBUG("Got legacy IRQ %d\n", _irq);
-     }
-     if (IRQ_UNUSED == _irq) {
-         ERROR("Could not locate MP table entry for device %d, pin %d on bus %d\n", pci_dev->device, pci_dev->irq_pin,
+    if ((1 == pci_dev->msi_support) & (1 == params_get_int("use_msi"))) {
+        _irq = IRQ_MSI;
+        MSG("Using MSI for this device\n");
+    }
+    else {
+        /*
+        * Scan ACPI or MP table to locate IRQ for this device or get
+        * legacy IRQ from device in PIC mode
+        */
+        if (IRQ_MODE_APIC == irq_mode) {
+            if (0 == acpi_used()) {
+                _irq = mptables_get_irq_pin_pci(pci_dev->bus->bus_id, pci_dev->device, pci_dev->irq_pin);
+                MSG("Got IRQ %d from configuration tables\n", _irq);
+            }
+            else {
+                ERROR("Not yet implemented!\n");
+            }
+        }
+        else {
+            _irq = pci_dev->irq_line;
+            DEBUG("Got legacy IRQ %d\n", _irq);
+        }
+    }
+    if (IRQ_UNUSED == _irq) {
+        ERROR("Could not locate MP table entry for device %d, pin %d on bus %d\n", pci_dev->device, pci_dev->irq_pin,
                  pci_dev->bus->bus_id);
-         return -EINVAL;
-     }
-     /*
-      * Add handler and redirection entry if needed
-      */
-     return add_isr(_irq, priority, new_isr, 1);
+        return -EINVAL;
+    }
+    /*
+     * Add handler and redirection entry if needed
+     */
+    return add_isr(_irq, priority, new_isr, 1, pci_dev);
  }
 
  /*
@@ -353,7 +392,7 @@ int irq_add_handler_isa(isr_t new_isr, int priority, int _irq, int lock) {
      * Use priority 1
      */
     DEBUG("Adding redirection entry for APIC pin %h\n", apic_pin);
-    vector = add_isr(apic_pin, priority, new_isr, 1);
+    vector = add_isr(apic_pin, priority, new_isr, 1, 0);
     DEBUG("Got vector %d for apic_pin = %d, priority = %d\n", vector, apic_pin, priority);
     /*
      * Remember if the interrupt needs to be locked

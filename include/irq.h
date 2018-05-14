@@ -86,8 +86,10 @@ typedef struct _isr_handler_t {
 #define IRQ_MAX_VECTOR 255
 /*
  * Dummy IRQ for "not used"
+ * and "reserved for MSI"
  */
 #define IRQ_UNUSED -1
+#define IRQ_MSI    -2
 
 /*
  * Priorities
