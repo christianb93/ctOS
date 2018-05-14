@@ -54,6 +54,7 @@ typedef struct {
 #define MADT_ENTRY_TYPE_LOCAL_APIC 0
 #define MADT_ENTRY_TYPE_IO_APIC 1
 #define MADT_ENTRY_TYPE_OVERRIDE 2
+#define MADT_ENTRY_LAPIC_OVERRIDE 5
 
 /*
  * A local APIC entry

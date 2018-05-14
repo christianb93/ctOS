@@ -68,6 +68,7 @@ help | ?)
     vbox-ide:   VirtualBox with an IDE drive
     bochs:      Run ctOS on the Bochs emulator
     efi:        Run ctOS on an emulated EFI platform (run efi_image.sh first)
+    efi-smp:    EFI with more than one CPU
     
     
 EOF
@@ -207,6 +208,18 @@ efi)
     HD="-drive id=disk,file=bin/efiimage,if=ide,media=disk "
     ;;
     
+efi-smp)
+    if [ ! -e "bin/efiimage" ]
+    then
+        echo "Could not find bin/efiimage, please do (cd bin ; ./efi_image.sh) first"
+    exit
+    fi
+    EMU="qemu-system-x86_64 --bios /usr/share/qemu/OVMF.fd -m 512 -debugcon stdio"
+    HD="-drive id=disk,file=bin/efiimage,if=ide,media=disk "
+    SMP="-smp sockets=8,threads=1 -enable-kvm"
+    ;;
+
+
 *)
     echo "Unrecognized run target, please use the run target ? or help to get a full list"
     exit 1

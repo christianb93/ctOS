@@ -354,6 +354,7 @@ int irq_add_handler_isa(isr_t new_isr, int priority, int _irq, int lock) {
      */
     DEBUG("Adding redirection entry for APIC pin %h\n", apic_pin);
     vector = add_isr(apic_pin, priority, new_isr, 1);
+    DEBUG("Got vector %d for apic_pin = %d, priority = %d\n", vector, apic_pin, priority);
     /*
      * Remember if the interrupt needs to be locked
      */
@@ -617,6 +618,7 @@ void irq_post() {
 void irq_init() {
     int i;
     int use_apic;
+    int have_apic = 0;
     for (i = 0; i <= IRQ_MAX_VECTOR; i++) {
         irq[i] = IRQ_UNUSED;
     }
@@ -625,7 +627,15 @@ void irq_init() {
      * use it, otherwise use PIC
      */
     use_apic = params_get_int("apic");
-    if ((0 == mptables_get_primary_ioapic()) || (0 == use_apic)) {
+    /*
+     * See whether we have an IO APIC and fall back to 
+     * PIC mode if not
+     */
+    if (0 == acpi_used())
+        have_apic = (0 != mptables_get_primary_ioapic());
+    else
+        have_apic = (0 != acpi_get_primary_ioapic());
+    if ((0 == have_apic) || (0 == use_apic)) {
         MSG("Setting up PIC\n");
         pic_init(IRQ_OFFSET_PIC);
         irq_mode = IRQ_MODE_PIC;
