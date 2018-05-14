@@ -199,14 +199,7 @@ typedef struct _irq_forced_entry_t {
 #define MP_TABLE_ENTRY_TYPE_ROUTING 3
 #define MP_TABLE_ENTRY_TYPE_LOCAL 4
 
-/*
- * IRQ trigger modes and polarities
- * as stored in the I/O APIC redirection table
- */
-#define IRQ_TRIGGER_MODE_EDGE 0
-#define IRQ_TRIGGER_MODE_LEVEL 1
-#define IRQ_POLARITY_ACTIVE_HIGH 0
-#define IRQ_POLARITY_ACTIVE_LOW 1
+
 
 
 /*

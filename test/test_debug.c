@@ -30,11 +30,19 @@ void lapic_print_configuration() {
 
 }
 
+void acpi_print_madt() {
+    
+}
+
 void net_if_print() {
 
 }
 
 void multiboot_print_info() {
+    
+}
+
+void acpi_print_info() {
     
 }
 

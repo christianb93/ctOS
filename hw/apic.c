@@ -114,6 +114,12 @@ static void apic_init_local() {
  */
 void apic_init_bsp(u32 phys_base) {
     /*
+     * If we have already been called, ignore this 
+     * call
+     */
+    if (local_apic_base)
+        return;
+    /*
      * The last register is the divide configuration register
      */
     local_apic_base = mm_map_memio(phys_base, LOCAL_APIC_DCR_REG+sizeof(u32));

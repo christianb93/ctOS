@@ -19,6 +19,7 @@
 #include "lib/string.h"
 #include "io.h"
 #include "vga.h"
+#include "acpi.h"
 
 /*
  * Forward declarations
@@ -48,6 +49,8 @@ static int mb2_memory_map_entries = 0;
 static int mb2_memory_map_index = 0;
 static int mb2_have_fb = 0;
 static mb2_mbi_tag_fb_t mb2_fb_tag;
+static acpi_rsdp_t* acpi_rsdp = 0;
+static acpi_rsdp_t acpi_rsdp_copy;
 static int vbe_startup_mode = -1;
 
 /*
@@ -159,6 +162,11 @@ void parse_multiboot2(u32 multiboot_info_ptr) {
                     memcpy(&mb2_fb_tag, (void*) fb_tag, sizeof(mb2_fb_tag));
                 }
                 break;
+            case 15:
+                // ACPI RSDP 
+                memcpy(&acpi_rsdp_copy, (void*)(((u32) mbi_tag) + 8), mbi_tag->size - 8);
+                acpi_rsdp = &acpi_rsdp_copy;
+                break;
         }
         /*
          * Advance to next tag. Note that the next tag is again aligned, so we might have to fill up
@@ -190,9 +198,9 @@ const char* multiboot_get_cmdline() {
  * 0 - no more entries exist
  * 1 - the next entry was written into *next
  */
- int multiboot_get_next_mmap_entry(memory_map_entry_t* next) {
+int multiboot_get_next_mmap_entry(memory_map_entry_t* next) {
     if (MB_STAGE_EARLY  != __multiboot_stage) {
-        PANIC("Called too early\n");
+       PANIC("Called too early\n");
     }   
     if (1 == multiboot_version) {
         /*
@@ -295,49 +303,59 @@ int multiboot_locate_ramdisk(multiboot_ramdisk_info_block_t* ramdisk_info_block)
  * If we are in graphics mode, 1 is returned and the structure
  * fb_desc is filled
  */
- int multiboot_probe_video_mode(fb_desc_t* fb_desc) {
-     if (1 == multiboot_version) {
-         /*
-          * For multiboot1, we do not support startup in graphics mode
-          * and assume that have been brought up in text mode
-          * This is a hack, but multiboot1 is only used by QEMU these days and
-          * QEMU does not have VBE support anyway
-          */
-          return 0;
-     }
-     if (0 == mb2_have_fb)
+int multiboot_probe_video_mode(fb_desc_t* fb_desc) {
+    if (1 == multiboot_version) {
+        /*
+         * For multiboot1, we do not support startup in graphics mode
+         * and assume that have been brought up in text mode
+         * This is a hack, but multiboot1 is only used by QEMU these days and
+         * QEMU does not have VBE support anyway
+         */
          return 0;
-    /*
-     * We have a framebuffer tag of type 1, so we are in graphics mode
-     */
-    fb_desc->bitsPerPixel = mb2_fb_tag.bitsPerPixel;
-    fb_desc->bytesPerScanLine = mb2_fb_tag.bytesPerScanline;
-    fb_desc->xResolution = mb2_fb_tag.width;
-    fb_desc->yResolution = mb2_fb_tag.height;
-    fb_desc->bitsPerPixel = mb2_fb_tag.bitsPerPixel;
-    fb_desc->type = FB_TYPE_RGB;
-    fb_desc->redMaskSize = mb2_fb_tag.redMaskSize;
-    fb_desc->redFieldPosition = mb2_fb_tag.redFieldPosition;
-    fb_desc->greenMaskSize = mb2_fb_tag.greenMaskSize;
-    fb_desc->greenFieldPosition = mb2_fb_tag.greenFieldPosition;
-    fb_desc->blueMaskSize = mb2_fb_tag.blueMaskSize;
-    fb_desc->blueFieldPosition = mb2_fb_tag.blueFieldPosition;
-    fb_desc->physBasePtr = mb2_fb_tag.fb_addr_low;
-    KASSERT(0 == mb2_fb_tag.fb_addr_high);
-    return 1;
- }
+    }
+    if (0 == mb2_have_fb)
+        return 0;
+   /*
+    * We have a framebuffer tag of type 1, so we are in graphics mode
+    */
+   fb_desc->bitsPerPixel = mb2_fb_tag.bitsPerPixel;
+   fb_desc->bytesPerScanLine = mb2_fb_tag.bytesPerScanline;
+   fb_desc->xResolution = mb2_fb_tag.width;
+   fb_desc->yResolution = mb2_fb_tag.height;
+   fb_desc->bitsPerPixel = mb2_fb_tag.bitsPerPixel;
+   fb_desc->type = FB_TYPE_RGB;
+   fb_desc->redMaskSize = mb2_fb_tag.redMaskSize;
+   fb_desc->redFieldPosition = mb2_fb_tag.redFieldPosition;
+   fb_desc->greenMaskSize = mb2_fb_tag.greenMaskSize;
+   fb_desc->greenFieldPosition = mb2_fb_tag.greenFieldPosition;
+   fb_desc->blueMaskSize = mb2_fb_tag.blueMaskSize;
+   fb_desc->blueFieldPosition = mb2_fb_tag.blueFieldPosition;
+   fb_desc->physBasePtr = mb2_fb_tag.fb_addr_low;
+   KASSERT(0 == mb2_fb_tag.fb_addr_high);
+   return 1;
+}
+
+/*
+ * Return the address of a copy of the RSDT if we have it
+ */
+u32 multiboot_get_acpi_rsdp() {
+    return (u32) acpi_rsdp;
+}
 
 /***************************************************************
  * Everything below this line is for debugging only            *
  **************************************************************/
 
- void multiboot_print_info() {
-     PRINT("Multiboot stage:         %d\n", __multiboot_stage);
-     PRINT("Magic number:            %x\n", magic);
-     PRINT("Multiboot version:       %d\n", multiboot_version);
-     PRINT("Command line:            %s\n", cmdline);
-     PRINT("VBE mode at startup:     %d\n", vbe_startup_mode);
-     if (2 == multiboot_version ) {
+void multiboot_print_info() {
+    PRINT("Multiboot stage:         %d\n", __multiboot_stage);
+    PRINT("Magic number:            %x\n", magic);
+    PRINT("Multiboot version:       %d\n", multiboot_version);
+    PRINT("Command line:            %s\n", cmdline);
+    PRINT("VBE mode at startup:     %d\n", vbe_startup_mode);
+    if (2 == multiboot_version ) {
         PRINT("RAM disk start:          %x\n", mb2_rd_start);
-     }
- }
+    }
+    if (acpi_rsdp) {
+        PRINT("Have RSDP\n");
+    }
+}

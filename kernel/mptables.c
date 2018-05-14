@@ -69,6 +69,7 @@
 #include "cpu.h"
 #include "keyboard.h"
 #include "mptables.h"
+#include "acpi.h"
 
 
 
@@ -376,15 +377,6 @@ static void mp_table_process_routing(void* mp_table_entry) {
     LIST_ADD_END(routing_list_head, routing_list_tail, irq_routing_ptr);
 }
 
-/*
- * Process a local interrupt entry in the MP table
- * Parameters:
- * @mp_table_entry_ptr - pointer to the table entry
- */
-static void mp_table_process_local(void* mp_table_entry) {
-    mp_table_local_t* mp_table_local = (mp_table_local_t*) mp_table_entry;
-    DEBUG("Found local assignment entry, source bus id = %d\n", mp_table_local->src_bus_id);
-}
 
 /*
  * This function will scan the MP table and build a list of
@@ -414,12 +406,7 @@ static void mp_table_build_routing_list(mp_table_header_t* mp_table_header, char
          * Process entry
          */
         if (MP_TABLE_ENTRY_TYPE_ROUTING == mp_table_entry_type) {
-            
             mp_table_process_routing(mp_table_entry_ptr);
-        }
-        if (MP_TABLE_ENTRY_TYPE_LOCAL == mp_table_entry_type) {
-            
-            mp_table_process_local(mp_table_entry_ptr);
         }
         /*
          * Advance to next entry
@@ -462,6 +449,7 @@ static void mp_table_build_routing_list(mp_table_header_t* mp_table_header, char
  * Parse an entry in the MP table describing an I/O APIC and add the
  * entry to our internal list of I/O APICs. At this point, we also
  * map the I/O APICs memory registers into our virtual address space
+ * if this has not yet been done by the ACPI module
  * Parameters:
  * @mp_table_entry_ptr - MP table entry
  */
@@ -471,8 +459,12 @@ static void mp_table_process_apic(void* mp_table_entry_ptr) {
     io_apic_t* io_apic = (io_apic_t*) kmalloc(sizeof(io_apic_t));
     KASSERT(io_apic);
     io_apic->apic_id = mp_table_io_apic->io_apic_id;
-    io_apic->base_address = mm_map_memio(mp_table_io_apic->io_apic_address, 14);
-    KASSERT(io_apic->base_address);
+    if (0 == acpi_used()) {
+        DEBUG("Mapping IO APIC base address %x into virtual memory\n", mp_table_io_apic->io_apic_address);
+        io_apic->base_address = mm_map_memio(mp_table_io_apic->io_apic_address, 14);
+        KASSERT(io_apic->base_address);
+        DEBUG("Done, APIC is not at %x\n,",io_apic->base_address);
+    }
     LIST_ADD_END(io_apic_list_head, io_apic_list_tail, io_apic);
 }
 
@@ -510,23 +502,32 @@ static void mp_table_build_bus_list(mp_table_header_t* mp_table_header) {
             mp_table_process_apic(mp_table_entry_ptr);
         }
         if (MP_TABLE_ENTRY_TYPE_CPU == mp_table_entry_type) {
-            cpu_entry = (mp_table_cpu_t*) mp_table_entry_ptr;
             /*
-             * CPU entries are ignored if the enable flag (bit 0 in CPU flags field)
-             * is clear
+             * If the ACPI module is not in charge, it is on us
+             * to let the CPU module know about the entries
              */
-            if (cpu_entry->cpu_flags & 0x1) {
+            if (0 == acpi_used()) {
+                cpu_entry = (mp_table_cpu_t*) mp_table_entry_ptr;
                 /*
-                 * Check BSP flag
+                 * CPU entries are ignored if the enable flag (bit 0 in CPU flags field)
+                 * is clear
                  */
-                if ((cpu_entry->cpu_flags) & 0x2) {
-                    cpu_add(cpu_entry->local_apic_id, 1, cpu_entry->local_apic_version);
+                if (cpu_entry->cpu_flags & 0x1) {
+                    /*
+                     * Check BSP flag
+                     */
+                    if ((cpu_entry->cpu_flags) & 0x2) {
+                        DEBUG("Adding BSP to CPU list\n");
+                        cpu_add(cpu_entry->local_apic_id, 1, cpu_entry->local_apic_version);
+                    }
+                    else {
+                        DEBUG("Adding AP to CPU list\n");
+                        cpu_add(cpu_entry->local_apic_id, 0, cpu_entry->local_apic_version);
+                    }
                 }
-                else
-                    cpu_add(cpu_entry->local_apic_id, 0, cpu_entry->local_apic_version);
-            }
-            else {
-                MSG("Found disabled CPU in MP configuration table\n");
+                else {
+                    MSG("Found disabled CPU in MP configuration table\n");
+                }
             }
         }
         /*

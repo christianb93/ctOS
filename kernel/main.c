@@ -158,6 +158,7 @@
 #include "net.h"
 #include "wq.h"
 #include "mptables.h"
+#include "acpi.h"
 
 
 static int __errno = 0;
@@ -273,6 +274,12 @@ void run(u32 magic, u32 multiboot_ptr) {
     MSG("Setting up process manager and scheduler\n");
     pm_init();
     sched_init();
+    /*
+     * We scan the ACPI tables now as we still have 
+     * no paging enabled and therefore can avoid 
+     * temporary mappings to get access to all the tables
+     */
+    acpi_parse();
     MSG("Turning on paging\n");
     enable_paging();
     /*
@@ -282,6 +289,7 @@ void run(u32 magic, u32 multiboot_ptr) {
      */
     vga_enable_paging();
     mm_init_heap();
+    acpi_init();
     mptables_init();
     irq_init();
     MSG("Initializing keyboard\n");

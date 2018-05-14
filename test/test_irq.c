@@ -182,6 +182,24 @@ void pic_init() {
 
 }
 
+int acpi_used() {
+    return 0;
+}
+
+int acpi_get_apic_pin_isa(int i) {
+    return IRQ_UNUSED;
+}
+
+int acpi_get_trigger_polarity(int irq, int* trigger, int* polarity) {
+    *trigger = IRQ_TRIGGER_MODE_EDGE;
+    *polarity = IRQ_POLARITY_ACTIVE_HIGH;
+    return 1;
+}
+
+io_apic_t* acpi_get_primary_ioapic() {
+    return 0;
+}
+
 /*
  * Stubs for process manager and scheduler
  */

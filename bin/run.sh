@@ -93,7 +93,7 @@ qemu-ide)
     EMU=$QEMU
     HD="-drive id=disk,file=bin/hdimage,if=ide,media=disk"
     KERNEL="-kernel bin/ctOSkernel1"
-    APPEND="-append \"use_debug_port=1 root=769 loglevel=0\""
+    APPEND="-append \"use_debug_port=1 root=769 loglevel=0 use_acpi=1\""
     ;;
 
 qemu-debug)
@@ -130,7 +130,7 @@ qemu-smp)
     HD="-drive id=disk,file=bin/hdimage,if=ide,media=disk"
     KERNEL="-kernel bin/ctOSkernel1"
     SMP="-smp sockets=8,threads=1 -enable-kvm"
-    APPEND="-append \"use_debug_port=1 root=769 loglevel=0 vga=1\""
+    APPEND="-append \"use_debug_port=1 root=769 loglevel=0 vga=1 use_acpi=1\""
     ;;
 
 qemu-tap)

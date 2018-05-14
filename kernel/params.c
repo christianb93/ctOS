@@ -38,6 +38,7 @@ static char parm_eth_loglevel[2];
 static char parm_tcp_disable_cc[2];
 static char parm_irq_watch[8];
 static char parm_use_bios_font[2];
+static char parm_use_acpi[2];
 
 
 /*
@@ -58,6 +59,7 @@ static char parm_use_bios_font[2];
  * eth_loglevel: enable logging in eth layer
  * tcp_disable_cc: disable tcp congestion control
  * use_bios_font: use VGA bios font 
+ * use_acpi: use ACPI as leading configuration source
  */
  
  
@@ -81,6 +83,7 @@ static kparm_t kparm[] = {
         { "tcp_disable_cc", parm_tcp_disable_cc, 1, "0", 0},
         { "use_vbox_port", parm_use_vbox_port, 1, "0", 0 },
         { "use_bios_font", parm_use_bios_font, 1, "0", 0 },
+        { "use_acpi", parm_use_acpi, 1, "0", 0 },
 };
 
 #define NR_KPARM (sizeof(kparm) / sizeof(kparm_t))

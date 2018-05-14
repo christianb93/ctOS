@@ -64,6 +64,7 @@
 
 #include "irq.h"
 #include "mptables.h"
+#include "acpi.h"
 #include "debug.h"
 #include "pic.h"
 #include "tests.h"
@@ -205,44 +206,62 @@ static int apic_mode = 1;
      isr_handler_t* isr_handler;
      int polarity;
      int trigger_mode;
+     int found = 0;
+     io_apic_t* io_apic;
      /*
-       * Determine vector to use or reuse existing one
-       */
-      vector = assign_vector(_irq, priority, &new);
-      /*
-       * If this is the first assignment, add entry to I/O APIC
-       */
-      if ((1 == new) && (IRQ_MODE_APIC == irq_mode)) {
-          if (mptables_get_trigger_polarity(_irq, &polarity, &trigger_mode)) {
-              apic_add_redir_entry(mptables_get_primary_ioapic(), _irq, polarity, trigger_mode,
+      * Determine vector to use or reuse existing one
+      */
+    vector = assign_vector(_irq, priority, &new);
+    /*
+     * We need trigger, polarity and the IO APIC
+     */
+    if (0 == acpi_used()) {
+        found = mptables_get_trigger_polarity(_irq, &polarity, &trigger_mode);
+        io_apic = mptables_get_primary_ioapic();
+    }
+    else {
+         found = acpi_get_trigger_polarity(_irq, &polarity, &trigger_mode);
+         io_apic = acpi_get_primary_ioapic();
+    }
+    /*
+     * If this is the first assignment, add entry to I/O APIC
+     */
+    if ((1 == new) && (IRQ_MODE_APIC == irq_mode)) {
+        if (0 == io_apic) {
+            ERROR("Could not detect IO APIC to use\n");
+            irq[vector] = IRQ_UNUSED;
+            return -1;
+        }
+        if (found) {
+            apic_add_redir_entry(io_apic, _irq, polarity, trigger_mode,
                       vector, ( (1 == force_bsp) ? 1 : apic_mode));
-          }
-          else {
-              ERROR("Could not locate entry in MP table for IRQ %d\n", _irq);
+        }
+        else {
+            ERROR("Could not locate entry in configuration tables for IRQ %d\n", _irq);
               irq[vector] = IRQ_UNUSED;
               return -1;
-          }
-      }
-      /*
-       * Check whether this handler has already been added to the list for this
-       * vector - if yes return
-       */
-      LIST_FOREACH(isr_handler_list_head[vector], isr_handler) {
-          if (isr_handler->handler == isr) {
-              return vector;
-          }
-      }
-      /*
-       * Add new handler to list
-       */
-      isr_handler = (isr_handler_t*) kmalloc(sizeof(isr_handler_t));
-      if (0 == isr_handler) {
-          ERROR("Could not allocate memory for ISR handler\n");
-          return -ENOMEM;
-      }
-      isr_handler->handler = isr;
-      LIST_ADD_END(isr_handler_list_head[vector], isr_handler_list_tail[vector], isr_handler);
-      return vector;
+        }
+    }
+    /*
+     * Check whether this handler has already been added to the list for this
+     * vector - if yes return
+     */
+    LIST_FOREACH(isr_handler_list_head[vector], isr_handler) {
+        if (isr_handler->handler == isr) {
+            return vector;
+        }
+    }
+    /*
+     * Add new handler to list
+     */
+    isr_handler = (isr_handler_t*) kmalloc(sizeof(isr_handler_t));
+    if (0 == isr_handler) {
+        ERROR("Could not allocate memory for ISR handler\n");
+        return -ENOMEM;
+    }
+    isr_handler->handler = isr;
+    LIST_ADD_END(isr_handler_list_head[vector], isr_handler_list_tail[vector], isr_handler);
+    return vector;
  }
 
 /*
@@ -263,12 +282,17 @@ static int apic_mode = 1;
          return EINVAL;
      }
      /*
-      * Scan MP table to locate IRQ for this device or get
+      * Scan ACPI or MP table to locate IRQ for this device or get
       * legacy IRQ from device in PIC mode
       */
      if (IRQ_MODE_APIC == irq_mode) {
-         _irq = mptables_get_irq_pin_pci(pci_dev->bus->bus_id, pci_dev->device, pci_dev->irq_pin);
-         DEBUG("Got IRQ %d from configuration tables\n", _irq);
+         if (0 == acpi_used()) {
+            _irq = mptables_get_irq_pin_pci(pci_dev->bus->bus_id, pci_dev->device, pci_dev->irq_pin);
+            MSG("Got IRQ %d from configuration tables\n", _irq);
+         }
+         else {
+             ERROR("Not yet implemented!\n");
+         }
      }
      else {
          _irq = pci_dev->irq_line;
@@ -296,39 +320,47 @@ static int apic_mode = 1;
   * the vector which has been assigned to this interrupt
   * or a negative error code
   */
- int irq_add_handler_isa(isr_t new_isr, int priority, int _irq, int lock) {
-     int apic_pin = 0;
-     int vector;
-     if (0 == new_isr) {
-         ERROR("Invalid argument - null handler\n");
-         return -EINVAL;
-     }
-     /*
-      * Scan MP table to locate IRQ for this device or directly use
-      * legacy IRQ
-      */
-     if (IRQ_MODE_APIC == irq_mode) {
-         apic_pin = mptables_get_apic_pin_isa(_irq);
-     }
-     else {
-         apic_pin = _irq;
-     }
-     if (IRQ_UNUSED == apic_pin) {
-         ERROR("Could not locate MP table entry for legacy IRQ %d\n", _irq);
-         return -EINVAL;
-     }
-     /*
-      * Add handler and redirection entry if needed
-      * Use priority 1
-      */
-     vector = add_isr(apic_pin, priority, new_isr, 1);
-     /*
-      * Remember if the interrupt needs to be locked
-      */
-     if (vector > 0)
-         if (lock)
-             irq_locked[vector] = 1;
-     return vector;
+int irq_add_handler_isa(isr_t new_isr, int priority, int _irq, int lock) {
+    int apic_pin = 0;
+    int vector;
+    if (0 == new_isr) {
+        ERROR("Invalid argument - null handler\n");
+        return -EINVAL;
+    }
+    /*
+     * Scan ACPI / MP table to locate IRQ for this device or directly use
+     * legacy IRQ
+     */
+    if (IRQ_MODE_APIC == irq_mode) {
+        if (0 == acpi_used()) {
+            apic_pin = mptables_get_apic_pin_isa(_irq);    
+            DEBUG("Got APIC pin %h from MP tables\n", apic_pin);
+        }
+        else {
+            apic_pin = acpi_get_apic_pin_isa(_irq);    
+            DEBUG("Got APIC pin %h from ACPI tables\n", apic_pin); 
+        }
+    }
+    else {
+        apic_pin = _irq;
+    }
+    if (IRQ_UNUSED == apic_pin) {
+        ERROR("Could not get APIC PIN for legacy IRQ %d\n", _irq);
+        return -EINVAL;
+    }
+    /*
+     * Add handler and redirection entry if needed
+     * Use priority 1
+     */
+    DEBUG("Adding redirection entry for APIC pin %h\n", apic_pin);
+    vector = add_isr(apic_pin, priority, new_isr, 1);
+    /*
+     * Remember if the interrupt needs to be locked
+     */
+    if (vector > 0)
+        if (lock)
+            irq_locked[vector] = 1;
+    return vector;
  }
 
 
@@ -339,6 +371,8 @@ void irq_balance() {
     int vector;
     int trigger_mode;
     int polarity;
+    io_apic_t* io_apic;
+    int found = 0;
     /*
      * Do nothing if we are in PIC mode or if APIC mode is one
      */
@@ -353,9 +387,18 @@ void irq_balance() {
              * Remap entry in I/O APIC only if irq_locked is not set
              * for this entry
              */
-            if (0 == irq_locked[vector])
-                if (mptables_get_trigger_polarity(irq[vector], &polarity, &trigger_mode))
-                    apic_add_redir_entry(mptables_get_primary_ioapic(), irq[vector], polarity, trigger_mode, vector, apic_mode);
+            if (0 == irq_locked[vector]) {
+                if (0 == acpi_used()) {
+                    found = mptables_get_trigger_polarity(irq[vector], &polarity, &trigger_mode);
+                    io_apic = mptables_get_primary_ioapic();
+                }
+                else {
+                    found = acpi_get_trigger_polarity(irq[vector], &polarity, &trigger_mode);
+                    io_apic = acpi_get_primary_ioapic();
+                }
+                if (found && io_apic) 
+                    apic_add_redir_entry(io_apic, irq[vector], polarity, trigger_mode, vector, apic_mode);
+            }
         }
     }
 }

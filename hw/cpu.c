@@ -364,7 +364,7 @@ void cpu_init() {
 /*
  * Check whether the provided local APIC id is the APIC ID
  * of a detected AP. If yes, return the CPU number starting
- * with 1, ordered by occurrence in the MP table
+ * with 1, ordered by occurrence in the ACPI / MP table
  * No locks are acquired as we assume that the list does not
  * change after boot time
  * Parameter:

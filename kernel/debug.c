@@ -77,6 +77,7 @@
 #include "net_if.h"
 #include "ip.h"
 #include "multiboot.h"
+#include "acpi.h"
 
 extern int (*mm_page_mapped)(u32);
 
@@ -454,6 +455,8 @@ static void print_usage() {
     PRINT("route - print routing table\n");
     PRINT("pir - print PIR BIOS table\n");
     PRINT("multiboot - print multiboot information\n");
+    PRINT("acpi - print basic ACPI information\n");
+    PRINT("madt - print the MADT ACPI table\n");
 }
 
 /*
@@ -975,6 +978,12 @@ void debug_main(ir_context_t* ir_context) {
         }
         else if (0 == strncmp("multiboot", cmd, 9)) {
             multiboot_print_info();
+        }
+        else if (0 == strncmp("acpi", cmd, 4)) {
+            acpi_print_info();
+        }
+        else if (0 == strncmp("madt", cmd, 4)) {
+            acpi_print_madt();
         }
         else {
             print_usage(line);

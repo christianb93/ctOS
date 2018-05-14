@@ -67,6 +67,14 @@ typedef struct _isr_handler_t {
 #define IRQ_OFFSET_PIC 0x20
 
 /*
+ * IRQ trigger modes and polarities
+ */
+#define IRQ_TRIGGER_MODE_EDGE 0
+#define IRQ_TRIGGER_MODE_LEVEL 1
+#define IRQ_POLARITY_ACTIVE_HIGH 0
+#define IRQ_POLARITY_ACTIVE_LOW 1
+
+/*
  * Some traps
  */
 #define IRQ_TRAP_PF 0xe
