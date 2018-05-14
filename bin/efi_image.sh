@@ -121,12 +121,12 @@ sudo cp ramdisk.img mnt/grub2/ramdisk.img
 cat <<EOF > grub.cfg
 menuentry "ctOS" {
     insmod multiboot2
-    multiboot2 (\$root)/grub2/ctOSkernel
+    multiboot2 (\$root)/grub2/ctOSkernel use_acpi=1
     module2 (\$root)/grub2/ramdisk.img
     boot
 }
 menuentry "ctOS (IDE HD)" {
-  multiboot2 (\$root)/grub2/ctOSkernel use_debug_port=1 root=770 loglevel=0 do_test=0
+  multiboot2 (\$root)/grub2/ctOSkernel use_debug_port=1 root=770 loglevel=0 do_test=0 use_acpi=1
   boot
 }
 EOF
