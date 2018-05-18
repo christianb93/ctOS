@@ -65,6 +65,7 @@ typedef struct _isr_handler_t {
 #define IRQ_MODE_PIC 0
 #define IRQ_MODE_APIC 1
 #define IRQ_OFFSET_PIC 0x20
+#define IRQ_OFFSET_APIC 0x30
 
 /*
  * IRQ trigger modes and polarities
@@ -91,6 +92,7 @@ typedef struct _isr_handler_t {
 #define IRQ_UNUSED -1
 #define IRQ_MSI    -2
 
+ 
 /*
  * Priorities
  */

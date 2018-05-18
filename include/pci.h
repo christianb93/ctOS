@@ -75,11 +75,9 @@ typedef struct {
     u32 msg_address;
     u32 msg_address_upper;
     u16 msg_data;
-    int msg_cap;
-    int msg_enabled;
     int msi_enabled;
+    u8 multi_msg_enabled;
     int is64;
-    int masking;
 } msi_config_t;
 
 /*

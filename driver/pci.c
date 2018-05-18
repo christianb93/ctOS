@@ -204,14 +204,14 @@ static u32 pci_get_dword_config(u8 bus, u8 device, u8 function, u8 offset) {
 }
 
 /*
- * Get an individual word from an individual register
+ * Get an individual word (i.e. two registers only)
  * as opposed to the full 32-bit dword (4 registers) returned
  * by the function pci_get_dword_config
  * Parameter:
  * @bus: bus specifying the device to read from
  * @device: device number to read from
  * @function: function number to read from
- * @offset: offset into 256-byte config space (sometimes called register),
+ * @offset: offset into 256-byte config space 
  * Return value:
  * a word containing the content of the register
 
@@ -228,14 +228,14 @@ static u16 pci_get_word_config(u8 bus, u8 device, u8 function, u8 offset) {
 }
 
 /*
- * Get an individual word from an individual register
+ * Get an individual byte from an individual register
  * as opposed to the full 32-bit dword (4 registers) returned
  * by the function pci_get_dword_config
  * Parameter:
  * @bus: bus specifying the device to read from
  * @device: device number to read from
  * @function: function number to read from
- * @offset: offset into 256-byte config space (sometimes called register),
+ * @offset: offset into 256-byte config space 
  * Return value:
  * a byte containing the content of the register
 
@@ -243,7 +243,7 @@ static u16 pci_get_word_config(u8 bus, u8 device, u8 function, u8 offset) {
 static u8 pci_get_byte_config(u8 bus, u8 device, u8 function, u8 offset) {
     u32 dword_pci_value;
     /*
-     * Position of word we are looking for in 32-bit dword
+     * Position of byte we are looking for in 32-bit dword
      * returned by pci_get_dword_config
      */
     int position = offset % 4;
@@ -289,7 +289,7 @@ static void pci_put_dword_config(u8 bus, u8 device, u8 function, u8 offset, u32 
     return;
 }
 
-/* Put an individual word into an individual register
+/* Put an individual word into two consecutive registers
  * as opposed to the full 32-bit dword (4 registers) written
  * by the function pci_put_dword_config
  * Note that offset needs to be even for this to work!
@@ -297,7 +297,7 @@ static void pci_put_dword_config(u8 bus, u8 device, u8 function, u8 offset, u32 
 static void pci_put_word_config(u8 bus, u8 device, u8 function, u8 offset, u16 value) {
     u32 dword_pci_value;
     /* 
-     * Position of byte we are looking for in 32-bit dword
+     * Position of word we are looking for in 32-bit dword
      * returned by pci_get_dword_config
      */
     int position = offset % 4;
@@ -400,6 +400,11 @@ static void pci_scan_device(u8 bus_id, u8 device, u8 function,
             cap_id = pci_get_byte_config(pci_dev->bus->bus_id,
                     pci_dev->device, pci_dev->function, cap_pointer);
             if (PCI_CAPABILITY_MSI == cap_id) {
+                /*
+                 * We found an MSI entry. Store the information that
+                 * this device supports MSI and the current offset
+                 * in the PCI structure for later use
+                 */
                 pci_dev->msi_support = 1;
                 pci_dev->msi_cap_offset = cap_pointer;
             }
@@ -656,18 +661,43 @@ void pci_enable_bus_master_dma(pci_dev_t* pci_dev) {
  */
 static void pci_get_msi_config(pci_dev_t* dev, msi_config_t* msi_config) {
     u16 msg_control;
+    /*
+     * See the PCI 3.0 Local bus specification, section 6.8 for a description
+     * of the layout of the MSI capability
+     */
+    /*
+     * Read the message control register first. The configuration space 
+     * is built up as follows here:
+     * - at offset dev->msi_cap_offset, we have the MSI capability (one byte)
+     *   followed by the pointer to the next capability (one byte)
+     * - the message control register is at bytes 2 and 3
+     */
     msg_control = pci_get_dword_config(dev->bus->bus_id, 
                                 dev->device, 
                                 dev->function, dev->msi_cap_offset) >> 16;
+    /*
+     * Is this 64 bit MSI or 32 bit MSI?
+     */
     msi_config->is64 = (msg_control & PCI_MSI_64_SUPP) / PCI_MSI_64_SUPP;
-    msi_config->masking = (msg_control & PCI_MSI_MASKING_SUPP) / PCI_MSI_MASKING_SUPP;
-    msi_config->msg_cap = (msg_control >> 1) & 0x7;
-    msi_config->msg_enabled=(msg_control >> 4) & 0x7;
+    /*
+     * Is MSI enabled?
+     */
+    msi_config->msi_enabled = msg_control & PCI_MSI_CNTL_ENABLED;
+    /*
+     * Bits 4 - 6 determine how many messages we enable
+     */
+     msi_config->multi_msg_enabled = (msg_control >> 4) & 0x7;
+    /*
+     * The next dword is the message address 
+     */
     msi_config->msg_address = pci_get_dword_config(dev->bus->bus_id,
                                 dev->device,
                                 dev->function,
                                 dev->msi_cap_offset + 4);
-    msi_config->msi_enabled = msg_control & PCI_MSI_CNTL_ENABLED;
+    /*
+     * If the device supports 64 bit message addresses, read the
+     * upper 32 bits next, then the data register (2 bytes)
+     */
     if (msi_config->is64) {
         msi_config->msg_address_upper = pci_get_dword_config(dev->bus->bus_id,
                                 dev->device,
@@ -689,14 +719,6 @@ static void pci_get_msi_config(pci_dev_t* dev, msi_config_t* msi_config) {
 
 /*
  * Write configuration information to a given device
- * Out of the msi config structure passed as argument, only
- * the fields
- *   message address
- *   message data
- *   Number of messages enabled in message control register
- *   MSI enable flag in message control register
- * are actually written. However, the remaining fields are assumed
- * to be valid and should be the result of a previous read operation
  */
 static void pci_put_msi_config(pci_dev_t* dev, msi_config_t* msi_config) {
     u8 msi_offset = dev->msi_cap_offset;
@@ -705,12 +727,25 @@ static void pci_put_msi_config(pci_dev_t* dev, msi_config_t* msi_config) {
                                     dev->device,
                                     dev->function, 
                                     msi_offset) >> 16;
+    /*
+     * Adapt MSI enabled flag 
+     */
+    msg_control = msg_control & ~(0x1);
     msg_control = msg_control | (msi_config->msi_enabled & 0x1);
+    /*
+     * Adapt multi message enabled bits
+     */
     msg_control = msg_control & ~(0x7 << 4);
-    msg_control = msg_control | ((msi_config->msg_enabled & 0x7) << 4);
+    msg_control = msg_control | ((msi_config->multi_msg_enabled & 0x7) << 4);
+    /*
+     * and write message control register back
+     */
     pci_put_word_config(dev->bus->bus_id, dev->device, dev->function,
                                 msi_offset+2,
                                 msg_control);
+    /*
+     * Now write message address and message data
+     */
     pci_put_dword_config(dev->bus->bus_id,
                                 dev->device,
                                 dev->function,
@@ -753,22 +788,37 @@ void pci_config_msi(pci_dev_t* pci_dev, int vector) {
      * Read existing configuration first
      */
     pci_get_msi_config(pci_dev, &msi_config);
+    /*
+     * If MSI is already enabled, turn it off first
+     * so that we can change the configuration safely
+     */
+    if (1 == msi_config.msi_enabled) {
+        msi_config.msi_enabled = 0;
+        pci_put_msi_config(pci_dev, &msi_config);
+    }
+    /*
+     * Set MSI enabled flag
+     */
     msi_config.msi_enabled = 1;
     /*
-     * Build message address.
-     * Bits 20-31: 0xfee
-     * Bits 12-19: local APIC ID
-     * Bits 0-11: zero (use physical destination mode)
+     * Build message address. This is platform
+     * specific. For x86, section 10.11 of Intels
+     * Software Developers manual, Volume 3 tells 
+     * us the following: 
+     * Bits 20-31: 0xfee - fixed value
+     * Bits 12-19: destination ID (as bits 63:56 of APIC redirection entry)
+     * Bits 0-11: zero (we use physical destination mode)
      */
-    msi_config.msg_address = 0xfee00000 + ((cpu_get_apic_id(0) & 0xf) << 12);
+    msi_config.msg_address = 0xfee00000 + ((cpu_get_apic_id(0) & 0xff) << 12);
     msi_config.msg_address_upper = 0;
     /*
-     * Build message data
-     * Bits 0-8: vector 
+     * Build message data, again according to the 
+     * Intel manual.
+     * Bits 0-7: vector 
      * Bits 8-10: zero for vector based delivery
-     * Bit 14: set to one
+     * Bit 14,15: set to zero
      */
-    msi_config.msg_data = vector + (1<<14);
+    msi_config.msg_data = vector;
     /*
      * Write configuration data back
      */

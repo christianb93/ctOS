@@ -31,19 +31,19 @@
  *                -------------------------------
  *
  * A driver can register an interrupt handler for a specific device (PCI) or by specifying a legacy ISA interrupt (ISA/LPC). When
- * processing such a request, the interrupt manager will use the MP specification table to locate the I/O APIC pin connected to this
- * device. It then determines whether a vector has already been assigned to this IRQ. If yes, the handler is added to the list of handlers
- * for this previously assigned vector.
+ * processing such a request, the interrupt manager will use the ACPI tables or the MP specification table to locate the I/O APIC pin 
+ * connected to this device. It then determines whether a vector has already been assigned to this IRQ. If yes, the handler is added 
+ * to the list of handlers for this previously assigned vector.
  *
  * If no vector has been assigned yet, a new vector is chosen. For this purpose, the table of vectors is scanned from the top to the
  * bottom starting at the specified priority until a free entry is found. Then the newly established mapping is added to an internal
- * table and a new entry is added to the I/O APIC redirection table.
+ * table and a new entry is added to the I/O APIC redirection tabl (unless MSI is used, in which case this entry is not needed).
  *
  * In PIC mode, the handling is similar, but the mapping of interrupts to vectors is fixed and determined by the hardware.
  *
  * Interrupt routing:
  *
- * If an I/O APIC is present, ctOS supports three different mechanisms to route interrupts to CPUs which can be chosen
+ * If an I/O APIC is present, ctOS supports four different mechanisms to route interrupts to CPUs which can be chosen
  * via the kernel parameter apic.
  *
  * apic=1: interrupts are set up in physical delivery mode and sent to the BSP
@@ -178,7 +178,7 @@ static int apic_mode = 1;
     if (priority < IRQ_PRIO_HIGHEST)
         priority = IRQ_PRIO_HIGHEST;
     top = 0x7F - 0x10 * (priority - 1);
-    bottom = 0x30;
+    bottom = IRQ_OFFSET_APIC;
     for (vector = top; vector >= bottom; vector--) {
         if (IRQ_UNUSED == irq[vector]) {
             irq[vector] = _irq;
@@ -188,6 +188,39 @@ static int apic_mode = 1;
     }
     ERROR("Could not determine free vector for IRQ %d\n", _irq);
     return -1;
+}
+
+/*
+ * Read some configuration data from the ACPI / MP tables, 
+ * specifically get the I/O APIC to be used, the trigger mode
+ * and the polarity
+ * Parameter:
+ * @_irq - the I/O APIC pin 
+ * @trigger - will be filled
+ * @polarity - will be filled
+ * @ioapic - will be filled
+ * Returns:
+ * 1 if the data could be found
+ * 0 if we do not have that data
+ * 
+ */
+static int get_irq_config_data(int _irq, int* trigger, int* polarity, io_apic_t** io_apic) {
+    int found = 0;
+    if (0 == acpi_used()) {
+        found = mptables_get_trigger_polarity(_irq, polarity, trigger);
+        *io_apic = mptables_get_primary_ioapic();
+    }
+    else {
+        found = acpi_get_trigger_polarity(_irq, polarity, trigger);
+        if (0 == found) {
+            /*
+             * Fall back to MP tables
+             */
+             found = mptables_get_trigger_polarity(_irq, polarity, trigger);
+        }
+        *io_apic = acpi_get_primary_ioapic();
+    }
+    return found;
 }
 
 /*
@@ -215,7 +248,7 @@ static int apic_mode = 1;
       * Determine vector to use or reuse existing one
       */
     vector = assign_vector(_irq, priority, &new);
-    MSG("Using interrupt vector %d\n", vector);
+    DEBUG("Using interrupt vector %d\n", vector);
     /*
      * If this is not an MSI, we need to get some
      * configuration information first and set up the
@@ -223,14 +256,7 @@ static int apic_mode = 1;
      * We need trigger, polarity and the IO APIC
      */
     if (IRQ_MSI != _irq) {
-        if (0 == acpi_used()) {
-            found = mptables_get_trigger_polarity(_irq, &polarity, &trigger_mode);
-            io_apic = mptables_get_primary_ioapic();
-        }
-        else {
-            found = acpi_get_trigger_polarity(_irq, &polarity, &trigger_mode);
-            io_apic = acpi_get_primary_ioapic();
-        }
+        found = get_irq_config_data(_irq, &trigger_mode, &polarity, &io_apic);
         /*
         * If this is the first assignment, add entry to I/O APIC
         */
@@ -320,17 +346,15 @@ static int apic_mode = 1;
     }
     else {
         /*
-        * Scan ACPI or MP table to locate IRQ for this device or get
-        * legacy IRQ from device in PIC mode
+        * Scan MP table to locate IRQ for this device or get
+        * legacy IRQ from device in PIC mode. For PCI devices,
+        * we try to read the MP table even if we are in ACPI mode
+        * as the PCI routing is in AML part of the DSDT which we 
+        * do not support
         */
-        if (IRQ_MODE_APIC == irq_mode) {
-            if (0 == acpi_used()) {
-                _irq = mptables_get_irq_pin_pci(pci_dev->bus->bus_id, pci_dev->device, pci_dev->irq_pin);
-                MSG("Got IRQ %d from configuration tables\n", _irq);
-            }
-            else {
-                ERROR("Not yet implemented!\n");
-            }
+       if (IRQ_MODE_APIC == irq_mode) {
+            _irq = mptables_get_irq_pin_pci(pci_dev->bus->bus_id, pci_dev->device, pci_dev->irq_pin);
+            DEBUG("Got IRQ %d from configuration tables\n", _irq);
         }
         else {
             _irq = pci_dev->irq_line;
@@ -422,20 +446,14 @@ void irq_balance() {
      * Walk all assigned vectors
      */
     for (vector = 0; vector <= IRQ_MAX_VECTOR; vector++) {
-        if (IRQ_UNUSED != irq[vector]) {
+        /* TODO: handle MSI interrupts here */
+        if ((IRQ_UNUSED != irq[vector]) && (IRQ_MSI != irq[vector])) {
             /*
              * Remap entry in I/O APIC only if irq_locked is not set
              * for this entry
              */
             if (0 == irq_locked[vector]) {
-                if (0 == acpi_used()) {
-                    found = mptables_get_trigger_polarity(irq[vector], &polarity, &trigger_mode);
-                    io_apic = mptables_get_primary_ioapic();
-                }
-                else {
-                    found = acpi_get_trigger_polarity(irq[vector], &polarity, &trigger_mode);
-                    io_apic = acpi_get_primary_ioapic();
-                }
+                found = get_irq_config_data(irq[vector], &polarity, &trigger_mode, &io_apic);
                 if (found && io_apic) 
                     apic_add_redir_entry(io_apic, irq[vector], polarity, trigger_mode, vector, apic_mode);
             }
@@ -460,10 +478,17 @@ static void do_eoi(ir_context_t* ir_context) {
     if (params_get_int("irq_watch") == (ir_context->vector)) {
         DEBUG("Got EOI for context vector %d, ORIGIN_PIC = %d\n", ir_context->vector, ORIGIN_PIC(ir_context->vector));
     }
-    if ((ir_context->vector >= 32)) {
+    /*
+     * Is this a hardware interrupt?
+     */
+    if ((ir_context->vector >= IRQ_OFFSET_PIC)) {
          if (ORIGIN_PIC(ir_context->vector))
              pic_eoi(ir_context->vector, IRQ_OFFSET_PIC);
          else
+             /*
+              * The interrupt came via the local APIC, triggered either
+              * by the I/O APIC or by MSI.
+              */
              apic_eoi();
      }
 }
@@ -476,18 +501,18 @@ static void handle_exception(ir_context_t* ir_context) {
     /*
      * If this is not an exception or trap, return
      */
-    if (ir_context->vector > 31)
+    if (ir_context->vector >= IRQ_OFFSET_PIC)
         return;
     switch (ir_context->vector) {
-    case IRQ_TRAP_PF:
-        mm_handle_page_fault(ir_context);
-        break;
-    case IRQ_TRAP_NM:
-        pm_handle_nm_trap();
-        break;
-    default:
-        debug_main(ir_context);
-        break;
+        case IRQ_TRAP_PF:
+            mm_handle_page_fault(ir_context);
+            break;
+        case IRQ_TRAP_NM:
+            pm_handle_nm_trap();
+            break;
+        default:
+            debug_main(ir_context);
+            break;
     }
 }
 
@@ -558,7 +583,7 @@ u32 irq_handle_interrupt(ir_context_t ir_context) {
         /*
          * Hardware interrupt or scheduler interrupt. Search for a handler and execute it.
          */
-        else if (ir_context.vector > 31) {
+        else if (ir_context.vector >= IRQ_OFFSET_PIC) {
             /*
              * Restart only allowed for system calls
              */

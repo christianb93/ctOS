@@ -85,8 +85,8 @@ static kparm_t kparm[] = {
         { "tcp_disable_cc", parm_tcp_disable_cc, 1, "0", 0},
         { "use_vbox_port", parm_use_vbox_port, 1, "0", 0 },
         { "use_bios_font", parm_use_bios_font, 1, "0", 0 },
-        { "use_acpi", parm_use_acpi, 1, "0", 0 },
-        { "use_msi", parm_use_msi, 1, "0", 0 },
+        { "use_acpi", parm_use_acpi, 1, "1", 1 },
+        { "use_msi", parm_use_msi, 1, "1", 1 },
 };
 
 #define NR_KPARM (sizeof(kparm) / sizeof(kparm_t))
