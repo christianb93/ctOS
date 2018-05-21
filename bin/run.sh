@@ -155,6 +155,7 @@ qemu-ahci)
     EMU=$QEMU
     HD="-drive id=disk,file=bin/hdimage,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0"
     KERNEL="-kernel bin/ctOSkernel1"
+    NET="-netdev user,id=netuser -device rtl8139,netdev=netuser "
     APPEND="-append \"use_debug_port=1 root=1025 loglevel=0 vga=1\""
     ;;
 
@@ -207,6 +208,7 @@ efi)
     exit
     fi
     EMU="qemu-system-x86_64 --bios /usr/share/qemu/OVMF.fd -m 512 -debugcon stdio"
+    NET="-netdev user,id=netuser -device rtl8139,netdev=netuser "
     HD="-drive id=disk,file=bin/efiimage,if=ide,media=disk "
     ;;
     

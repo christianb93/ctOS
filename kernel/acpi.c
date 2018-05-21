@@ -24,6 +24,10 @@ static char* __module = "ACPI  ";
 static acpi_rsdp_t* rsdp = 0;
 static acpi_entry_header_t* rsdt = 0;
 static acpi_entry_header_t* xsdt = 0;
+static char rsdt_oem_id[7];
+static char rsdt_oem_tableid[9];
+static u32 rsdt_oem_rev = 0;
+
 /*
  * Are we ready, i.e. could we parse everything? 
  */
@@ -46,9 +50,55 @@ static io_apic_t primary_io_apic;
 static u32 primary_gsi_base = 0;
 
 /*
+ * DSDT OEMID, OEM revision and TABLE ID
+ */
+static int have_dsdt = 0;
+static char dsdt_oem_id[7];
+static char dsdt_oem_tableid[9];
+static u32 dsdt_oem_rev = 0;
+
+/*
  * The ISA IRQ routings
  */
 static isa_irq_routing_t isa_irq_routing[16];
+
+/*
+ * Additional entries for specific boards. Format is
+ * DSDT OEM ID
+ * DSDT OEM Table ID
+ * DSDT OEM Revision
+ * PIN 
+ * Device
+ * Bus
+ * IO-APIC PIN
+ */
+static acpi_override_t acpi_overrides[] = {
+    /*
+     * This entry is for QEMU PIIX, network card at device 3, bus 0
+     */
+    {"BOCHS ","BXPCDSDT", 1, 1, 3, 0, 0xa},
+};
+
+/*
+ * Parse DSDT
+ */
+static void parse_dsdt(u32 dsdt_address) {
+    acpi_entry_header_t* dsdt_header = (acpi_entry_header_t*) dsdt_address;
+    have_dsdt = 1;
+    strncpy(dsdt_oem_id, dsdt_header->oemid, 6);
+    dsdt_oem_id[6] = 0;
+    strncpy(dsdt_oem_tableid, dsdt_header->oemTableId, 8);
+    dsdt_oem_tableid[8] = 0;
+    dsdt_oem_rev = dsdt_header->oemRevision;
+}
+
+/*
+ * Parse FADT.
+ */
+static void parse_fadt(u32 fadt_address) {
+    acpi_fadt_header_t* fadt_header = (acpi_fadt_header_t*) (fadt_address + sizeof(acpi_entry_header_t));
+    parse_dsdt((u32) fadt_header->dsdt_address);
+}
 
 /*
  * Parse the MADT. This function expects being called with two arguments
@@ -153,6 +203,10 @@ static void parse_acpi_table(u32 table_address) {
         MSG("Found MADT\n");
         parse_madt(table_address + sizeof(acpi_entry_header_t), header->length - sizeof(acpi_entry_header_t) - sizeof(acpi_madt_header_t));
     }
+    if (0 == strncmp(header->signature, "FACP", 4)) {
+        MSG("Found FADT\n");
+        parse_fadt(table_address);
+    }
 }
 
 /*
@@ -165,6 +219,14 @@ static int parse_rsdt() {
     u32 table_address;
     int i;
     MSG("Parsing RSDT\n");
+    /*
+     * Get some data from the header
+     */
+    strncpy(rsdt_oem_id, rsdt->oemid, 6);
+    rsdt_oem_id[6]=0;
+    strncpy(rsdt_oem_tableid, rsdt->oemTableId, 8);
+    rsdt_oem_tableid[8]=0;
+    rsdt_oem_rev = rsdt->oemRevision;
     /*
      * The RSDT entries are 32 bit addresses of
      * the further tables. 
@@ -189,6 +251,14 @@ static int parse_xsdt() {
     u32 table_address_high;
     int i;
     MSG("Parsing XSDT\n");
+    /*
+     * Get some data from the header
+     */
+    strncpy(rsdt_oem_id, xsdt->oemid, 6);
+    rsdt_oem_id[6]=0;
+    strncpy(rsdt_oem_tableid, xsdt->oemTableId, 8);
+    rsdt_oem_tableid[8]=0;
+    rsdt_oem_rev = xsdt->oemRevision;    
     /*
      * The XSDT entries are 64 bit addresses of
      * the further tables. 
@@ -380,6 +450,51 @@ int acpi_get_apic_pin_isa(int irq) {
     return isa_irq_routing[irq].io_apic_input;
 }
 
+
+/*
+ * Get the IO APIC pin for a PCI interrupt
+ */
+int acpi_get_irq_pin_pci(int bus_id, int device,  char irq_pin) {
+    int i;
+    if (0 == have_dsdt)
+        return IRQ_UNUSED;
+    for (i = 0; i < sizeof(acpi_overrides) / sizeof(acpi_override_t); i++) {
+        if (0 == strncmp(dsdt_oem_id, acpi_overrides[i].oem_id, 6)) {
+            if (0 == strncmp(dsdt_oem_tableid, acpi_overrides[i].oem_table_id, 8)) {
+                if ((irq_pin  == acpi_overrides[i].src_pin) 
+                        && (dsdt_oem_rev == acpi_overrides[i].oem_rev)
+                        && (device == acpi_overrides[i].src_device)
+                        && (bus_id == acpi_overrides[i].src_bus_id)) {
+                    MSG("Applying override for device %d:%d:%d:  %d\n", bus_id, device, irq_pin, acpi_overrides[i].dest_irq);
+                    return acpi_overrides[i].dest_irq;
+                }
+            }
+        }
+    }    
+    return IRQ_UNUSED;
+}
+
+/*
+ * Search the table of overrides for a given pin
+ * and return 1 if a matching override exists
+ */
+static int search_overrides(int pin) {
+    int i;
+    if (0 == have_dsdt)
+        return 0;
+    for (i = 0; i < sizeof(acpi_overrides) / sizeof(acpi_override_t); i++) {
+        if (0 == strncmp(dsdt_oem_id, acpi_overrides[i].oem_id, 6)) {
+            if (0 == strncmp(dsdt_oem_tableid, acpi_overrides[i].oem_table_id, 8)) {
+                if ((pin == acpi_overrides[i].dest_irq) && (dsdt_oem_rev == acpi_overrides[i].oem_rev)) {
+                    MSG("Applying override for IRQ pin %d\n", pin);
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 /*
  * Get interrupt trigger mode and polarity for an IO APIC pin
  * Parameter:
@@ -394,17 +509,32 @@ int acpi_get_trigger_polarity(int pin, int* polarity, int* trigger) {
     int src_irq = -1;
     if (0 == __acpi_used)
         return 0;
-    if ((0 > pin) || (pin > 15))
+    if (pin < 0) 
         return 0;
     /*
      * Find the ISA IRQ table entry
      */
-    for (i = 0; i < 16; i++) {
-        if (pin == isa_irq_routing[i].io_apic_input) 
-            src_irq = i;
+    if (pin < 16) {
+        for (i = 0; i < 16; i++) {
+            if (pin == isa_irq_routing[i].io_apic_input) 
+                src_irq = i;
+        }
     }
-    if (-1 == src_irq)
+    if (-1 == src_irq) {
+        /*
+         * Not found. See whether we have any overrides
+         */
+        if (search_overrides(pin)) {
+            /*
+             * We have a PCI device connected to this
+             * PIN. Assume PCI defaults.
+             */
+            *polarity = IRQ_POLARITY_ACTIVE_LOW;
+            *trigger = IRQ_TRIGGER_MODE_LEVEL;
+            return 1;
+        }
         return 0;
+    }
     /*
      * First determine polarity
      */
@@ -467,7 +597,7 @@ void acpi_print_info() {
     int i;
     PRINT("Address of RSDP:         %x\n", rsdp);
     PRINT("ACPI ready:              %d\n", acpi_ready);
-    PRINT("ACPI used:               %d\n", acpi_used);
+    PRINT("ACPI used:               %d\n", __acpi_used);
     if (rsdp) {
         PRINT("Revision:                %d\n", rsdp->revision);
         PRINT("OEMID:                   ");
@@ -477,6 +607,14 @@ void acpi_print_info() {
         kprintf("\n");
         PRINT("RSDT address:            %x\n", rsdt);
         PRINT("XSDT address:            %x\n", xsdt);
+    }
+    PRINT("RSDT OEM ID:             %s\n", rsdt_oem_id);
+    PRINT("RSDT OEM TABLE ID:       %s\n", rsdt_oem_tableid);
+    PRINT("RSDT OEM REV:            %d\n", rsdt_oem_rev);
+    if (have_dsdt) {
+        PRINT("DSDT OEM ID:             %s\n", dsdt_oem_id);
+        PRINT("DSDT OEM TABLE ID:       %s\n", dsdt_oem_tableid);
+        PRINT("DSDT OEM REV:            %d\n", dsdt_oem_rev);
     }
 }
 

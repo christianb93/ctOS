@@ -193,6 +193,10 @@ int acpi_get_apic_pin_isa(int i) {
     return IRQ_UNUSED;
 }
 
+int acpi_get_irq_pin_pci(int bus_id, int device,  char irq_pin) {
+    return IRQ_UNUSED;
+}
+
 int acpi_get_trigger_polarity(int irq, int* trigger, int* polarity) {
     *trigger = IRQ_TRIGGER_MODE_EDGE;
     *polarity = IRQ_POLARITY_ACTIVE_HIGH;

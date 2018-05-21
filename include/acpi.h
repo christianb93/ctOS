@@ -45,7 +45,15 @@ typedef struct {
 typedef struct {
     u32 lapic_address;
     u32 apic_flags;
-}__attribute__ ((packed)) acpi_madt_header_t;
+} __attribute__ ((packed)) acpi_madt_header_t;
+
+/*
+ * The header of the FADT
+ */
+typedef struct {
+    u32 firmware_ctrl;
+    u32 dsdt_address;
+} __attribute__ ((packed)) acpi_fadt_header_t;
 
 /*
  * Some MADT entry types
@@ -55,6 +63,21 @@ typedef struct {
 #define MADT_ENTRY_TYPE_IO_APIC 1
 #define MADT_ENTRY_TYPE_OVERRIDE 2
 #define MADT_ENTRY_LAPIC_OVERRIDE 5
+
+/*
+ * Additional entries that we do for specific motherboards which do not
+ * fill the MP table completely 
+ */
+typedef struct  {
+    char oem_id[6];
+    char oem_table_id[8];
+    int  oem_rev;
+    char src_pin;
+    char src_device;
+    char src_bus_id;
+    char dest_irq;
+} acpi_override_t;
+
 
 /*
  * A local APIC entry
@@ -84,8 +107,8 @@ typedef struct {
  */
 typedef struct {
     u16 unused;     // type and length of the generic entry
-    u8 bus;
-    u8 src_irq;
+    u8  bus;
+    u8  src_irq;
     u32 gsi;
     u16 flags;
 } __attribute__ ((packed)) acpi_irq_override_t;
@@ -106,6 +129,7 @@ int acpi_parse();
 void acpi_init();
 int acpi_used();
 int acpi_get_apic_pin_isa(int irq);   
+int acpi_get_irq_pin_pci(int bus_id, int device,  char irq_pin);
 int acpi_get_trigger_polarity(int irq, int* polarity, int* trigger_mode);
 io_apic_t*  acpi_get_primary_ioapic();
  

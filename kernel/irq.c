@@ -352,10 +352,13 @@ static int get_irq_config_data(int _irq, int* trigger, int* polarity, io_apic_t*
         * legacy IRQ from device in PIC mode. For PCI devices,
         * we try to read the MP table even if we are in ACPI mode
         * as the PCI routing is in AML part of the DSDT which we 
-        * do not support
+        * do not support. We then fall back to the ACPI call which
+        * will only look up the overrides
         */
-       if (IRQ_MODE_APIC == irq_mode) {
+        if (IRQ_MODE_APIC == irq_mode) {
             _irq = mptables_get_irq_pin_pci(pci_dev->bus->bus_id, pci_dev->device, pci_dev->irq_pin);
+            if (IRQ_UNUSED == _irq)             
+                _irq = acpi_get_irq_pin_pci(pci_dev->bus->bus_id, pci_dev->device, pci_dev->irq_pin);
             DEBUG("Got IRQ %d from configuration tables\n", _irq);
         }
         else {
