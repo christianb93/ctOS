@@ -43,7 +43,7 @@ void pm_handle_nm_trap() {
 
 }
 
-void pci_config_msi(pci_dev_t* pci_dev, int vector) {
+void pci_config_msi(pci_dev_t* pci_dev, int vector, int irq_dlv) {
     
 }
 
@@ -201,6 +201,10 @@ int acpi_get_trigger_polarity(int irq, int* trigger, int* polarity) {
 
 io_apic_t* acpi_get_primary_ioapic() {
     return 0;
+}
+
+void pci_rebalance_irqs(int irq_dlv) {
+    
 }
 
 /*

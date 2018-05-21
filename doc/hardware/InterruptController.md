@@ -293,6 +293,19 @@ On my system, the values of these register upon startup are as follows for the B
 
 Note that when the local APIC is disabled, the pins LINT0 and LINT1 are directly routed to the CPUs INTR and NMI pins.
 
+## Delivery modes and destination modes
+
+When interrupts are delivered via the IO APIC in a multi-processor system, the configuration needs to determine to which CPU (respectively local APIC) an interrupt is delivered. The IO-APIC architecture offers several so-called **delivery modes** in combination with the **destination modes** to define this.
+
+Let us first turn to the delivery mode called **fixed delivery mode**. In this mode, the IO APIC configuration defines one or several CPUs per interrupt vector to which the interrupt is delivered. All interrupts are delivered according to this configuration, regardless of the current state of the target CPU. In contrast to this, the **lowest priority** delivery mode will try to determine within the group of CPUs that is defined as the target the CPU which currently executes at the lowest priority. Other delivery modes are defined, which determine that interrupts are delivered as SMI (system management inerrupt) or NMI (non-maskable interrupt), see section 10 of the Intel Sofware Developers manual Volume 3 for more details.
+
+The second part of the configuration that determines to which CPU an interrupt is actually delivered is the **destination mode**. There are two destination modes, called **physical** and **logical** destination. Essentially, the destination mode defines how an interrupt target is interpreted.
+
+In physical mode, the ID of the local APIC is used to define a target. Thus if the combination of physical destination mode and fixed delivery mode is chosen, a given interrupt will always be routed to the same local APIC and hence to the same CPU.
+
+In logical destination mode, the interrupt target is interpreted as a **message destination address**. This is an 8-bit address which is interpreted by each local APIC and combined with the values of certain registers in the local APIC to determine whether the CPU will process the interrupt or not. One of these registers is the LDR (logical destination register) that contains a logical APIC ID that an operating system can define. The second is the DFR (logical destination format register) which determines how the message destination address and the logical APIC ID are combined to see whether the local APIC accepts the interrupt. In the **flat model**, the logical APIC ID is interpreted as a bit mask, i.e. the local APIC performs an AND operation between the message destination address and the logical APIC ID and accepts the interrupt if the result is different from zero. Thus each bit in the MDA that is set results in delivery to one local APIC. The second mode is the **cluster model** which allows the definition of a hierarchy of local APICS and which we do not explain here in detail.
+
+
 ## A note on IDE controllers in legacy mode
 
 We have seen above that the BIOS will write the ISA interrupt to which a PCI device is connected in virtual wire mode or PIC mode into the PCI configuration block of that device. There is an interesting exception from this rule, namely IDE devices operating in legacy mode.

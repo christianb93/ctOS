@@ -43,13 +43,13 @@
  *
  * Interrupt routing:
  *
- * If an I/O APIC is present, ctOS supports four different mechanisms to route interrupts to CPUs which can be chosen
- * via the kernel parameter apic.
+ * For interrupts routed via the I/O APIC or MSI, ctOS supports different mechanisms to route interrupts to CPUs which can be chosen
+ * via the kernel parameter irq_dlv
  *
- * apic=1: interrupts are set up in physical delivery mode and sent to the BSP
- * apic=2: interrupts are set up in logical delivery mode and distributed to different CPUs, however the assignment is static, i.e
+ * irq_dlv=1: interrupts are set up in physical delivery mode and sent to the BSP
+ * irq_dlv=2: interrupts are set up in logical delivery mode and distributed to different CPUs, however the assignment is static, i.e
  *         each interrupts goes to a fixed CPU. This is the default
- * apic=3: use lowest priority delivery mode
+ * irq_dlv=3: use lowest priority delivery mode
  *
  * At boot time, when device drivers request interrupt handler mappings, all interrupts are set up in mode 1. This is done to make
  * sure that no interrupts are delivered to an AP which is not yet operating (in this case, the I/O APIC might wait indefinitely for
@@ -124,9 +124,10 @@ static u32 irq_count[SMP_MAX_CPU][256];
 static int irq_locked[IRQ_MAX_VECTOR];
 
 /*
- * APIC mode, i.e. validated value of kernel parameter APIC
+ * Kernel parameter
  */
-static int apic_mode = 1;
+static int use_apic = 1;
+static int irq_dlv = 1;
 
 
 /****************************************************************************************
@@ -268,7 +269,7 @@ static int get_irq_config_data(int _irq, int* trigger, int* polarity, io_apic_t*
             }
             if (found) {
                 apic_add_redir_entry(io_apic, _irq, polarity, trigger_mode,
-                        vector, ( (1 == force_bsp) ? 1 : apic_mode));
+                        vector, ( (1 == force_bsp) ? 1 : irq_dlv));
             }
             else {
                 ERROR("Could not locate entry in configuration tables for IRQ %d\n", _irq);
@@ -290,9 +291,10 @@ static int get_irq_config_data(int _irq, int* trigger, int* polarity, io_apic_t*
         }
         /*
          * Now ask the PCI bus driver to set up the MSI
-         * routing for us
+         * routing for us. We use fixed delivery mode initially
+         * and will re-write the setup later in irq_balance()
          */
-        pci_config_msi(pci_dev, vector);
+        pci_config_msi(pci_dev, vector, 1);
     }
     /*
      * Check whether this handler has already been added to the list for this
@@ -438,15 +440,16 @@ void irq_balance() {
     io_apic_t* io_apic;
     int found = 0;
     /*
-     * Do nothing if we are in PIC mode or if APIC mode is one
+     * Do nothing if we are in PIC mode or if irq_dlv is one
      */
-    if ((IRQ_MODE_PIC == irq_mode) || (1 == apic_mode))
+    if ((IRQ_MODE_PIC == irq_mode) || (1 == irq_dlv)) {
         return;
+    }
     /*
      * Walk all assigned vectors
      */
+    cli();
     for (vector = 0; vector <= IRQ_MAX_VECTOR; vector++) {
-        /* TODO: handle MSI interrupts here */
         if ((IRQ_UNUSED != irq[vector]) && (IRQ_MSI != irq[vector])) {
             /*
              * Remap entry in I/O APIC only if irq_locked is not set
@@ -455,10 +458,16 @@ void irq_balance() {
             if (0 == irq_locked[vector]) {
                 found = get_irq_config_data(irq[vector], &polarity, &trigger_mode, &io_apic);
                 if (found && io_apic) 
-                    apic_add_redir_entry(io_apic, irq[vector], polarity, trigger_mode, vector, apic_mode);
+                    apic_add_redir_entry(io_apic, irq[vector], polarity, trigger_mode, vector, irq_dlv);
             }
-        }
+        } 
     }
+    /*
+     * Now ask the PCI driver to do rebalancing for all devices
+     * that we have set up earlier
+     */
+    pci_rebalance_irqs(irq_dlv);
+    sti();
 }
 
 /****************************************************************************************
@@ -681,7 +690,6 @@ void irq_post() {
  */
 void irq_init() {
     int i;
-    int use_apic;
     int have_apic = 0;
     for (i = 0; i <= IRQ_MAX_VECTOR; i++) {
         irq[i] = IRQ_UNUSED;
@@ -690,7 +698,7 @@ void irq_init() {
      * Do we have at least one APIC? If yes,
      * use it, otherwise use PIC
      */
-    use_apic = params_get_int("apic");
+    use_apic = params_get_int("use_apic");
     /*
      * See whether we have an IO APIC and fall back to 
      * PIC mode if not
@@ -716,25 +724,28 @@ void irq_init() {
     if (params_get_int("irq_log"))
         __irq_loglevel = 1;
     /*
-     * Set apic mode and print a corresponding message
+     * Set interrupt delivery mode in APIC mode or return
+     * in PIC mode
      */
-    switch (params_get_int("apic")) {
-         case 0:
-             apic_mode = 0;
+    if (IRQ_MODE_PIC == irq_mode) {
+        irq_dlv = 1;
+        return;
+    }
+    switch (params_get_int("irq_dlv")) {
          case 1:
              MSG("Using physical / fixed delivery mode\n");
-             apic_mode = 1;
+             irq_dlv = 1;
              break;
          case 2:
              MSG("Using logical / fixed delivery mode\n");
-             apic_mode = 2;
+             irq_dlv = 2;
              break;
          case 3:
              MSG("Using logical / lowest priority delivery mode\n");
-             apic_mode = 3;
+             irq_dlv = 3;
              break;
          default:
-             PANIC("Invalid value (%d) of kernel parameter apic\n");
+             PANIC("Invalid value (%d) of kernel parameter irq_dlv\n");
              break;
      }
 }

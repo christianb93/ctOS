@@ -26,7 +26,7 @@ static char parm_use_debug_port[2];
 static char parm_use_vbox_port[2];
 static char parm_do_test[2];
 static char parm_root[8];
-static char parm_apic[2];
+static char parm_use_apic[2];
 static char parm_loglevel[2];
 static char parm_pata_ro[2];
 static char parm_ahci_ro[2];
@@ -40,7 +40,7 @@ static char parm_irq_watch[8];
 static char parm_use_bios_font[2];
 static char parm_use_acpi[2];
 static char parm_use_msi[2];
-
+static char parm_irq_dlv[2];
 
 /*
  *
@@ -48,7 +48,7 @@ static char parm_use_msi[2];
  * use_debug_port: duplicate console output to Bochs / QEMU debug port
  * use_vbox_port: duplicate console output to Vbox debugging port (see vmmdevBackdoorLog in the VBox source code)
  * do_test: run kernel level tests at startup
- * apic: 0 = do not use apic, 1 = send all IRQs to BSP, 2 = use fixed assignment, 3 = lowest priority delivery mode
+ * use_apic: 0 = do not use APIC, 1 = use APIC
  * loglevel: set the global loglevel
  * pata_ro: block all writes to PATA devices
  * ahci_ro: block all writes to AHCI devices
@@ -62,6 +62,7 @@ static char parm_use_msi[2];
  * use_bios_font: use VGA bios font 
  * use_acpi: use ACPI as leading configuration source
  * use_msi: use MSI whenever a device supports this
+ * irq_dlv: 1 = fixed delivery mode to BSP. 2 = logical delivery mode, 3 = lowest priority
  */
  
  
@@ -72,7 +73,7 @@ static kparm_t kparm[] = {
         { "use_debug_port", parm_use_debug_port, 1, "1", 1 },
         { "do_test", parm_do_test, 1, "0", 0 },
         { "root", parm_root, 6, "0x100", 0x100},
-        { "apic", parm_apic, 1, "2", 2},
+        { "use_apic", parm_use_apic, 1, "1", 1},
         { "loglevel", parm_loglevel, 1, "0", 0},
         { "pata_ro", parm_pata_ro, 1, "0", 0},
         { "ahci_ro", parm_ahci_ro, 1, "0", 0},
@@ -87,6 +88,7 @@ static kparm_t kparm[] = {
         { "use_bios_font", parm_use_bios_font, 1, "0", 0 },
         { "use_acpi", parm_use_acpi, 1, "1", 1 },
         { "use_msi", parm_use_msi, 1, "1", 1 },
+        { "irq_dlv", parm_irq_dlv, 1, "1", 1 },
 };
 
 #define NR_KPARM (sizeof(kparm) / sizeof(kparm_t))

@@ -15,7 +15,7 @@
 #include "vga.h"
 #include "cpu.h"
 
-static char* __module = "IDE   ";
+static char* __module = "PCI   ";
 
 
 /*
@@ -368,6 +368,7 @@ static void pci_scan_device(u8 bus_id, u8 device, u8 function,
     pci_dev->header = pci_get_byte_config(bus_id, device, function,
             PCI_HEADER_TYPE_REG);
     pci_dev->msi_support = 0;
+    pci_dev->uses_msi = 0;
     /*
      * Read command and status register
      * We access these registers as one double word at offset 0x4
@@ -779,15 +780,27 @@ static void pci_put_msi_config(pci_dev_t* dev, msi_config_t* msi_config) {
  * done before
  * Parameter:
  * @pci_dev - the device
- * @vector - the vector we want to use
- * TODO: support different delivery modes
+ * @vector - the vector we want to use (-1 = re-use existing vector)
+ * @irq_dlv - delivery mode: 1 = fixed delivery to BSP, 2=logical, 3=lowest priority
  */
-void pci_config_msi(pci_dev_t* pci_dev, int vector) {
+void pci_config_msi(pci_dev_t* pci_dev, int vector, int irq_dlv) {
     msi_config_t msi_config;
+    u8 dest_id;
+    u32 rh = 0;
+    u32 dm = 0;
+    u32 dlv_mode = 0;
     /*
      * Read existing configuration first
      */
     pci_get_msi_config(pci_dev, &msi_config);
+    /*
+     * If vector = -1, i.e. use existing one, extract
+     * vector from configuration
+     */
+    if (-1 == vector) {
+        vector = msi_config.msg_data & 0xFF;
+        DEBUG("Reconfiguring vector %d\n", vector);
+    }
     /*
      * If MSI is already enabled, turn it off first
      * so that we can change the configuration safely
@@ -801,28 +814,83 @@ void pci_config_msi(pci_dev_t* pci_dev, int vector) {
      */
     msi_config.msi_enabled = 1;
     /*
+     * We only support one vector, i.e. we set the
+     * multi-message enabled bits to zero
+     */
+    msi_config.multi_msg_enabled = 0;
+    /*
      * Build message address. This is platform
      * specific. For x86, section 10.11 of Intels
      * Software Developers manual, Volume 3 tells 
      * us the following: 
      * Bits 20-31: 0xfee - fixed value
+     * Bits 0-11: depending on delivery mode
      * Bits 12-19: destination ID (as bits 63:56 of APIC redirection entry)
-     * Bits 0-11: zero (we use physical destination mode)
      */
-    msi_config.msg_address = 0xfee00000 + ((cpu_get_apic_id(0) & 0xff) << 12);
+    switch (irq_dlv) {
+        case 1:
+            /*
+             * Fixed delivery to BSP
+             */
+            dest_id = cpu_get_apic_id(0) & 0xff;
+            rh = 0;
+            dm = 0;
+            dlv_mode = 0;
+            break;
+        case 2:
+            /*
+             * Logical delivery 
+             */
+            dest_id = ( 1 << (vector % cpu_get_cpu_count()));
+            rh = 0;
+            dm = 1 << 2;
+            dlv_mode = 0;
+            break;
+        case 3:
+            /*
+             * Lowest priority. Use bitmask matching all existing 
+             * CPUs
+             */
+            dest_id = ((1 << cpu_get_cpu_count()) - 1); 
+            rh = 1 << 3;
+            dm = 1 << 2;
+            dlv_mode = 1;
+            break;
+    }
+    msi_config.msg_address = 0xfee00000 + (dest_id << 12) + dm + rh;
     msi_config.msg_address_upper = 0;
     /*
      * Build message data, again according to the 
      * Intel manual.
      * Bits 0-7: vector 
-     * Bits 8-10: zero for vector based delivery
+     * Bits 8-10: dlv_mode
      * Bit 14,15: set to zero
      */
-    msi_config.msg_data = vector;
+    msi_config.msg_data = vector + (dlv_mode << 8);
     /*
      * Write configuration data back
      */
     pci_put_msi_config(pci_dev, &msi_config);
+    /*
+     * Set an earmark that the device is enabled for 
+     * MSI
+     */
+    pci_dev->uses_msi = 1;
+}
+
+/*
+ * Rebalance interrupts for all devices. This function is called
+ * by irq_balance in the interrupt manager. It will visit all devices
+ * for which MSI has been enabled earlier and reconfigure them
+ * according to the actual irq delivery mode
+ */
+void pci_rebalance_irqs(int irq_dlv) {
+    pci_dev_t* pci_dev;
+    LIST_FOREACH(pci_dev_list_head, pci_dev) {
+        if (1 == pci_dev->uses_msi) {
+            pci_config_msi(pci_dev, -1, irq_dlv);
+        }
+    }     
 }
 
 /******************************************************************

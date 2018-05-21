@@ -72,7 +72,7 @@ static void lapic_write(u32 offset, u32 value) {
 /*
  * Basic initialization of a local APIC. This contains all the basic setup
  * required for both BSP and AP, i.e. setting the TSR to zero and set
- * enable flag in the spurious interrupt register. The LDF register is set to
+ * enable flag in the spurious interrupt register. The DFR register is set to
  * flat mode
  */
 static void apic_init_local() {
@@ -93,7 +93,7 @@ static void apic_init_local() {
     lapic_write(LOCAL_APIC_LDR_REG, tmp);
     /*
      * Set up local APIC for flat model, i.e. put 0xFFFFFFFF
-     * into destination format register (LDF)
+     * into destination format register (DFR))
      */
     lapic_write(LOCAL_APIC_LDF_REG, 0xffffffff);
     /*

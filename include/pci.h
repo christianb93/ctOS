@@ -46,6 +46,7 @@ typedef struct _pci_dev_t {
     u16 command;
     u8 msi_support;
     u8 msi_cap_offset;
+    u8 uses_msi;
     /* These fields are only valid for bridges */
     u8 primary_bus;
     u8 secondary_bus;
@@ -197,6 +198,7 @@ void pci_query_by_class(pci_query_callback_t callback, u8 base_class, u8 sub_cla
 u16 pci_get_status(pci_dev_t* pci_dev);
 u16 pci_get_command(pci_dev_t* pci_dev);
 void pci_enable_bus_master_dma(pci_dev_t* pci_dev);
-void pci_config_msi(pci_dev_t* pci_dev, int vector);
+void pci_config_msi(pci_dev_t* pci_dev, int vector, int irq_dlv);
+void pci_rebalance_irqs(int irq_dlv);
 
 #endif /* _PCI_H_ */
