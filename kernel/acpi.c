@@ -15,6 +15,7 @@
 #include "mm.h"
 #include "cpu.h"
 #include "irq.h"
+#include "pci.h"
 
 static char* __module = "ACPI  "; 
  
@@ -64,6 +65,7 @@ static isa_irq_routing_t isa_irq_routing[16];
 
 /*
  * Additional entries for specific boards. Format is
+ * Chipset component ID (must be probed successfully by pci_chipset_component_present)
  * DSDT OEM ID
  * DSDT OEM Table ID
  * DSDT OEM Revision
@@ -74,9 +76,13 @@ static isa_irq_routing_t isa_irq_routing[16];
  */
 static acpi_override_t acpi_overrides[] = {
     /*
-     * This entry is for QEMU PIIX, network card at device 3, bus 0
+     * This entry is for QEMU PIIX3, network card at device 3, bus 0
      */
-    {"BOCHS ","BXPCDSDT", 1, 1, 3, 0, 0xa},
+    {PCI_CHIPSET_COMPONENT_PIIX3, "BOCHS ","BXPCDSDT", 1, 1, 3, 0, 0xa},
+    /*
+     * This entry is for QEMU Q35 (ICH9), network card at device 3, bus 0
+     */
+    {PCI_CHIPSET_COMPONENT_ICH9, "BOCHS ","BXPCDSDT", 1, 1, 3, 0, 0x17},
 };
 
 /*
@@ -459,7 +465,8 @@ int acpi_get_irq_pin_pci(int bus_id, int device,  char irq_pin) {
     if (0 == have_dsdt)
         return IRQ_UNUSED;
     for (i = 0; i < sizeof(acpi_overrides) / sizeof(acpi_override_t); i++) {
-        if (0 == strncmp(dsdt_oem_id, acpi_overrides[i].oem_id, 6)) {
+        if ((0 == strncmp(dsdt_oem_id, acpi_overrides[i].oem_id, 6)) && 
+            (pci_chipset_component_present(acpi_overrides[i].chipset_component_id))) {
             if (0 == strncmp(dsdt_oem_tableid, acpi_overrides[i].oem_table_id, 8)) {
                 if ((irq_pin  == acpi_overrides[i].src_pin) 
                         && (dsdt_oem_rev == acpi_overrides[i].oem_rev)
@@ -483,7 +490,8 @@ static int search_overrides(int pin) {
     if (0 == have_dsdt)
         return 0;
     for (i = 0; i < sizeof(acpi_overrides) / sizeof(acpi_override_t); i++) {
-        if (0 == strncmp(dsdt_oem_id, acpi_overrides[i].oem_id, 6)) {
+        if ((0 == strncmp(dsdt_oem_id, acpi_overrides[i].oem_id, 6))  && 
+            (pci_chipset_component_present(acpi_overrides[i].chipset_component_id))) {
             if (0 == strncmp(dsdt_oem_tableid, acpi_overrides[i].oem_table_id, 8)) {
                 if ((pin == acpi_overrides[i].dest_irq) && (dsdt_oem_rev == acpi_overrides[i].oem_rev)) {
                     MSG("Applying override for IRQ pin %d\n", pin);

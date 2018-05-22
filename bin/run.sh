@@ -218,8 +218,9 @@ efi-smp)
         echo "Could not find bin/efiimage, please do (cd bin ; ./efi_image.sh) first"
     exit
     fi
-    EMU="qemu-system-x86_64 --bios /usr/share/qemu/OVMF.fd -m 512 -debugcon stdio"
-    HD="-drive id=disk,file=bin/efiimage,if=ide,media=disk "
+    EMU="qemu-system-x86_64 --bios /usr/share/qemu/OVMF.fd -m 512 -debugcon stdio -M q35"
+    HD="-drive id=disk,file=bin/efiimage,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0"
+    NET="-netdev user,id=netuser -device rtl8139,netdev=netuser "
     SMP="-smp sockets=8,threads=1 -enable-kvm"
     ;;
 

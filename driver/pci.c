@@ -148,6 +148,22 @@ static capability_t capabilities[] = {
 #define PCI_CLASS_CODE_SIZE (sizeof(pci_class_codes) / sizeof(pci_class_t))
 
 /*
+ * Forward declarations
+ */
+static int probe_ich9(pci_dev_t*);
+static int probe_ich10R(pci_dev_t*);
+static int probe_piix3(pci_dev_t*);
+
+/*
+ * Some chipset components that we know
+ */
+static pci_chipset_component_t chipset_components[] = {
+    {PCI_CHIPSET_COMPONENT_ICH9, "ICH9", "Intel ICH9 I/O Controller Hub", 0, probe_ich9 },
+    {PCI_CHIPSET_COMPONENT_ICH10R, "ICH10R", "Intel ICH10R I/O Controller Hub", 0, probe_ich10R },
+    {PCI_CHIPSET_COMPONENT_PIIX3, "PIIX3", "Intel PIIX3 PCI ISA IDE XCELERATOR", 0, probe_piix3 },
+};
+
+/*
  * Read four bytes from the PCI configuration space
  * Parameter:
  * @bus: bus specifying the device to read from
@@ -505,6 +521,26 @@ static void pci_scan_bus(pci_bus_t* pci_bus) {
 }
 
 /*
+ * This function walks the list of registered PCI devices
+ * and tries to match them against the list of known chipset
+ * components by calling the probe function for each of them. The result
+ * is stored in the component list
+ */
+static void probe_chipset_components() {
+    int i;
+    pci_dev_t* pci_dev;
+    for (i = 0; i < sizeof(chipset_components) / sizeof(pci_chipset_component_t); i++) {
+        LIST_FOREACH(pci_dev_list_head, pci_dev) {
+            if (chipset_components[i].probe(pci_dev)) {
+                chipset_components[i].present = 1;
+                break;
+            }
+        }
+    }
+}
+
+
+/*
  * Initialize the PCI bus driver and perform a
  * scan of the PCI bus system to detect busses and
  * devices
@@ -546,7 +582,12 @@ void pci_init() {
         pci_scan_bus(pci_bus);
         pci_bus = pci_bus->next;
     }
+    /*
+     * Now probe for known chipset components
+     */
+    probe_chipset_components();
 }
+
 
 
 /*
@@ -893,6 +934,77 @@ void pci_rebalance_irqs(int irq_dlv) {
     }     
 }
 
+
+/*
+ * Probe for the presence of an Intel ICH9 I/O controller hub
+ */
+static int probe_ich9(pci_dev_t* pci_dev) {
+    /*
+     * We are detecting the presence of an ICH9 I/O hub by 
+     * looking for the PCI-LPC bridge. According to the Intel ICH9 
+     * datasheet and the Intel ICH9 specification update, this is
+     * device 31, function 0 with vendor id 0x8086 and device id 
+     * 0x2918
+     */
+    if ((31 == pci_dev->device) && (0 == pci_dev->function)) {
+        if ((0x8086 == pci_dev->vendor_id) && (0x2918 == pci_dev->device_id)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/*
+ * Probe for the presence of an Intel ICH10 I/O controller hub
+ */
+static int probe_ich10R(pci_dev_t* pci_dev) {
+    /*
+     * We are detecting the presence of an ICH10R I/O hub by 
+     * looking for the PCI-LPC bridge. According to the Intel ICH9 
+     * datasheet and the Intel ICH10 specification update, this is
+     * device 31, function 0 with vendor id 0x8086 and device id 
+     * 0x3a16
+     */
+    if ((31 == pci_dev->device) && (0 == pci_dev->function)) {
+        if ((0x8086 == pci_dev->vendor_id) && (0x3a16 == pci_dev->device_id)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/*
+ * Probe for the presence of an Intel PIIX3 ISA/IDE
+ * chipset
+ */
+static int probe_piix3(pci_dev_t* pci_dev) {
+    /*
+     * We are looking for a multifunction device for which function
+     * 0 has vendor id 0x8086 and device id 0x7000
+     */
+    if (0 == pci_dev->function) {
+        if ((0x8086 == pci_dev->vendor_id) && (0x7000 == pci_dev->device_id)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/*
+ * Has a given chipset component been found during probing?
+ *
+ */
+int pci_chipset_component_present(int component_id) {
+    int i;
+    for (i = 0; i < sizeof(chipset_components) / sizeof(pci_chipset_component_t);  i++) {
+        if (chipset_components[i].component_id == component_id) {
+            return chipset_components[i].present;
+        }
+    }
+    return 0;
+}
+
+
 /******************************************************************
  * The functions below this line are for debugging purpose only   *
  * and are meant to be used by the internal debugger              *
@@ -1055,7 +1167,26 @@ void pci_list_devices() {
     pci_dev_t* pci_dev;
     pci_dev = pci_dev_list_head;
     int nr = 1;
+    int i, j;
     char input;
+    /*
+     * We first print a list of detected chipset components
+     */
+    cls(0);
+    PRINT("Known chipset components that I could detect: \n");
+    PRINT("-------------------------------------------------------------------------\n");
+    j = 0;
+    for (i = 0; i < sizeof(chipset_components) / sizeof(pci_chipset_component_t); i++) {
+        if (chipset_components[i].present) {
+            j = 1; 
+            PRINT("%x        %s\n", chipset_components[i].component_id, chipset_components[i].long_name);
+        }
+    }
+    if (0 == j) {
+        PRINT("None\n");
+    }
+    PRINT("-------------------------------------------------------------------------\n");
+    PRINT("PCI devices: \n");
     /*
      * This is an array containing pointers to the devices
      * listed on the current page. Used to branch to the details page
@@ -1063,7 +1194,6 @@ void pci_list_devices() {
      * device on the current page
      */
     pci_dev_t * shown_devices[DEVICE_LIST_PAGE_SIZE + 1];
-    cls(0);
     PRINT("         Device/   Vendor  Device  Base   Sub    Prog  Class      \n");
     PRINT("Nr  Bus  Function  ID      ID      Class  Class  If    Description\n");
     PRINT("-------------------------------------------------------------------------\n");

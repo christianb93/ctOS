@@ -69,6 +69,7 @@ typedef struct {
  * fill the MP table completely 
  */
 typedef struct  {
+    u32  chipset_component_id;
     char oem_id[6];
     char oem_table_id[8];
     int  oem_rev;

@@ -81,6 +81,7 @@ typedef struct {
     int is64;
 } msi_config_t;
 
+
 /*
  * I/O register to use for access
  * to configuration space
@@ -186,10 +187,32 @@ typedef struct {
 #define ETH_SUB_CLASS 0x0
 
 /*
+ * Chipset components that we know
+ */
+typedef struct {
+    u32 component_id;
+    char* short_name;
+    char* long_name;
+    int present;
+    int (*probe)(pci_dev_t* pci_dev);
+} pci_chipset_component_t;
+
+/*
+ * Some values for the component ID
+ */
+#define PCI_CHIPSET_COMPONENT_ICH9      0x1
+#define PCI_CHIPSET_COMPONENT_ICH10R    0x2
+#define PCI_CHIPSET_COMPONENT_PIIX3     0x3
+#define PCI_CHIPSET_COMPONENT_PIIX4     0x4
+
+/*
  * A callback function for PCI query functions
  */
 typedef void (*pci_query_callback_t)(const pci_dev_t*);
 
+/*
+ * Public interface
+ */
 void pci_init();
 void pci_list_devices();
 void pci_query_all(pci_query_callback_t callback);
@@ -200,5 +223,6 @@ u16 pci_get_command(pci_dev_t* pci_dev);
 void pci_enable_bus_master_dma(pci_dev_t* pci_dev);
 void pci_config_msi(pci_dev_t* pci_dev, int vector, int irq_dlv);
 void pci_rebalance_irqs(int irq_dlv);
+int pci_chipset_component_present(int component_id);
 
 #endif /* _PCI_H_ */
