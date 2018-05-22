@@ -129,6 +129,10 @@ menuentry "ctOS (IDE HD)" {
   multiboot2 (\$root)/grub2/ctOSkernel use_debug_port=1 root=770 loglevel=0 do_test=0 use_acpi=1
   boot
 }
+menuentry "ctOS (AHCI HD)" {
+  multiboot2 (\$root)/grub2/ctOSkernel use_debug_port=1 root=1026 loglevel=0 do_test=0 use_acpi=1
+  boot
+}
 EOF
 sudo cp grub.cfg mnt/grub2/grub.cfg
 
