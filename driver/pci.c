@@ -163,6 +163,11 @@ static pci_chipset_component_t chipset_components[] = {
     {PCI_CHIPSET_COMPONENT_PIIX3, "PIIX3", "Intel PIIX3 PCI ISA IDE XCELERATOR", 0, probe_piix3 },
 };
 
+/******************************************************************
+ * These functions read and write the PCI configuration           *
+ ******************************************************************/
+
+
 /*
  * Read four bytes from the PCI configuration space
  * Parameter:
@@ -329,6 +334,13 @@ static void pci_put_word_config(u8 bus, u8 device, u8 function, u8 offset, u16 v
     dword_pci_value = dword_pci_value | (((u32)value) << (8*position));
     pci_put_dword_config(bus, device, function, offset, dword_pci_value);
 }
+
+
+/******************************************************************
+ * The following functions build and maintain our internal tables *
+ * with device and configuration information                      *
+ ******************************************************************/
+
 
 /*
  * Locate bus by id in internal table
@@ -589,6 +601,10 @@ void pci_init() {
 }
 
 
+/******************************************************************
+ * Some functions to query PCI device configuration               *
+ ******************************************************************/
+
 
 /*
  * This function calls the provided callback once for
@@ -639,6 +655,10 @@ void pci_query_by_class(pci_query_callback_t callback, u8 base_class, u8 sub_cla
 
 /*
  * Get the PCI status register from offset 0x6 of configuration space
+ * Parameter:
+ * @pci_dev - the PCI device
+ * Returns:
+ * the value of the status register
  */
 u16 pci_get_status(pci_dev_t* pci_dev) {
     u32 command_status;
@@ -649,6 +669,11 @@ u16 pci_get_status(pci_dev_t* pci_dev) {
 
 /*
  * Get the PCI command register 
+ * Parameter:
+ * @pci_dev - the PCI device
+ * Returns:
+ * the value of the status register
+ * 
  */
 u16 pci_get_command(pci_dev_t* pci_dev) {
     u32 command_status;
@@ -657,9 +682,17 @@ u16 pci_get_command(pci_dev_t* pci_dev) {
     return (u16) (command_status);
 }
  
+/******************************************************************
+ * The functions in this section are dealing with PCI interrupts. *
+ * We can enable bus mastering DMA and MSI for individual devices *
+ ******************************************************************/
+ 
+ 
 /*
  * Enable the PCI bus master functionality by setting the
  * bus master configuration bit
+ * Parameter:
+ * @pci_dev - the device for which we want to enable bus mastering DMA
  */
 void pci_enable_bus_master_dma(pci_dev_t* pci_dev) {
      /*
@@ -761,6 +794,9 @@ static void pci_get_msi_config(pci_dev_t* dev, msi_config_t* msi_config) {
 
 /*
  * Write configuration information to a given device
+ * Parameter:
+ * @dev - the PCI device
+ * @msi_config - the MSI configuration to be written
  */
 static void pci_put_msi_config(pci_dev_t* dev, msi_config_t* msi_config) {
     u8 msi_offset = dev->msi_cap_offset;
@@ -924,6 +960,9 @@ void pci_config_msi(pci_dev_t* pci_dev, int vector, int irq_dlv) {
  * by irq_balance in the interrupt manager. It will visit all devices
  * for which MSI has been enabled earlier and reconfigure them
  * according to the actual irq delivery mode
+ * Parameter:
+ * @irq_dlv - the value of the kernel parameter irq_dlv, see  
+ *            irq.c for a detailed description
  */
 void pci_rebalance_irqs(int irq_dlv) {
     pci_dev_t* pci_dev;
@@ -953,6 +992,12 @@ static int probe_ich9(pci_dev_t* pci_dev) {
     }
     return 0;
 }
+
+/******************************************************************
+ * The following functions probe for the presence of specific     *
+ * chipset components. They are usually not called directly, but  *
+ * by probe_chipset_components                                    *
+ ******************************************************************/
 
 /*
  * Probe for the presence of an Intel ICH10 I/O controller hub
@@ -991,7 +1036,13 @@ static int probe_piix3(pci_dev_t* pci_dev) {
 }
 
 /*
- * Has a given chipset component been found during probing?
+ * This public functions can be used by other kernel modules to
+ * learn whether a given chipset component (identified by the
+ * chipset componend ID) has been detected.
+ * Parameter:
+ * @component_id - the chipset component id
+ * Returns:
+ * 1 if the component is present, 0 otherwise
  *
  */
 int pci_chipset_component_present(int component_id) {

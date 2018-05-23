@@ -3,7 +3,7 @@
  *
  * This module contains the interrupt manager. During boot time, the interrupt manager is responsible for
  * setting up the PIC respectively the I/O APIC and the local APIC. Later, the interrupt manager dispatches incoming
- * interrupts and sends an EOI if necessary.
+ * interrupts and sends an EOI if necessary. The interrupt manager also triggers the setup of MSI capable PCI devices
  *
  * The interrupt manager dynamically assigns interrupt vectors (=index into IDT) to interrupt lines and other interrupt
  * sources. This is especially relevant for interrupts routed via the local APIC, as for these interrupts, the upper 4 bits of
@@ -15,15 +15,15 @@
  *                -------------------------------
  *                |         0x80 - 0x8F         |     <---- used for system calls (0x80), scheduler and IPIs
  *                -------------------------------
- *                |         0x70 - 0x7F         |     <---- Priority 1 hardware interrupts via I/O APIC
+ *                |         0x70 - 0x7F         |     <---- Priority 1 hardware interrupts via I/O APIC or MSI
  *                -------------------------------
- *                |         0x60 - 0x6F         |     <---- Priority 2 hardware interrupts via I/O APIC
+ *                |         0x60 - 0x6F         |     <---- Priority 2 hardware interrupts via I/O APIC or MSI
  *                -------------------------------
- *                |         0x50 - 0x5F         |     <---- Priority 3 hardware interrupts via I/O APIC
+ *                |         0x50 - 0x5F         |     <---- Priority 3 hardware interrupts via I/O APIC or MSI
  *                -------------------------------
- *                |         0x40 - 0x4F         |     <---- Priority 4 hardware interrupts via I/O APIC
+ *                |         0x40 - 0x4F         |     <---- Priority 4 hardware interrupts via I/O APIC or MSI
  *                -------------------------------
- *                |         0x30 - 0x3F         |     <---- Priority 5 hardware interrupts via I/O APIC
+ *                |         0x30 - 0x3F         |     <---- Priority 5 hardware interrupts via I/O APIC or MSI
  *                -------------------------------
  *                |         0x20 - 0x2F         |     <---- Used in PIC mode for IRQs 0 - 15
  *                -------------------------------
@@ -32,12 +32,12 @@
  *
  * A driver can register an interrupt handler for a specific device (PCI) or by specifying a legacy ISA interrupt (ISA/LPC). When
  * processing such a request, the interrupt manager will use the ACPI tables or the MP specification table to locate the I/O APIC pin 
- * connected to this device. It then determines whether a vector has already been assigned to this IRQ. If yes, the handler is added 
- * to the list of handlers for this previously assigned vector.
+ * connected to this device. For an MSI capable PCI device, it will use MSI. It then determines whether a vector has already been 
+ * assigned to this IRQ. If yes, the handler is added to the list of handlers for this previously assigned vector.
  *
  * If no vector has been assigned yet, a new vector is chosen. For this purpose, the table of vectors is scanned from the top to the
  * bottom starting at the specified priority until a free entry is found. Then the newly established mapping is added to an internal
- * table and a new entry is added to the I/O APIC redirection tabl (unless MSI is used, in which case this entry is not needed).
+ * table and a new entry is added to the I/O APIC redirection table (unless MSI is used, in which case this entry is not needed).
  *
  * In PIC mode, the handling is similar, but the mapping of interrupts to vectors is fixed and determined by the hardware.
  *
@@ -54,7 +54,7 @@
  * At boot time, when device drivers request interrupt handler mappings, all interrupts are set up in mode 1. This is done to make
  * sure that no interrupts are delivered to an AP which is not yet operating (in this case, the I/O APIC might wait indefinitely for
  * the EOI, thereby blocking any other interrupts which can freeze the machine). When all APs have been brought up, smp.c will call
- * the function irq_balance() to set up the interrupt redirection entries in the I/O APIC in the final mode.
+ * the function irq_balance() to set up the interrupt redirection entries in the I/O APIC and adapt the MSI configuration to the final mode.
  *
  * Some devices like the PIT are supposed to be always serviced by the BSP. For these devices, the initial setup of the handler can
  * be done with the parameter  "lock" which will mark the interrupt as not distributable to other CPUs. During balancing, these
@@ -109,7 +109,6 @@ static isr_handler_t* isr_handler_list_tail[IRQ_MAX_VECTOR+1];
  * A value of -1 means "not used".
  */
 static int irq[IRQ_MAX_VECTOR+1];
-
 
 /*
  * Interrupt counter per CPU
@@ -363,7 +362,7 @@ static int get_irq_config_data(int _irq, int* trigger, int* polarity, io_apic_t*
         }
         else {
             _irq = pci_dev->irq_line;
-            DEBUG("Got legacy IRQ %d\n", _irq);
+            DEBUG("Got legacy IRQ %d from PCI configuration\n", _irq);
         }
     }
     if (IRQ_UNUSED == _irq) {
@@ -434,7 +433,8 @@ int irq_add_handler_isa(isr_t new_isr, int priority, int _irq, int lock) {
 
 
 /*
- * Redistribute interrupts to different CPUs according to the kernel parameter apic
+ * Redistribute interrupts to different CPUs according to the kernel parameter 
+ * irq_dlv
  */
 void irq_balance() {
     int vector;
@@ -481,10 +481,14 @@ void irq_balance() {
  * Do EOI processing
  */
 static void do_eoi(ir_context_t* ir_context) {
-    if (ir_context->vector == 0x80)
+    /*
+     * We do not need EOI processing for system calls
+     */
+    if ((ir_context->vector == 0x80) || (ir_context->vector == 0x81))
         return;
-    if (ir_context->vector == 0x81)
-            return;
+    /*
+     * Print some debugging messages
+     */
     if (ir_context->vector != 0x20)
         IRQ_DEBUG("Doing EOI for vector %d\n", ir_context->vector);
     if (params_get_int("irq_watch") == (ir_context->vector)) {
@@ -702,10 +706,6 @@ void irq_init() {
      * use it, otherwise use PIC
      */
     use_apic = params_get_int("use_apic");
-    /*
-     * See whether we have an IO APIC and fall back to 
-     * PIC mode if not
-     */
     if (0 == acpi_used())
         have_apic = (0 != mptables_get_primary_ioapic());
     else

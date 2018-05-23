@@ -1,6 +1,6 @@
 /*
  * This is the ctOS ACPI module. Currently, only parsing of the static ACPI tables is 
- * supported, mainly the MADT, an AML interpreter is not provided
+ * supported, an AML interpreter is not provided
  */ 
  
  
@@ -48,7 +48,6 @@ static acpi_lapic_t local_apics[SMP_MAX_CPU];
 
 static int io_apic_count = 0;
 static io_apic_t primary_io_apic;
-static u32 primary_gsi_base = 0;
 
 /*
  * DSDT OEMID, OEM revision and TABLE ID
@@ -64,7 +63,20 @@ static u32 dsdt_oem_rev = 0;
 static isa_irq_routing_t isa_irq_routing[16];
 
 /*
- * Additional entries for specific boards. Format is
+ * Currently we only parse the static tables like RSDT and MADT and the static part of
+ * the DSDT, but not the AML code in the DSDT. We are therefore not able to determine
+ * to which I/O APIC pin a PCI device is connected.
+ * ctOS uses several strategies to deal with this:
+ * - if possible, MSI is used. This is clearly the way forward, but there might still be
+ *   PCI devices that do not support MSI
+ * - if MSI does not work, we try to use the MP configuration tables, but these tables are
+ *   legacy as well and often not present any more on newer hardware
+ * So there remains a gap for hardware which is old enough to still have non-MSI capable
+ * PCI devices but new enough to not have a BIOS and MP tables any more. To partially close
+ * the gap, we provide ACPI table overrides for specific combinations of chipset and ACPI 
+ * versions. These overrides are listed in the following table. The format of an entry
+ * is:
+ * 
  * Chipset component ID (must be probed successfully by pci_chipset_component_present)
  * DSDT OEM ID
  * DSDT OEM Table ID
@@ -87,6 +99,9 @@ static acpi_override_t acpi_overrides[] = {
 
 /*
  * Parse DSDT
+ * Parameter:
+ * @sdst_address - the address of the DSDT (these are physical addresses
+ * and all this needs to happen before we turn on paging)
  */
 static void parse_dsdt(u32 dsdt_address) {
     acpi_entry_header_t* dsdt_header = (acpi_entry_header_t*) dsdt_address;
@@ -99,7 +114,9 @@ static void parse_dsdt(u32 dsdt_address) {
 }
 
 /*
- * Parse FADT.
+ * Parse FADT and subsequently the DSDT
+ * Parameter:
+ * @fadt_address - the address of the FADT
  */
 static void parse_fadt(u32 fadt_address) {
     acpi_fadt_header_t* fadt_header = (acpi_fadt_header_t*) (fadt_address + sizeof(acpi_entry_header_t));
@@ -108,7 +125,7 @@ static void parse_fadt(u32 fadt_address) {
 
 /*
  * Parse the MADT. This function expects being called with two arguments
- * @madt - the 32 bit address of the MADT without the header
+ * @madt_address - the 32 bit address of the MADT without the header
  * @length - the length of the interrupt controller structure array
  */
 static void parse_madt(u32 madt_address, int length) {
@@ -133,20 +150,22 @@ static void parse_madt(u32 madt_address, int length) {
         type =  ((u8*)madt_entry_address)[0];
         entry_length = ((u8*)madt_entry_address)[1];
         switch (type) {
-            /* TODO: parse local APIC address overrides as well */
             case MADT_ENTRY_TYPE_IO_APIC: 
                /*
                 * For the time being, we ignore all but the first I/O APIC - 
                 * after all, we only need to route the ISA interrupts anyway
-                * as we rely on MSI for the PCI interrupts
+                * as we rely on MSI for the PCI interrupts. So we assume that there
+                * is at least one I/O APIC with GSI base 0 and use that as the 
+                * primary
                 */
                 if (0 == io_apic_count) {
-                    DEBUG("Adding entry for primary IO APIC\n");
                     acpi_io_apic = (acpi_io_apic_t*) madt_entry_address;
-                    primary_io_apic.apic_id = acpi_io_apic->io_apic_id;
-                    primary_io_apic.base_address = acpi_io_apic->io_apic_address;
-                    primary_gsi_base = acpi_io_apic->gsi_base;
-                    io_apic_count = 1;
+                    if (0 == acpi_io_apic->gsi_base) {
+                        DEBUG("Adding entry for primary IO APIC\n");
+                        primary_io_apic.apic_id = acpi_io_apic->io_apic_id;
+                        primary_io_apic.base_address = acpi_io_apic->io_apic_address;
+                        io_apic_count = 1;
+                    }
                 }
                 break;
             case MADT_ENTRY_TYPE_LOCAL_APIC:
@@ -160,7 +179,6 @@ static void parse_madt(u32 madt_address, int length) {
             case MADT_ENTRY_TYPE_OVERRIDE:
                 /*
                  * We only fill the GSI field now, as we might not yet have seen the I/O APIC
-                 * and therefore do not know the GSI base
                  */
                 acpi_irq_override = (acpi_irq_override_t*) madt_entry_address;
                 isa_irq_routing_entry = isa_irq_routing + acpi_irq_override->src_irq;
@@ -187,13 +205,11 @@ static void parse_madt(u32 madt_address, int length) {
             if (isa_irq_routing[i].gsi != -1) {
                 /*
                  * This entry has been overridden. Determine the new
-                 * I/O APIC pin
+                 * I/O APIC pin. As we only look at the IO APIC with base 0,
+                 * the number is the same, but this might change in the future
+                 * when we detect more than one IO APIC
                  */
-                /* TODO: what happens if this is negative? Is there any rule that the first 
-                 * I/O APIC needs to cover 0 - 15? Or should we define the primary I/O APIC to be the
-                 * one that covers this area?
-                 */
-                isa_irq_routing[i].io_apic_input = isa_irq_routing[i].gsi - primary_gsi_base;
+                isa_irq_routing[i].io_apic_input = isa_irq_routing[i].gsi;
             }
         }
     }
@@ -201,16 +217,25 @@ static void parse_madt(u32 madt_address, int length) {
 
 /*
  * Parse a single static table, as described
- * in section 5.2.6
+ * in section 5.2.6 of the ACPI specification
+ * Parameter:
+ * @table_address - the address of the table
  */
 static void parse_acpi_table(u32 table_address) {
+    /*
+     * Each ACPI table is starting with the common header. 
+     */
     acpi_entry_header_t* header = (acpi_entry_header_t*) table_address;
+    /*
+     * From the header, we can get the signature that will tell us
+     * which table we are taking about
+     */
     if (0 == strncmp(header->signature, "APIC", 4)) {
-        MSG("Found MADT\n");
+        DEBUG("Found MADT\n");
         parse_madt(table_address + sizeof(acpi_entry_header_t), header->length - sizeof(acpi_entry_header_t) - sizeof(acpi_madt_header_t));
     }
     if (0 == strncmp(header->signature, "FACP", 4)) {
-        MSG("Found FADT\n");
+        DEBUG("Found FADT\n");
         parse_fadt(table_address);
     }
 }
@@ -328,7 +353,7 @@ int acpi_parse() {
             table_search = ebda_ptr;
             while (table_search <= ebda_ptr + 1024) {
                 if (0 == strncmp(table_search, "RSD PTR ", 8)) {
-                    MSG("Found ACPI RSDP at address %x\n", table_search);
+                    DEBUG("Found ACPI RSDP at address %x\n", table_search);
                     rsdp = (acpi_rsdp_t*) table_search;
                     break;
                 }
@@ -417,7 +442,6 @@ void acpi_init() {
      */
     DEBUG("Mapping IO APIC base address %x into virtual memory\n", primary_io_apic.base_address);
     primary_io_apic.base_address = mm_map_memio(primary_io_apic.base_address, 14); 
-    DEBUG("Done, base address is now %x\n", primary_io_apic.base_address);
     /*
      * Inform the CPU module about the local APICs that we have found
      */
@@ -456,15 +480,27 @@ int acpi_get_apic_pin_isa(int irq) {
     return isa_irq_routing[irq].io_apic_input;
 }
 
-
 /*
- * Get the IO APIC pin for a PCI interrupt
+ * Get the IO APIC pin for a PCI interrupt. As we do not interpret the
+ * AML block in the DSDT, we only search our explicit overrides here
+ * Parameter:
+ * @bus_id - the bus on which the device is located
+ * @device - the device / slot number
+ * @irq_pin - the PCI IRQ pin
+ * Returns:
+ * the IO APIC pin to which the device is connected
  */
 int acpi_get_irq_pin_pci(int bus_id, int device,  char irq_pin) {
     int i;
     if (0 == have_dsdt)
         return IRQ_UNUSED;
     for (i = 0; i < sizeof(acpi_overrides) / sizeof(acpi_override_t); i++) {
+        /*
+         * We apply an override if:
+         * the ACPI identifiers (OEM ID, OEM table ID and OEM revision in the DSDT) match
+         * the chipset component could be detected
+         * PCI device, pin and bus match
+         */ 
         if ((0 == strncmp(dsdt_oem_id, acpi_overrides[i].oem_id, 6)) && 
             (pci_chipset_component_present(acpi_overrides[i].chipset_component_id))) {
             if (0 == strncmp(dsdt_oem_tableid, acpi_overrides[i].oem_table_id, 8)) {
@@ -484,6 +520,10 @@ int acpi_get_irq_pin_pci(int bus_id, int device,  char irq_pin) {
 /*
  * Search the table of overrides for a given pin
  * and return 1 if a matching override exists
+ * Parameter:
+ * @pin - the IO APIC pin
+ * Returns:
+ * 1 if an override exists, 0 otherwise
  */
 static int search_overrides(int pin) {
     int i;
@@ -651,7 +691,6 @@ void acpi_print_madt() {
     else {
         PRINT("IO APIC ID:      %h\n", primary_io_apic.apic_id);
         PRINT("Base address:    %x\n", primary_io_apic.base_address);
-        PRINT("GSI base:        %d\n", primary_gsi_base);
     }
     PRINT("Hit any key to continue\n");
     early_getchar();
