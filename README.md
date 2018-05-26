@@ -12,6 +12,10 @@ So I invested some time to dig out the old source code and find my way through t
 Currently, the following features have been implemented:
 
 * Boot using GRUBs multiboot configuration (has support for multiboot and multiboot2)
+* Support for BIOS and (U)EFI based systems
+* Basic ACPI support
+* Support for SMP with up to eight CPUs 
+* Virtual memory and multi-tasking
 * Built-in kernel debugger to inspect CPU state, memory contents, threads, kernel configuration etc. (launch with F1)
 * 32 bit protected mode (64 bit not supported and unlikely that I will ever find the time to port it)
 * Virtual memory and multi-tasking
@@ -29,8 +33,7 @@ Currently, the following features have been implemented:
     * AHCI hard drive
     * PCI bus
 * Support for ext2 and FAT16 file systems
-* APIC support
-* Support for SMP with up to eight CPUs 
+* Interrupt routing via PIC, APIC and MSI
 * A full networking stack, supporting ARP, ICMP, IP, UDP, TCP and DNS resolution
 * A simple user-space command line utility
 * A basic POSIX compatible C library

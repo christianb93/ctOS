@@ -229,15 +229,43 @@ Thus the signal handling code can force a restart of the currently processed sys
 
 Having discussed the actual interrupt processing, let us now take a short   look at the initialization phase. At startup, the function `irq_init` in the interrupt manager is called. The processing in this function depends on the value of the kernel parameter `apic`. If this is set, the function first tries to locate an I/O APIC, using either the MP tables (as previously parsed by mptables.) or APCI. If an APIC could be find, the APIC will be initialized, otherwise the PIC will be used.
 
-If the PIC is to be used, the functinon `pic_init` in the PIC driver is called. In this case, the mapping of interrupts to vectors is trivial - the base address is hard coded to be 0x20, so that the PIC input line n is mapped to the vector 0x20 + n. Then all interrupts are enabled.
+If the PIC is to be used, the function `pic_init` in the PIC driver is called. In this case, the mapping of interrupts to vectors is trivial - the base address is hard coded to be 0x20, so that the PIC input line n is mapped to the vector 0x20 + n. Then all interrupts are enabled.
 
 If the APIC is used, the PIC will be set up as well, but all interrupts will be disabled in the PIC. 
 
-Now suppose a PCI device is in its setup phase. The device will then call `irq_add_handler_pci` in the interrupt manager. Depending on the mode set in `pic_init`, the input of the interrupt controller to which the device is connected will either be determined using the entry in the PCI configuration space (PIC) or the MP table configuration (APIC). In APIC mode, a new redirection entry will be added to the APIC configuration, in PIC mode, only the assignment of a vector to the IRQ number will be done. In both cases, the interrupt handler will be associated with the vector so that it will be executed by the kernel whenever the interrupt is raised.
+When a device driver is initialized, it needs to allocate an interrupt vector and register an interrupt handler with the interrupt manager. This is done in different ways, depending on whether the device is an ISA device (or more precisely whether it is connected using the LPC bus on a modern PC) or a PCI device.
 
-At the time of writing, ctOS does not support ACPI yet. As more and more motherboards do no longer create a full MP configuration table (a nice example is the ICH9 chipset emulated by Virtualbox, which only creates MP table entries for ISA interrupts), there is the option to add hardcoded entries to the table for specific devices and motherboards. This list is maintained in the array `forced_irq_routings` in irq.c.
+### Initializing interrupt handlers for ISA devices
 
+An ISA device will call the function `irq_add_handler_isa`, passing in the interrupt handler and the ISA IRQ line number used by the device. If an IO APIC is used, i.e. if the static variable `irq_mode` is equal to `IRQ_MODE_APIC`, this function will first try to determine the pin of the IO APIC to which the device is connected. This is either done by querying the ACPI MADT table or - if no ACPI tables are present or the usage of ACPI has been disabled using the kernel parameter `apci_used` - the MP configuration tables.
 
+Then the function ´add_isr` is called. This function will do two different things. First, it will allocate an interrupt vector for the device, i.e. an entry in the IDT. Then, it will register the interrupt handler for this vector. In addition, this function is responsible for adding a redirection entry to the IO APIC if the IO APIC is used.
 
+Once `add_isr` returns, the interrupt vector is marked as locked if needed (this will include the vector from the interrupt rebalancing later on) and the assigned interrupt vector is returned to the caller.
 
+### Initializing interrupt handlers for PCI devices.
+
+For PCI devices, initialization is a bit more complicated, mainly due to the fact that figuring out the IO APIC pin to which a device is connected is not that easy any more.
+
+PCI devices are supposed to call `irq_add_handler_pci`, passing in a pointer to the device and hte interrupt handler. 
+
+The first thing that this function does is to check whether the device supports MSI. If that is the case, MSI will be used, i.e. we call `add_isr` immediately. The processing within `add_isr` is very similar to that in the ISA case, with the difference that `pci_config_msi` will be called to set up the MSI configuration instead of adding an IO APIC redirection entry.
+
+In the non-MSI case, the next step is to determine the interrupt controller line to which the device is connected. Here, several cases are possible.
+
+* If the system is in PIC mode, the interrupt line is retrieved from the PCI configuration space
+* If we are are in APIC mode, the system still has an MP configuration table and we can find an entry for that device in the MP configuration table, that entry is used
+* Otherwise, we ask the ACPI module to determine the pin of the IO APIC to which the device is connected
+
+Currently, ctOS only supports static ACPI tables and does not contain an AML interpreter. Consequently, the ACPI module is not able to read the DSDT entries that contain the actual interrupt routing. Instead, the ACPI module only contains a hard-coded list of entries for specific combinations of chipsets (more precisely southbridge components) and ACPI versions.
+
+The rationale behind this design decision is as follows. First, I wanted to avoid including an AML interpreter in ctOS at all cost. I did not like the idea to pull in a large code base from an existing implementation like ACPICA, but also did not want to invest the effort to write an own AML interpreter. In addition, the case under consideration is comparatively rare in practice and will even get less likely in the future. Since PCI 2.2, support for MSI or MSI-X is mandatory, and it is very unlikely that a PCI device on a modern real-world PC does not support MSI. 
+
+Emulators do in fact contain older devices that do not support MSI, like the RTL8139 network adapter emulated by QEMU. However, this is a rather small number of well known configurations for which using hard-coded values seems appropriate. So for me, including a new or existing AML interpreter is not justified by these rather exotic combinations.
+
+Once the interrupt controller pin has been determined, the processing again continues by calling ´add_isr` to set up the actual interrupt handler and the IO APCI redirection entry.
+
+### Interrupt rebalancing
+
+In an SMP setting, both the IO APIC as well as MSI allow for the distribution of interrupts between the different CPUs on the system. To make sure that no CPU receives an interrupt before being fully functional, ctOs initially routes all interrupts to the BSP. At a later point during the setup phase, the kernel mainline will invoke the function `irq-rebalance`. This function will then revisit all interrupt configurations and re-distribute the interrupts to the detected CPUs in the system, depending on the value of the kernel parameter `irq_dlv`.
 

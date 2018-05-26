@@ -147,7 +147,7 @@ Bus    IRQ   Device/PIN  IRQ      Flags
 
 We see that the interrupt pin that we looked at earlier - PIN A of device 6 on PCI bus 5 - is routed to input line 0x12 of the IO APIC (in this case there is only one IO APIC, but the table also contains the information to which IO APIC the interrupt is connected). So we see that in fact, this pin is connected to the CPU via the programmable interrupt router **and** via the IO APIC. At startup, an operating system needs to decide whether it wants to use the APIC or the PIC and disable one of them to avoid that interrupts are delivered twice.
 
-The MP configuration tables are easy to parse, but unfortunately a matter of the past. Instead, more and more motherboards move to the **ACPI** standard. ACPI is an interface for the communication between an operating system and firmware that can do much more than a pure table could do. Instead, ACPI provides a mixture of tables and executable code, written in a bytecode called **AML** and executed by a virtual machine. To discover interrupt routings, an operating system does no longer detect and parse a table, but detect a piece of AML code in memory and then run that code in an AML interpreter. This code then contains a method which, if invoked, returns and interrupt mapping. This is very flexible and very powerful, but requires a lot of infrastructural code, in particular a full fledged ACPI interpreter. At the time being, ctOS does not support ACPI but uses the MP tables as far as they are available. 
+The MP configuration tables are easy to parse, but unfortunately a matter of the past. Instead, more and more motherboards move to the **ACPI** standard. ACPI is an interface for the communication between an operating system and firmware that can do much more than a pure table could do. Instead, ACPI provides a mixture of tables and executable code, written in a bytecode called **AML** and executed by a virtual machine. To discover interrupt routings, an operating system does no longer detect and parse a table, but detect a piece of AML code in memory and then run that code in an AML interpreter. This code then contains a method which, if invoked, returns and interrupt mapping. This is very flexible and very powerful, but requires a lot of infrastructural code, in particular a full fledged ACPI interpreter. At the time being, ctOS only parses and evaluates the static part of the ACPI tables. This is sufficient to detect the correct routing for ISA interrupts using the **FADT** ACPI tables but not to fully parse the **DSDT** which contains the interrupt routing information for PCI devices. Instead, ctOS tries to use MSI as far as possible where no wired interrupt routing is needed anymore as the device will directly send the interrupt vector (i.e. offset into the IDT) to the local APIC.
 
 
 ## Programming the I/O APIC
@@ -468,6 +468,85 @@ Other devices, however, simply OR together all interrupt sources and only send a
 
 Note that this would not be necessary for a level triggered interrupt, as the I/O APIC automatically rescans the interrupt line and sends a new message to the local APIC if it is still asserted. Therefore handlers need to be aware of the fact that they are invoked via MSI and need to implement a behaviour which matches the interrupt generation logic used by the device.
 
+## Appendix: reading the ACPI DSDT table
+
+
+As mentioned above, ctOS does currently not support the dynamic part of the DSDT as no AML bytecode interpreter is included. However, there is the option to add a hardcoded routing entry for a specific combination of chipset and ACPI version in `acpi.c`. As the information for such an entry needs to be taken from the DSDT, this appendix described a typical entry in the DSDT, taken from the QEMU configuration (`hw/i386/q35-acpi-dsdt.dsl` in the QEMU source tree).
+
+In that file, we find the following AML method within the namespace `\_SB.PCI0`:
+
+```
+Method(_PRT, 0, NotSerialized) {
+                /* PCI IRQ routing table, example from ACPI 2.0a specification,
+                   section 6.2.8.1 */
+                /* Note: we provide the same info as the PCI routing
+                   table of the Bochs BIOS */
+                If (LEqual(\PICF, Zero)) {
+                    Return (PRTP)
+                } Else {
+                    Return (PRTA)
+                }
+            }
+```
+
+When the system is in APIC mode, this method returns a **package** (the AML equivalent of an array) caleld `PRTA`. This package is defined a few lines above and is composed of lines like the following one.
+
+```
+prt_slot_gsiH(0x0003)
+```
+
+This refers to two macros and eventually resolves to
+
+```
+prt_slot_gsi(0x0003, GSIH, GSIE, GSIF, GSIG)
+```
+
+```
+    Package() { 0x0003ffff, 0, GSIH, 0 },
+    Package() { 0x0003ffff, 1, GSIE, 0 },
+    Package() { 0x0003ffff, 2, GSIF, 0 },
+    Package() { 0x0003ffff, 3, GSIG, 0 }
+```
+
+The meaning of these entries becomes clear if we combine section 6.1.13 of the ACPI specification (version 6.2) that describes the PRT object with the specification of the chipset to which the entry refers, i.e. the Intel ICH9 datasheet section 5.9.2 and section 10.1. 
+
+The Intel chipset has eight PCI interrupt lines, called PIQRA - PIRQH. These interrupt lines are connected to pins 16 - 23 of the IO APIC. As there is only one IO APIC in the system with GSI base zero, these pins are 1:1 with the corresponding GSI. So PIRQA is connected to GSI 15 which represents pin 15 of the IO APIC and so forth.
+
+This hardware configuration is reflected in the AML code. Each of the interrupt lines PIRQA - PIRQH is represented by a PCI device in the AML code, called a **GSI link**. Again, these devices are coded as macros, but when we evualate that, we obtain the following definition for the device GSIH.
+
+```
+        Device(GSIH) {
+            Name(_HID, EISAID("PNP0C0F"))
+            Name(_UID, 0)
+            Name(_PRS, ResourceTemplate() {
+                Interrupt(, Level, ActiveHigh, Shared) {
+                    0x17
+                }
+            })
+            Name(_CRS, ResourceTemplate() {
+                Interrupt(, Level, ActiveHigh, Shared) {
+                    0x17
+                }
+            })
+            Method(_SRS, 1, NotSerialized) {
+            }
+        }
+```
+
+As any PCI device in AML, this object has two methods called CRS (current resource setting) and PRS (possible resource setting). 
+
+With that understanding, we can now decode the package returned by the method `\_SB.PCI0`. Each of the four entries describes the interrupt routing for one PCI device and pin. The device is the first entry in the field, and is composed of the device number (0x0003 in this case) and the function number (0xFFFF in this case, as all functions share the same interrupt). The second entry (0, 1, 2, 3 in our case) is the interrupt pin, where 0 is INT-A, 1 is INT-B and so forth. The third entry is the name of - as the ACPI specification puts it - "a device that allocates the interrupts to which the pin is connected". 
+
+So in our case, we see that INT-A of the device 3 is allocated by the device GSIH. The operating system is supposed to call the CRS of that device to determine the actual routing. So we are pointed to the method CRS of the device GSIH. According to the definition of this method, we see that this returns an AML interrupt object
+
+```
+Interrupt(, Level, ActiveHigh, Shared) {
+                    0x17
+                }
+```
+
+which defines (see section 19.5.61 of the ACPI specification) a shared interrupt with MSI 0x17. So putting all this together, we see that INT-A of the PCI device 3 is connected to input line 0x17 of the IO APIC.
+
 ## References
 
 * [Plug-and-Play Howto from the Linux documentation project][1]
@@ -475,6 +554,8 @@ Note that this would not be necessary for a level triggered interrupt, as the I/
 * [The pirtool sources][2]
 * [The Intel Multiprocess specification][3]
 * [The Intel System programming manual][4]
+* [The ACPI specification][6]
+* [Intel I/P Controller Hub 9 (ICH9) Family][7]
 
 
 [1]: https://www.tldp.org/HOWTO/Plug-and-Play-HOWTO-7.html
@@ -482,6 +563,6 @@ Note that this would not be necessary for a level triggered interrupt, as the I/
 [3]: https://pdos.csail.mit.edu/6.828/2011/readings/ia32/MPspec.pdf
 [4]: https://software.intel.com/sites/default/files/managed/a4/60/325384-sdm-vol-3abcd.pdf
 [5]: https://people.freebsd.org/~jhb/papers/bsdcan/2007/article/article.html
-
-
+[6]: http://uefi.org/sites/default/files/resources/ACPI_6_2.pdf
+[7]: https://www.intel.com/content/www/us/en/io/io-controller-hub-9-datasheet.html
 

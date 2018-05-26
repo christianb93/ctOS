@@ -149,14 +149,14 @@ Modules:
 
 ## Interrupt manager
 
-The interrupt manager is setting up and controlling the interrupt processing. At boot time, code within the interrupt manager sets up the systems interrupt controller (PIC or APIC). It maintains a table of interrupt handlers which are invoked whenever an interrupt is raised. Other parts of the kernel can register their interrupt handlers with the interrupt manager. If the I/O APIC is used, the interrupt manager will also scan the BIOS tables containing interrupt routing information (MP tables) to understand which device is connected to which input pin of the interrupt controller and set up the controller accordingly.
+The interrupt manager is setting up and controlling the interrupt processing. At boot time, code within the interrupt manager sets up the systems interrupt controller (PIC or APIC). It maintains a table of interrupt handlers which are invoked whenever an interrupt is raised. Other parts of the kernel can register their interrupt handlers with the interrupt manager. If the I/O APIC is used, the interrupt manager will also scan the BIOS tables containing interrupt routing information (MP tables) and the ACPI tables to understand which device is connected to which input pin of the interrupt controller and set up the controller accordingly. If a device supports MSI, this is used instead of using a wired interrupt.
 
 After initialization, ctOS is mostly interrupt driven. In fact, kernel space is only entered if a hardware interrupt or an exception is raised or if a user space program uses the interrupt 0x80 reserved for system calls to access kernel services. Therefore, the interrupt manager can be considered as being the "main loop" of the kernel once it is up and running.
 
 Functions offered by the interrupt manager are
 
 * Initialization of interrupt router and interrupt controller (PIC and APIC)
-* locate the interrupt associated with a given PCI device
+* locate the interrupt associated with a given PCI or ISA / LPC device
 * register interrupt handlers
 * dispatch incoming interrupts
 
@@ -164,6 +164,7 @@ Modules:
 
 * irq.c
 * mptables.c
+* acpi.c
 
 ## PCI bus driver
 

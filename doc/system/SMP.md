@@ -63,7 +63,7 @@ With the first method, interrupts are routed statically to a CPU depending on th
 
 A more advanced way of distributing interrupts is the so-called **lowest priority delivery mode** in which the hardware (i.e. the I/O APIC, the local APICs and the system bus) will distribute an interrupt to the CPU with the currently lowest priority. Here the  priority of a CPU is determined based on the interrupts which it is currently servicing and the content of a dedicated register in the CPUs local APIC, called the task priority register (TPR).
 
-Currently ctOS supports the following interrupt distribution modes which can be selected using the kernel parameter APIC.
+Currently ctOS supports the following interrupt distribution modes which can be selected using the kernel parameter `irq_dlv`.
 
 <table>
 <thead>
@@ -76,24 +76,18 @@ Currently ctOS supports the following interrupt distribution modes which can be 
 </thead>
 <tbody>
 <tr class="odd">
-<td>0<br />
-</td>
-<td>Do not use the APIC but the PIC. Consequently all interrupts go to the bootstrap CPU (BSP) only<br />
-</td>
-</tr>
-<tr class="even">
 <td>1<br />
 </td>
 <td>The APIC is used and programmed for physical delivery mode. All interrupts go to the BSP<br />
 </td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>2<br />
 </td>
 <td>The APIC is programmed to distribute the interrupts statically across all available CPUs, specifically vector x will be routed to CPU (x mod nr_of_cpus)<br />
 </td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>3<br />
 </td>
 <td>The APIC is programmed for lowest priority delivery mode<br />
@@ -101,6 +95,8 @@ Currently ctOS supports the following interrupt distribution modes which can be 
 </tr>
 </tbody>
 </table>
+
+The same parameter with the same semantics also applies to devices that use MSI to route interrupts.
 
 ## Startup procedure
 

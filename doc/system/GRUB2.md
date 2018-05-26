@@ -545,6 +545,7 @@ Now we can test our installation. We will use the 64 bit version of QEMU and ask
 qemu-system-x86_64 --bios /usr/share/qemu/OVMF.fd -drive id=disk,file=efiimage,if=ide,media=disk -m 512 -debugcon stdio
 ```
 
+Instead of doing all this manually, you can also use the scripts that come with the ctOS source code. The script `bin/efi_image.sh` will use the method described above to create an EFI bootable image. In the script `bin/run.sh`, there is a run target `efi` which brings up an EFI based QEMU instance running ctOS with a simulated IDE disk and a network device. Finally, the target `efi-smp` is an EFI based SMP system with an emulated AHCI drive.
 
 Further reading
 ---------------
