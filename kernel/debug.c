@@ -926,7 +926,10 @@ void debug_main(ir_context_t* ir_context) {
             mptables_print_io_apics();
         }
         else if (0 == strncmp("apicc", cmd, 5)) {
-            mptables_print_apic_conf();
+            if (0 == acpi_used())
+                mptables_print_apic_conf();
+            else
+                apic_print_configuration(acpi_get_primary_ioapic());
         }
         else if (0 == strncmp("irqstat", cmd, 7)) {
             irq_print_stats();

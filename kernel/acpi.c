@@ -160,21 +160,29 @@ static void parse_madt(u32 madt_address, int length) {
                 */
                 if (0 == io_apic_count) {
                     acpi_io_apic = (acpi_io_apic_t*) madt_entry_address;
+                    DEBUG("Parsing IO APIC entry in MADT, base address = %x, gsi_base = %d, id = %x, offset into MADT = %d\n", 
+                        acpi_io_apic->io_apic_address, 
+                        acpi_io_apic->gsi_base, 
+                        acpi_io_apic->io_apic_id,
+                        madt_entry_address - madt_address);
                     if (0 == acpi_io_apic->gsi_base) {
-                        DEBUG("Adding entry for primary IO APIC\n");
                         primary_io_apic.apic_id = acpi_io_apic->io_apic_id;
-                        primary_io_apic.base_address = acpi_io_apic->io_apic_address;
+                        primary_io_apic.phys_base_address = acpi_io_apic->io_apic_address;
+                        primary_io_apic.base_address = 0;
+                        DEBUG("Found IO APIC in MADT, physical base address is %x\n", primary_io_apic.phys_base_address);
                         io_apic_count = 1;
                     }
                 }
                 break;
             case MADT_ENTRY_TYPE_LOCAL_APIC:
-                acpi_lapic = (acpi_lapic_t*) madt_entry_address;
-                local_apics[local_apic_count].acpi_cpu_id = acpi_lapic->acpi_cpu_id;
-                local_apics[local_apic_count].local_apic_id = acpi_lapic->local_apic_id;
-                local_apics[local_apic_count].local_apic_flags = acpi_lapic->local_apic_flags;
-                local_apic_count++;
-                DEBUG("Added entry for local APIC\n");
+                if (local_apic_count < SMP_MAX_CPU) {
+                    acpi_lapic = (acpi_lapic_t*) madt_entry_address;
+                    local_apics[local_apic_count].acpi_cpu_id = acpi_lapic->acpi_cpu_id;
+                    local_apics[local_apic_count].local_apic_id = acpi_lapic->local_apic_id;
+                    local_apics[local_apic_count].local_apic_flags = acpi_lapic->local_apic_flags;
+                    local_apic_count++;
+                    DEBUG("Added entry for local APIC\n");
+                }
                 break;
             case MADT_ENTRY_TYPE_OVERRIDE:
                 /*
@@ -249,7 +257,7 @@ static int parse_rsdt() {
     u32 entry_address = 0;
     u32 table_address;
     int i;
-    MSG("Parsing RSDT\n");
+    MSG("Parsing RSDT at address %x\n", rsdt_address);
     /*
      * Get some data from the header
      */
@@ -434,14 +442,17 @@ void acpi_init() {
         * This will map the local APIC page into virtual memory
         * and therefore requires paging
         */
-        DEBUG("Setting up LAPIC paging for BSP\n");
+        DEBUG("Setting up LAPIC paging for BSP, using LAPIC base address %x\n", local_apic_address);
         apic_init_bsp(local_apic_address);
+    }
+    else {
+        ERROR("Could not determine local APIC address!!\n");
     }
     /*
      * Next we map the memory space used by the IO APIC
      */
-    DEBUG("Mapping IO APIC base address %x into virtual memory\n", primary_io_apic.base_address);
-    primary_io_apic.base_address = mm_map_memio(primary_io_apic.base_address, 14); 
+    DEBUG("Mapping IO APIC base address %x into virtual memory\n", primary_io_apic.phys_base_address);
+    primary_io_apic.base_address = mm_map_memio(primary_io_apic.phys_base_address, 14); 
     /*
      * Inform the CPU module about the local APICs that we have found
      */
@@ -631,7 +642,7 @@ int acpi_get_trigger_polarity(int pin, int* polarity, int* trigger) {
 io_apic_t* acpi_get_primary_ioapic() {
     if (0 == __acpi_used) 
         return 0;
-    if (io_apic_count == 0)
+    if (0 == io_apic_count)
         return 0;
     return &primary_io_apic;
 }
@@ -682,6 +693,13 @@ void acpi_print_madt() {
             local_apics[i].local_apic_id,
             local_apics[i].local_apic_flags);
     }
+    PRINT("Hit any key to continue\n");
+    early_getchar();
+    
+    PRINT("------------------------------------------\n");
+    PRINT("Local APIC base address   %x\n", local_apic_address);
+    PRINT("------------------------------------------\n");
+    
     PRINT("------------------------------------------\n");
     PRINT("Primary IO APIC entry: \n");
     PRINT("------------------------------------------\n");
@@ -689,8 +707,9 @@ void acpi_print_madt() {
         PRINT("None\n");
     }
     else {
-        PRINT("IO APIC ID:      %h\n", primary_io_apic.apic_id);
-        PRINT("Base address:    %x\n", primary_io_apic.base_address);
+        PRINT("IO APIC ID:          %h\n", primary_io_apic.apic_id);
+        PRINT("Base address:        %x\n", primary_io_apic.base_address);
+        PRINT("Phys. base address:  %x\n", primary_io_apic.phys_base_address);
     }
     PRINT("Hit any key to continue\n");
     early_getchar();

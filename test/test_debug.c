@@ -46,6 +46,18 @@ void acpi_print_info() {
     
 }
 
+int acpi_used() {
+    return 0;
+}
+
+io_apic_t* acpi_get_primary_ioapic() {
+    return 0;
+}
+
+void apic_print_configuration(io_apic_t* io_apic) {
+    
+}
+
 int mm_validate() {
     return 0;
 }

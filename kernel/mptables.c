@@ -462,8 +462,9 @@ static void mp_table_process_apic(void* mp_table_entry_ptr) {
     if (0 == acpi_used()) {
         DEBUG("Mapping IO APIC base address %x into virtual memory\n", mp_table_io_apic->io_apic_address);
         io_apic->base_address = mm_map_memio(mp_table_io_apic->io_apic_address, 14);
+        io_apic->phys_base_address = mp_table_io_apic->io_apic_address;
         KASSERT(io_apic->base_address);
-        DEBUG("Done, APIC is not at %x\n,",io_apic->base_address);
+        DEBUG("Done, APIC is now at %x\n,",io_apic->base_address);
     }
     LIST_ADD_END(io_apic_list_head, io_apic_list_tail, io_apic);
 }
@@ -578,6 +579,7 @@ void mptables_init() {
      * to set up the local APIC and map its address
      * range into physical memory
      */
+    DEBUG("Setting up LAPIC paging for BSP, using LAPIC base address %x\n", mp_table->local_apic_address);
     apic_init_bsp(mp_table->local_apic_address);
 }
 

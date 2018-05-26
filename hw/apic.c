@@ -480,6 +480,7 @@ void apic_print_configuration(io_apic_t* io_apic) {
     io_apic_base = (void*) (io_apic->base_address);
     index_register = (u32*) (io_apic_base + IO_APIC_IND);
     data_register = (u32*) (io_apic_base + IO_APIC_DATA);
+    PRINT("Virtual IO APIC base address: %x\n", io_apic->base_address);
     PRINT("Address of index register: %p\n", index_register);
     PRINT("Address of data register: %p\n", data_register);
     /*
