@@ -218,6 +218,7 @@ static int parse_conv_specs_printf(char** ptr, int* flags, int* width,
  * Implementation of kprintf
  * Currently the following format specifiers are supported:
  * X,x,p - format number as 32 bit hex in format 0xFFFF:FFFF
+ * P - format number as 64 bit hex in format FFFF:FFFF:FFFF:FFFF 
  * h - format number as hex with two nibbles
  * w - format number as hex with four nibbles (16 bit word)
  * d - format number as decimal number
@@ -229,7 +230,7 @@ static int parse_conv_specs_printf(char** ptr, int* flags, int* width,
  */
 static void vkprintf(win_t* win, char* template, va_list args) {
     char* ptr;
-    u32 x, c;
+    u32 x, c, low, high;
     char* s;
     u32 i;
     u32 nr_of_digits;
@@ -259,6 +260,13 @@ static void vkprintf(win_t* win, char* template, va_list args) {
                 case 'x':
                     x = va_arg(args, u32);
                     printhex(win, x, 8);
+                    break;
+                case 'P':
+                    low = va_arg(args, u32);
+                    high = va_arg(args, u32);
+                    printhex(win, high, 8);
+                    win_putchar(win, ':');
+                    printhex(win, low, 8);
                     break;
                 case 'h':
                     x = va_arg(args, u32);

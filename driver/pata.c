@@ -1083,16 +1083,15 @@ void pata_print_devices() {
             PRINT("%h    %h   %h     %s   %d       %h\n", i >> 2, (i >> 1) & 0x1, i & 0x1, drives[i].model, drives[i].lba_long,
                     inb(channels[i/2].ata_alt_status));
     PRINT("\n");
-    PRINT("                             First         Last\n");
-    PRINT("Cntl Ch.  Dev.  Partition    Sector        Sector       Size (MB)\n");
-    PRINT("-----------------------------------------------------------------\n");
+    PRINT("                       First                 Last\n");
+    PRINT("Cntl Ch.  Dev.  Part.  Sector                Sector               Size (MB)\n");
+    PRINT("---------------------------------------------------------------------------\n");
     for (i = 0; i < PATA_MAX_CNTL * 4 * PATA_PART_DRIVE; i++) {
         if (partitions[i].used) {
-            /* TODO: print proper 64 bit values here and below */
-            PRINT("%h   %h   %h    %h           %x     %x    %d\n",
+            PRINT("%h   %h   %h    %h     %P   %P  %d\n",
                     i/(PATA_PART_DRIVE*4), (i >> 5) & 0x1, (i >> 4) & 0x1, i % PATA_PART_DRIVE,
-                    (u32) partitions[i].first_sector, (u32) partitions[i].last_sector,
-                    (partitions[i].last_sector+1-partitions[i].first_sector)/2048);
+                    partitions[i].first_sector, partitions[i].last_sector,
+                    (u32) (partitions[i].last_sector+1-partitions[i].first_sector)/2048);
         }
     }
 }

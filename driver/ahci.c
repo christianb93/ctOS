@@ -639,7 +639,6 @@ static void ahci_prepare_request(hd_request_queue_t* request_queue,
      * First determine buffer boundaries and let first chunk start at start of buffer
      */
     buffer_start = request->buffer;
-    /* TODO: should we have an upper limit on request->blocks to avoid overflow here? */
     buffer_end = buffer_start + request->blocks * ATA_BLOCK_SIZE - 1;
     chunk_start = buffer_start;
     while (1) {
@@ -1250,18 +1249,17 @@ void ahci_print_ports() {
                 port->regs->pxssts, port->regs->pxis, port->regs->pxcmd, port->regs->pxserr, port->regs->pxci,
                 (port->regs->pxtfd >> 7) & 0x1, (port->regs->pxtfd >> 3) & 0x1, port->regs->pxtfd & 0x1);
         PRINT("\n");
-        PRINT("                   First         Last\n");
-        PRINT("Port  Partition    Sector        Sector       Size (MB)\n");
-        PRINT("-----------------------------------------------------------------\n");
+        PRINT("               First                Last\n");
+        PRINT("Port  Part.    Sector               Sector                 Size (MB)\n");
+        PRINT("----------------------------------------------------------------------\n");
     }
     LIST_FOREACH(ahci_port_list_head, port) {
         for (i = 1; i <= AHCI_MAX_PARTITIONS; i++) {
             if (port->partitions[i].used == 1) {
-                /* TODO: print proper 64 bit values here */
-                PRINT("%h    %h           %x     %x    %d\n",
+                PRINT("%h    %h       %P  %P    %d\n",
                         (port->minor) / AHCI_MAX_PARTITIONS, i,
-                        (u32) port->partitions[i].first_sector, (u32) port->partitions[i].last_sector,
-                        (port->partitions[i].last_sector+1-port->partitions[i].first_sector)/2048);
+                        port->partitions[i].first_sector, port->partitions[i].last_sector,
+                        (u32) (port->partitions[i].last_sector+1-port->partitions[i].first_sector)/2048);
             }
         }
     }
@@ -1284,9 +1282,14 @@ void ahci_print_queue() {
             PRINT("---------------------------------------------------------------------\n");
             for (j = queue->head; j < queue->tail; j++) {
                 request = &queue->queue[j % HD_QUEUE_SIZE];
-                /* TODO: print proper 64 bit values here */
-                PRINT("%h     %h    %x     %w    %x     %d    %d  %d\n", j % HD_QUEUE_SIZE, request-> rw, request->blocks, request->task_id,
-                        request->semaphore, request->status, request->submitted_by_irq, (u32) request->first_block);
+                PRINT("%h     %h    %x     %w    %x     %d    %d  %P\n", 
+                       j % HD_QUEUE_SIZE, 
+                       request-> rw, 
+                       request->blocks, 
+                       request->task_id,
+                       request->semaphore, request->status, 
+                       request->submitted_by_irq, 
+                       request->first_block);
             }
         }
     }

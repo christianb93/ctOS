@@ -30,7 +30,7 @@ escsamples: escsamples.c
 	gcc -o escsamples escsamples.c
 	
 testargs: testargs.c
-	gcc -o testargs testargs.c 
+	gcc -o testargs testargs.c -m32
 
 testenv: testenv.c
 	gcc -o testenv testenv.c 
