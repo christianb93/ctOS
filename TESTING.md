@@ -118,7 +118,9 @@ The following screenshot shows the outcome of this test. The upper window on the
 
 ![ctOS Basic networking test][3]
 
-Finally, let us try out a TCP/IP connection. To to this, we will now connect our Linux host to a QEMU virtual machine running ctOS. 
+### Advanced networking using a tap device
+
+Next, let us try out a TCP/IP connection. To to this, we will now connect our Linux host to a QEMU virtual machine running ctOS. 
 
 For this purpose, we need to instruct QEMU to attach a tap device to its virtual ethernet bridge. This is essentially a pipe, where one end is a file descriptor to which QEMU connects and the other hand is a virtual networking device. Thus this device is effectively connected to the same virtual bridge that is also used by our virtual machine.
 
@@ -211,6 +213,36 @@ This will fetch the content of the URL httpbin.org/ip and print out the resultin
 
 The first part of the output is the HTTP header that we send over the line. The second part is the HTTP header that we get back, followed by the actual HTTP data. Note that the built-in http function is simply assembling a GET request and printing out the answer including all header information and is not yet able to parse the header. In particular, it does not respect the content length in the header but does a non-blocking read and returns if no new data has arrived for five seconds.
 
+### QEMU user networking
+
+To close this section, let us take a quick look at the **user networking** offered by QEMU. This networking mode is a bit less flexible than using a TAP device, but has the significant advantage that it can be used without elevated privileges. To use this mode, add a switch like
+
+```
+-netdev user,id=netuser -device rtl8139,netdev=netuser
+```
+
+to the QEMU command line (this line is included in some of the ctOS run targets contained in `bin/run.sh`, like the efi-smp target). 
+
+User networking in QEMU works using an embedded user-space networking stack inside QEMU called **SLIRP**. Using this networking stack, QEMU will read packets coming from the emulated networking device, extract the TCP/IP part of it, forward this into the local area network attached to the host and route the answer back using the same mechanism. In addition, QEMU emulates a DNS server and optionally an SMB server. The following diagram shows the network topology emulated by QEMU.
+
+
+![User networking in QEMU](doc/hardware/images/QEMU_Networking_Config4.png)
+
+
+To set up the networking in ctOS, we therefore need to tell ctOS to assign the IP address 10.0.2.15 to the own network device, to set up 10.0.2.2 as gateway and to use 10.0.2.3 as DNS server.
+
+```
+@> net addr eth0 10.0.2.15
+@> route add 0.0.0.0 0.0.0.0 10.0.2.2 eth0
+@> dns add 10.0.2.3
+```
+
+We can now connect to the internet as above, for instance we can again inquire the IP address of the host httpbin.org and read some HTTP test data using
+
+```
+@> host httpbin.org
+@> http httpbin.org/ip
+```
 
 
 ## Debugging options
