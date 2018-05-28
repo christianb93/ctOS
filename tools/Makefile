@@ -1,4 +1,4 @@
-EXE = ext2dump ext2samples dumpconstants timesamples dumpargs testargs streamsamples waitsamples ttysamples dumpchars escsamples dumptty dumptermcap testenv ipsamples testserver testclient tcpsamples udpsamples  testlocale httpclient convertbdf
+EXE = ext2dump ext2samples dumpconstants timesamples dumpargs testargs streamsamples waitsamples ttysamples dumpchars escsamples dumptty dumptermcap testenv ipsamples testserver testclient tcpsamples udpsamples  testlocale httpclient convertbdf getmntent
 
 all: $(EXE)
 
@@ -68,6 +68,10 @@ udpsamples: udpsamples.c
 
 testlocale: testlocale.c
 	gcc -o testlocale testlocale.c
+
+getmntent: getmntent.c
+	gcc -o getmntent getmntent.c
+
 
 clean:
 	rm -f $(EXE)
