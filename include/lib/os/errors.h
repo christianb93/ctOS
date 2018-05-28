@@ -53,5 +53,8 @@
 #define EXDEV 148
 #define EMLINK 149
 #define EFAULT 150
+#define EOPNOTSUPP 10045
+#define ELOOP 10062
+#define ENAMETOOLONG 36
 
 #endif /* __ERRORS_H_ */
