@@ -631,6 +631,20 @@ int testcase40() {
     return 0;
 }
 
+/*
+ * Testcase 41
+ * Tested function: strtoul
+ * Testcase: Convert a decimal integer without leading white space
+ */
+int testcase41() {
+    char* my_string = "12";
+    char* end_ptr;
+    unsigned long result = strtoul(my_string, &end_ptr, 10);
+    ASSERT(12==result);
+    ASSERT(end_ptr==my_string+2);
+    return 0;
+}
+
 int main() {
     INIT;
     RUN_CASE(1);
@@ -673,5 +687,6 @@ int main() {
     RUN_CASE(38);
     RUN_CASE(39);
     RUN_CASE(40);
+    RUN_CASE(41);
     END;
 }

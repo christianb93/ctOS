@@ -225,6 +225,29 @@ unsigned long long strtoull(const char* s, char** end_ptr, int base) {
 }
 
 /*
+ * ANSI C function strtoul
+ * Parameter:
+ * @s - string to parse
+ * @end_ptr - will be set to first character which could not be parsed
+ * @base - base to use
+ * Return value:
+ * unsigned long value of string
+ */
+unsigned long int strtoul(const char* s, char** end_ptr, int base) {
+    int sign = 0;
+    unsigned long long _s = do_conversion(s, end_ptr, base, &sign);
+    /*
+     * Now check if that fits into 
+     * a long int
+     */
+    if (_s > ULONG_MAX) {
+        errno = ERANGE;
+        return ULONG_MAX;
+    }
+    return (unsigned long int) _s;
+}
+
+/*
  * ANSI C function strtoll
  * Parameter:
  * @s - string to parse

@@ -9,6 +9,7 @@
 #define INT_MAX ((int) 0x7FFFFFFF)
 #define UINT_MAX ((unsigned int) 0xFFFFFFFF)
 #define LONG_MAX ((long) 0x7FFFFFFF)
+#define ULONG_MAX ((unsigned int) 0xFFFFFFFF)
 #define LONG_MIN ((long) -0x80000000)
 #define LLONG_MAX ((long long) 0x7FFFFFFFFFFFFFFFLL)
 #define LLONG_MIN ((long long) -0x8000000000000000LL)
