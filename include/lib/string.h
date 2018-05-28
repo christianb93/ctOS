@@ -20,8 +20,6 @@ char *strrchr(const char *s, int c);
 char *strstr(const char *s1, const char *s2);
 int memcmp(const void *s1, const void *s2, size_t n);
 char* strdup(const char* src);
-int strncasecmp(const char* s1, const char* s2, int max);
-int strcasecmp(const char* s1, const char* s2);
 void* memmove(void *s1, const void *s2, size_t n);
 char *strpbrk(const char *s1, const char *s2);
 char *strncat(char* s1, const char* s2, size_t n);

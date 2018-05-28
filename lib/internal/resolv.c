@@ -43,6 +43,7 @@
 #include "lib/unistd.h"
 #include "lib/sys/socket.h"
 #include "lib/string.h"
+#include "lib/strings.h"
 #include "lib/os/resolv.h"
 #include "lib/stdlib.h"
 #include "lib/errno.h"
