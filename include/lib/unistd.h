@@ -68,6 +68,8 @@ char *getcwd(char *buf, size_t size);
 int access(const char *path, int amode);
 void sync(void);
 unsigned int alarm(unsigned int seconds);
+int getdtablesize(void);
+
 
 
 #endif /* _UNISTD_H_ */

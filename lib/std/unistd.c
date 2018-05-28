@@ -549,3 +549,17 @@ int access(const char *path, int amode) {
 void sync() {
 
 }
+
+/*
+ * Return the current limit on the number of file descriptors
+ * that a process can allocate
+ * 
+ * According to POSIX, this is equivalent to calling 
+ * getrlimit() with the RLIMIT_NOFILE option.
+ */
+int getdtablesize(void) {
+    /*
+     * This is from fs.h (FS_MAX_FD)
+     */
+    return 128;
+}
