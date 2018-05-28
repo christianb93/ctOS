@@ -2526,6 +2526,16 @@ static void perform_stat(inode_t* inode, struct __ctOS_stat* buffer) {
     buffer->st_mtime = inode->mtime;
     buffer->st_ctime = 0;
     /*
+     * We only copy st_rdev if the
+     * inode represents a device
+     */
+    if (S_ISCHR(inode->mode) || (S_ISBLK(inode->mode))) {
+        buffer->st_rdev = inode->s_dev;
+    }
+    else {
+        buffer->st_rdev = 0;
+    }
+    /*
      * Release lock again
      */
     rw_lock_release_read_lock(&inode->rw_lock);

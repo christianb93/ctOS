@@ -2192,6 +2192,7 @@ int testcase68() {
     ASSERT(0==do_stat("/hello", &mystat));
     ASSERT(2==mystat.st_ino);
     ASSERT(0==mystat.st_dev);
+    ASSERT(0==mystat.st_rdev);
     ASSERT(S_ISREG(mystat.st_mode));
     ASSERT(mystat.st_size==fat16_hello_inode.size);
     return 0;
@@ -2234,20 +2235,26 @@ int testcase69() {
 
 /*
  * Testcase 70
- * Tested function: isatty
- * Testcase: call isatty on a tty
+ * Tested function: isatty and stat
+ * Testcase: call isatty and stat on a tty
  */
 int testcase70() {
     inode_t* inode;
     fat16_probe_result = 1;
     ext2_probe_result = 1;
     char data;
+    struct __ctOS_stat _mystat;
     setup();
     pid = 0;
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
     ASSERT(0==do_open("/dev/tty", 0, 0));
     ASSERT(1==do_isatty(0));
+    /*
+     * now call stat and check st_rdev
+     */
+    ASSERT(0 == do_stat("/dev/tty", &_mystat));
+    ASSERT(_mystat.st_rdev == DEVICE(2,0));
     return 0;
 }
 

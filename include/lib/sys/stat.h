@@ -9,7 +9,12 @@
 #include "types.h"
 
 /*
- * File status information
+ * File status information. Be careful when changing this - 
+ * it needs to stay in sync with the corresponding structure
+ * in os/stat.h
+ * Note that st_dev is the device on which the file is located,
+ * whereas st_rdev is the device that an inode (if it is a special
+ * file) represents
  */
 struct stat {
     dev_t st_dev;
@@ -19,6 +24,7 @@ struct stat {
     uid_t st_uid;
     gid_t st_gid;
     off_t st_size;
+    dev_t  st_rdev;            
     time_t st_atime;
     time_t st_mtime;
     time_t st_ctime;
