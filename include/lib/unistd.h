@@ -34,7 +34,6 @@
 pid_t fork();
 ssize_t read(int fd, void *buf, size_t count);
 ssize_t write(int fd, const char* buffer, size_t bytes);
-int open(const char* path, int flags, ...);
 int close(int fd);
 int unlink(const char* path);
 int rmdir(char* path);

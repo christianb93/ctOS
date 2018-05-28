@@ -35,5 +35,6 @@
 #define FD_CLOEXEC 0x1
 
 int fcntl(int fd, int cmd, ...);
+int open(const char* path, int flags, ...);
 
 #endif /* _FCNTL_H_ */
