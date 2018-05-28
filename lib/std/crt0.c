@@ -15,6 +15,8 @@
 extern int main(int argc, char** argv, ...);
 extern void _exit(int status);
 extern void _init();
+extern void __exit_init_handlers();
+extern void __exit_run_handlers();
 
 #ifdef SKIP_INIT_CALL
     /*
@@ -57,6 +59,10 @@ void _start(int argc, char** argv, char** envp) {
     unsigned int new_brk;
     int i;
     int envc;
+    /*
+     * Clean up all exit handlers
+     */
+    __exit_init_handlers();
     /*
      * Allocate heap. First we get the current break, i.e. the first
      * unallocated byte
@@ -131,6 +137,10 @@ void _start(int argc, char** argv, char** envp) {
      * Finally invoke main and exit
      */
     int res = main(argc, argv, environ);
+    /*
+     * Invoke exit handlers
+     */
+    __exit_run_handlers();
     _exit(res);
     while(1);
 }

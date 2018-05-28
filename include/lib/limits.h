@@ -32,4 +32,10 @@
  */
 #define LINK_MAX 16
 
+/*
+ * Maximum number of exit handlers
+ */
+#define ATEXIT_MAX 64
+
 #endif /* __LIMITS_H_ */
+
