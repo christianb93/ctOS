@@ -89,8 +89,8 @@ test_fs_stack: test_fs_stack.c ../kernel/blockcache.o ../kernel/fs.o ../kernel/d
 	gcc -o test_fs_stack test_fs_stack.c kunit.o ../kernel/blockcache.o ../kernel/fs.o ../kernel/fs_pipe.o ../kernel/dm.o ../kernel/fs_ext2.o ../kernel/fs_fat16.o ../kernel/kprintf.o -fno-builtin -iquote../include -Wno-packed-bitfield-compat -m32 -Wno-implicit-function-declaration
  
 
-test_tty: test_tty.c ../driver/tty.o ../driver/tty_ld.o kunit.o
-	gcc -o test_tty -g test_tty.c kunit.o ../driver/tty.o ../driver/tty_ld.o ../kernel/kprintf.o -iquote../include -m32 -Wno-implicit-function-declaration
+test_tty: test_tty.c ../driver/tty.o ../driver/tty_ld.o kunit.o ../lib/std/termios.o
+	gcc -o test_tty -g test_tty.c kunit.o ../driver/tty.o ../driver/tty_ld.o ../lib/std/termios.o ../kernel/kprintf.o ../lib/os/libos.a -iquote../include -m32 -Wno-implicit-function-declaration
 	
 test_keyboard: test_keyboard.c ../hw/keyboard.o kunit.o
 	gcc -o test_keyboard test_keyboard.c ../hw/keyboard.o kunit.o ../kernel/kprintf.o -fno-builtin -iquote../include -m32 -Wno-implicit-function-declaration

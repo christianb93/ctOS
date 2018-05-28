@@ -1035,6 +1035,44 @@ int testcase40() {
     return 0;
 }
 
+/*
+ * Testcase 41
+ * Tested function: cfgetospeed, cfsetospeed
+ * Testcase: set and read output baud rate with valid values
+ */
+int testcase41() {
+    struct termios term;
+    ASSERT(0 == cfsetospeed(&term, B38400));
+    ASSERT(B38400 == cfgetospeed(&term));
+    return 0;
+}
+
+/*
+ * Testcase 42
+ * Tested function: cfgetispeed, cfsetispeed
+ * Testcase: set and read output baud rate with a valid value
+ */
+int testcase42() {
+    struct termios term;
+    ASSERT(0 == cfsetispeed(&term, B38400));
+    ASSERT(0 == cfsetospeed(&term, B19200));
+    ASSERT(B38400 == cfgetispeed(&term));
+    ASSERT(B19200 == cfgetospeed(&term));
+    return 0;
+}
+
+/*
+ * Testcase 43
+ * Tested function: cfsetispeed, cfsetospeed
+ * Testcase: try to set baud rates to invalid values
+ */
+int testcase43() {
+    struct termios term;
+    ASSERT(EINVAL == cfsetispeed(&term, 134567));
+    ASSERT(EINVAL == cfsetospeed(&term, 134567));
+    return 0;
+}
+
 int main() {
     INIT;
     RUN_CASE(1);
@@ -1077,6 +1115,9 @@ int main() {
     RUN_CASE(38);
     RUN_CASE(39);
     RUN_CASE(40);
+    RUN_CASE(41);
+    RUN_CASE(42);
+    RUN_CASE(43);
     END;
 }
 
