@@ -87,6 +87,9 @@ struct termios {
 #define PARODD 0x20
 #define HUPCL 0x40
 #define CLOCAL 0x80
+#define CS5 0x100
+#define CS6 0x100
+#define CS7 0x100
 
 /*
  * Baud rates
