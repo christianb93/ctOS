@@ -27,6 +27,7 @@
 #include "mm.h"
 #include "smp_const.h"
 #include "timer.h"
+#include "params.h"
 
 
 /*
@@ -159,7 +160,7 @@ static int startup_ap(int cpuid) {
      * Send INIT IPI
      */
     if (apic_send_ipi(lapic, IPI_INIT, 0x0, 0)) {
-        PANIC("INIT IPI failed\n");
+        PANIC("INIT IPI failed for cpuid %d (lapic = %x)\n", cpuid, lapic);
     }
     /*
      * For an external APIC, we need the INIT Level de-assert IPI in addition
@@ -253,6 +254,13 @@ void smp_start_aps() {
     gdt_ptr_t* gdt_ptr;
     int cpuid;
     int ap_count = 0;
+    /*
+     * If the kernel parameter smp is set to zero, do nothing
+     */
+    if (0 == params_get_int("smp")) {
+        MSG("Skipping APs as smp=0\n");
+        return;
+    }
     MSG("Starting all available CPUs\n");
     /*
      * First copy our trampoline code to its final location

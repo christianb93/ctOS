@@ -275,7 +275,7 @@ int apic_send_ipi(u8 apic_id, u8 ipi, u8 vector, int deassert) {
              * de-assert IPI
              */
             icr_lower_dword &= ~(1 << 14);
-    }
+        }
     }
     /*
      * Write to APIC
@@ -288,7 +288,16 @@ int apic_send_ipi(u8 apic_id, u8 ipi, u8 vector, int deassert) {
         timeout++;
         if (0 == (lapic_read(LOCAL_APIC_ICR_LOW_REG) & (1 << 12)))
             break;
-        if (timeout > 1000) {
+        /*
+         * This busy wait is a bit of a hack, but I do not want to rely on a timer here. In the past, the timeout
+         * was 1000 loops only, but on some machines (a SAMSUNG R540 notebook with 4 logical CPUs), this was causing
+         * timeouts, so I changed this to a deliberately high value
+         */
+        if (timeout > 100000) {
+            ERROR("Waiting for LOCAL_APIC_ICR_LOW_REG failed, value is %x, icr_lower_dword is %x, higher dword of ICR register is%x\n", 
+                            lapic_read(LOCAL_APIC_ICR_LOW_REG), 
+                            icr_lower_dword,
+                            lapic_read(LOCAL_APIC_ICR_HIGH_REG));
             return 1;
         }
     }

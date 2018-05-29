@@ -41,6 +41,7 @@ static char parm_use_bios_font[2];
 static char parm_use_acpi[2];
 static char parm_use_msi[2];
 static char parm_irq_dlv[2];
+static char parm_smp[2];
 
 /*
  *
@@ -63,6 +64,7 @@ static char parm_irq_dlv[2];
  * use_acpi: use ACPI as leading configuration source
  * use_msi: use MSI whenever a device supports this
  * irq_dlv: 1 = fixed delivery mode to BSP. 2 = logical delivery mode, 3 = lowest priority
+ * smp: 0 - only use BSP, 1 - try to bring up all CPUs in the system
  */
  
  
@@ -89,6 +91,7 @@ static kparm_t kparm[] = {
         { "use_acpi", parm_use_acpi, 1, "1", 1 },
         { "use_msi", parm_use_msi, 1, "1", 1 },
         { "irq_dlv", parm_irq_dlv, 1, "1", 1 },
+        { "smp", parm_smp, 1, "1", 1 },
 };
 
 #define NR_KPARM (sizeof(kparm) / sizeof(kparm_t))
