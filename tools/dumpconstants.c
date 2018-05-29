@@ -59,5 +59,9 @@ int main() {
     printf("FNM_NOESCAPE:  %d (hex %x)\n", FNM_NOESCAPE, FNM_NOESCAPE);
     printf("LC_ALL:  %d (hex %x)\n", LC_ALL, LC_ALL);
     printf("LC_TIME:  %d (hex %x)\n", LC_TIME, LC_TIME);
+    printf("LC_COLLATE:  %d (hex %x)\n", LC_COLLATE, LC_COLLATE);
+    printf("LC_CTYPE:  %d (hex %x)\n", LC_CTYPE, LC_CTYPE);
+    printf("LC_NUMERIC:  %d (hex %x)\n", LC_NUMERIC, LC_NUMERIC);
+    printf("LC_MONETARY:  %d (hex %x)\n", LC_MONETARY, LC_MONETARY);
 }
 
