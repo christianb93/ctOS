@@ -69,7 +69,7 @@ int access(const char *path, int amode);
 void sync(void);
 unsigned int alarm(unsigned int seconds);
 int getdtablesize(void);
-
+int getpagesize(void);
 
 
 #endif /* _UNISTD_H_ */

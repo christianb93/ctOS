@@ -563,3 +563,11 @@ int getdtablesize(void) {
      */
     return 128;
 }
+
+/* 
+ * Return the memory page size
+ * 
+ */
+int getpagesize() {
+  return 4096;  
+}
