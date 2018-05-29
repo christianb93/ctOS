@@ -84,5 +84,6 @@ int fstat(int fd, struct stat* buf);
 mode_t umask(mode_t cmask);
 int chmod(const char* path, mode_t mode);
 int mkdir(const char *path, mode_t mode);
+int mknod(const char *path, mode_t mode, dev_t dev);
 
 #endif /* _STAT_H_ */

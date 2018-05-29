@@ -118,3 +118,12 @@ int chmod(const char* path, mode_t mode) {
     return rc;
 
 }
+
+/*
+ * Create a directory, special file or regular file
+ * 
+ * TODO: actually do this
+ */
+int mknod(const char *path, mode_t mode, dev_t dev) {
+    return 0;
+}

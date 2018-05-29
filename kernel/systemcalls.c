@@ -835,6 +835,18 @@ SYSENTRY(rename) {
     return do_rename((char*) ir_context->ebx, (char*) ir_context->ecx);
 }
 
+/*
+ * link
+ * Parameter:
+ * ebx - old name
+ * ecx - new name
+ */
+SYSENTRY(link) {
+    VALIDATE(ir_context->ebx, 0, 0);
+    VALIDATE(ir_context->ecx, 0, 0);
+    return do_link((char*) ir_context->ebx, (char*) ir_context->ecx);
+}
+
 
 /*
  * setsid
@@ -866,7 +878,7 @@ static st_handler_t systemcalls[] = { fork_entry,
         dup2_entry, fstat_entry, times_entry, getcwd_entry, tcgetattr_entry, time_entry, tcsetattr_entry, socket_entry,
         connect_entry, send_entry, recv_entry, listen_entry, bind_entry, accept_entry, select_entry, alarm_entry,
         sendto_entry, recvfrom_entry, setsockopt_entry, utime_entry, chmod_entry, getsockaddr_entry, mkdir_entry,
-        sigsuspend_entry, rename_entry, setsid_entry, getsid_entry};
+        sigsuspend_entry, rename_entry, setsid_entry, getsid_entry, link_entry};
 
 #define SYSTEM_CALL_ENTRIES (sizeof(systemcalls) / sizeof(st_handler_t))
 

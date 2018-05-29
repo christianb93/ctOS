@@ -422,6 +422,84 @@ int testcase14() {
     return 0;
 }
 
+/*
+ * Create a new file and write some data to it. Then 
+ * create a hard link. Check that the link is there and
+ * that both files are identical. Remove the original file
+ * and check that the new entry is still there. Finally, remove
+ * the new entry again
+ */
+int testcase15() {
+    struct stat mystat;
+    int fd;
+    char data[16];
+    char buffer[16];
+    /*
+     * Check that testtmp1 is not there
+     */
+    int rc = stat("testtmp1", &mystat);
+    ASSERT(-1 == rc);
+    /*
+     * Create it
+     */
+    fd=open("testtmp1", O_CREAT, S_IRWXU);
+    ASSERT(fd);
+    /*
+     * Now write some data to the file
+     */
+    for (int i = 0; i < 16; i++)
+        data[i] = 'b' + i;
+    write(fd, data, 16);
+    close(fd);
+    /*
+     * and stat again
+     */
+    rc = stat("testtmp1", &mystat);
+    ASSERT(0 == rc);    
+    /*
+     * Create the link
+     */
+    rc = link("testtmp1", "testtmp2");
+    ASSERT(0 == rc);
+    /*
+     * Open the second file and check that it has the 
+     * same data
+     */
+    fd = open("testtmp2", 0, 0);
+    ASSERT(fd);
+    memset(buffer, 0, 16);
+    read(fd, buffer, 16);
+    close(fd);
+    for (int i = 0; i < 16; i++) {
+        ASSERT(data[i] == buffer[i]);
+    }
+    /*
+     * Remove the original file
+     */
+    ASSERT(0 == unlink("testtmp1")); 
+    rc = stat("testtmp1", &mystat);
+    ASSERT(-1 == rc);
+    /*
+     * testtmp2 and data should still be there
+     */
+    ASSERT(0 == stat("testtmp2", &mystat));
+    fd = open("testtmp2", 0, 0);
+    ASSERT(fd);
+    memset(buffer, 0, 16);
+    read(fd, buffer, 16);
+    close(fd);
+    for (int i = 0; i < 16; i++) {
+        ASSERT(data[i] == buffer[i]);
+    }
+    /*
+     * Finally remove testtmp2 as well
+     */
+    unlink("testtmp2"); 
+    ASSERT(-1 == stat("testtmp2", &mystat));
+    return 0;
+}
+
+
 int main() {
     INIT;
     RUN_CASE(1);
@@ -438,6 +516,7 @@ int main() {
     RUN_CASE(12);    
     RUN_CASE(13);    
     RUN_CASE(14);    
+    RUN_CASE(15);    
     END;
 }
 

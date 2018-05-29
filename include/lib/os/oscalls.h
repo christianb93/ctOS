@@ -82,5 +82,6 @@ int __ctOS_chmod(char* path, mode_t mode);
 int __ctOS_getsockaddr(int fd, struct sockaddr* laddr, struct sockaddr* faddr, socklen_t* addrlen);
 int __ctOS_setsid();
 pid_t __ctOS_getsid(pid_t pid);
+int __ctOS_link(const char *path1, const char *path2);
 
 #endif /* __OSCALLS_H_ */

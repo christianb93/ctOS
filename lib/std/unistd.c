@@ -83,6 +83,16 @@ int execl(const char* path, const char* arg0, ...) {
 }
 
 /*
+ * Execute a program image, using the PATH
+ */
+int execlp(const char* path, const char* arg0, ...) {
+    /*
+     * TODO: implement this!
+     */
+    return EIO;
+}
+
+/*
  * Put the process to sleep for a given number of seconds
  * Parameters:
  * @seconds - seconds to wait
@@ -585,4 +595,35 @@ int fchown(int fildes, uid_t owner, gid_t group) {
         return EINVAL;
     }
     return 0;
+}
+
+/*
+ * This function will create a new directory entry for the existing file path1 called path2.
+ *
+ * Error codes:
+ * EPERM - the file path1 is a directory
+ * EEXIST - path2 does already exist
+ * ENOENT - path1 or a component of path2 do not exist
+ * 
+ * Based on:
+ * 
+ * POSIX 2004
+ * 
+ * Limitations:
+ * - st_ctime and st_mtime are not modified
+ */
+int link(const char *path1, const char *path2) {
+    int rc = __ctOS_link(path1, path2);
+    if (rc < 0) {
+        errno = -rc;
+        return -1;
+    }
+    return 0;
+} 
+
+/*
+ * TODO: actually implement this
+ */
+int ftruncate(int fildes, off_t length) {
+    return EIO;
 }

@@ -1621,6 +1621,183 @@ int testcase41() {
     return 0;
 }
 
+/*
+ * Testcase 42: add a hard link to /hello to /tmp
+ */
+int testcase42() {
+    struct __ctOS_stat mystat;
+    int ref_count;
+    int parent_inode_nr;
+    int fd;
+    char buffer1[256];
+    char buffer2[256];
+    /*
+     * Verify test setup
+     */
+    ASSERT(0 == do_stat("/tmp", &mystat));
+    ASSERT(0 == do_stat("/hello", &mystat));
+    /*
+     * Remember reference count
+     */
+    ref_count = fs_ext2_print_cache_info();    
+    /*
+     * Now add a hardlink
+     */
+    ASSERT(0 == do_link("/hello", "/tmp/aaa"));
+    /*
+     * Verify that the file is there
+     */
+    ASSERT(0 == do_stat("/tmp/aaa", &mystat));
+    /*
+     * and that we have not broken any reference counts
+     */
+    ASSERT(ref_count == fs_ext2_print_cache_info());
+    /*
+     * Open both files and read - content should be the same
+     */
+    memset(buffer1, 0, 255);
+    memset(buffer2, 0, 255);
+    fd = do_open("/tmp/aaa",0, 0);
+    ASSERT(do_read(fd, buffer1, 6));
+    do_close(fd);
+    fd = do_open("/hello",0, 0);
+    ASSERT(do_read(fd, buffer2, 6));
+    do_close(fd);
+    ASSERT(0 == strcmp(buffer1, buffer2));
+    return 0;
+}
+
+/*
+ * Testcase 43: add a hard link to an existing file
+ */
+int testcase43() {
+    struct __ctOS_stat mystat;
+    int ref_count;
+    int parent_inode_nr;
+    int fd;
+    int rc;
+    /*
+     * Verify test setup
+     */
+    ASSERT(0 == do_stat("/tmp", &mystat));
+    ASSERT(0 == do_stat("/hello", &mystat));
+    /*
+     * Create a new file
+     */
+    ASSERT((fd = do_open("/bbb", O_CREAT, 0777)) >= 0);
+    do_close(fd);
+    ASSERT(0 == do_stat("/bbb", &mystat));
+    /*
+     * Remember reference count
+     */
+    ref_count = fs_ext2_print_cache_info();    
+    /*
+     * Now add a hardlink to an existing file
+     */
+    rc = do_link("/hello", "/bbb");
+    ASSERT(rc == -EEXIST);
+    /*
+     * Check that we have not broken any reference counts
+     */
+    ASSERT(ref_count == fs_ext2_print_cache_info());
+    /*
+     * Remove our file again
+     */
+    ASSERT(0 == do_unlink("/bbb"));
+    return 0;
+}
+
+/*
+ * Testcase 44: add a symbolic link to a non-existing file
+ */
+int testcase44() {
+    struct __ctOS_stat mystat;
+    int ref_count;
+    int parent_inode_nr;
+    int fd;
+    int rc;
+    /*
+     * Verify test setup
+     */
+    ASSERT(0 == do_stat("/tmp", &mystat));
+    ASSERT(0 == do_stat("/hello", &mystat));
+    ASSERT(0 != do_stat("/youarenotthere", &mystat));
+    /*
+     * Remember reference count
+     */
+    ref_count = fs_ext2_print_cache_info();    
+    /*
+     * Now add a hardlink 
+     */
+    rc = do_link("/youarenothere", "/alsonotthere");
+    ASSERT(rc == -ENOENT);
+    /*
+     * Check that we have not broken any reference counts
+     */
+    ASSERT(ref_count == fs_ext2_print_cache_info());
+    return 0;
+}
+
+
+/*
+ * Testcase 45: apply link to a directory
+ */
+int testcase45() {
+    struct __ctOS_stat mystat;
+    int ref_count;
+    int parent_inode_nr;
+    int fd;
+    int rc;
+    /*
+     * Verify test setup
+     */
+    ASSERT(0 == do_stat("/tmp", &mystat));
+    ASSERT(0 == do_stat("/hello", &mystat));
+    /*
+     * Remember reference count
+     */
+    ref_count = fs_ext2_print_cache_info();    
+    /*
+     * Now add a hardlink to a directory
+     */
+    rc = do_link("/tmp", "/youarenotthere");
+    ASSERT(rc == -EPERM);
+    /*
+     * Check that we have not broken any reference counts
+     */
+    ASSERT(ref_count == fs_ext2_print_cache_info());
+    return 0;
+}
+
+/*
+ * Testcase 46: call link with a target which is a directory
+ */
+int testcase46() {
+    struct __ctOS_stat mystat;
+    int ref_count;
+    int parent_inode_nr;
+    int fd;
+    int rc;
+    /*
+     * Verify test setup
+     */
+    ASSERT(0 == do_stat("/tmp", &mystat));
+    ASSERT(0 == do_stat("/hello", &mystat));
+    /*
+     * Remember reference count
+     */
+    ref_count = fs_ext2_print_cache_info();    
+    /*
+     * Now add a hardlink to a directory
+     */
+    rc = do_link("/hello", "/tmp");
+    ASSERT(rc == -EEXIST);
+    /*
+     * Check that we have not broken any reference counts
+     */
+    ASSERT(ref_count == fs_ext2_print_cache_info());
+    return 0;
+}
 
 int main() {
     INIT;
@@ -1665,6 +1842,11 @@ int main() {
     RUN_CASE(39);
     RUN_CASE(40);
     RUN_CASE(41);
+    RUN_CASE(42);
+    RUN_CASE(43);
+    RUN_CASE(44);
+    RUN_CASE(45);
+    RUN_CASE(46);
     // save();
     END;
     return 0;

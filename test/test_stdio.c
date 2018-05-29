@@ -22,6 +22,10 @@ int __ctOS_rename(char* old, char* new) {
     return -1;
 }
 
+int __ctOS_link(const char *path1, const char *path2) {
+    return -ENOENT;
+}
+
 /*
  * Implementation of kputchar so that we can use kprintf
  */

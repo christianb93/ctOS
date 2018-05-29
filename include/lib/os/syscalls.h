@@ -76,6 +76,8 @@
 #define __SYSNO_RENAME 64
 #define __SYSNO_SETSID 65
 #define __SYSNO_GETSID 66
+#define __SYSNO_LINK 67
+
 
 unsigned int __ctOS_syscall (unsigned int __sysno, int argc, ...);
 

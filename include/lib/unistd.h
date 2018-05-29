@@ -41,6 +41,7 @@ off_t lseek(int fd, off_t offset, int whence);
 int execve(const char *path, char *const argv[], char *const envp[]);
 int execvp(const char *path, char *const argv[]);
 int execl(const char* path, const char* arg0, ...);
+int execlp(const char* path, const char* arg0, ...);
 void _exit(int status);
 unsigned int sleep(unsigned int);
 pid_t getpid();
@@ -71,6 +72,7 @@ unsigned int alarm(unsigned int seconds);
 int getdtablesize(void);
 int getpagesize(void);
 int fchown(int fildes, uid_t owner, gid_t group);
-
+int link(const char *path1, const char *path2);
+int ftruncate(int fildes, off_t length);
 
 #endif /* _UNISTD_H_ */

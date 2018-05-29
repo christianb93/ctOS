@@ -16,6 +16,11 @@ int __ctOS_rename(char* old, char* new) {
 }
 
 
+int __ctOS_link(const char *path1, const char *path2) {
+    return -1;
+}
+
+
 void win_putchar(win_t* win, u8 c) {
     write(1, &c, 1);
 }

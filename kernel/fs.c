@@ -3135,6 +3135,155 @@ exit:
 }
 
 /*
+ * Link a file
+ * Parameter:
+ * @old - path to existing file
+ * @new - path to new file
+ * Return values:
+ * 0 upon success
+ * -ENOENT if the old file does not exist
+ * -EPERM if the old file is a directory
+ * -EEXIST if the new file does already exist 
+ */
+int do_link(char* old, char* new) {
+    inode_t* old_inode = 0;
+    inode_t* new_inode = 0;
+    char* parent_dir = 0;
+    inode_t* new_parent_inode = 0;
+    inode_t* old_parent_inode = 0;
+    char* old_name = 0;
+    char* new_name = 0;
+    int rc;
+    int result = 0;
+    /*
+     * Resolve the old inode
+     */
+    FS_DEBUG("Getting old inode\n");
+    old_inode = fs_get_inode_for_name(old);
+    /*
+     * If the old file does not exist, this is an error
+     */
+    if (0 == old_inode) {
+        FS_DEBUG("Old file does not exist\n");
+        INODE_RELEASE(new_inode);
+        result = -ENOENT;
+        goto exit;
+    }
+    /*
+     * The old file must not be a directory
+     */
+    if (S_ISDIR(old_inode->mode)) {
+        result = -EPERM;
+        goto exit;
+    }
+    /*
+     * Resolve path components of new
+     */
+    FS_DEBUG("Resolving path components\n");
+    if (0 == (parent_dir = (char*) kmalloc(MAX(strlen(new), strlen(old)) + 1))) {
+        ERROR("Could not allocate buffer for path\n");
+        result = -ENOMEM;
+        goto exit;
+    }
+    if (0 == (old_name = (char*) kmalloc(MAX(strlen(new), strlen(old)) + 1))) {
+        ERROR("Could not allocate buffer for file name\n");
+        result = -ENOMEM;
+        goto exit;
+    }
+    if (0 == (new_name = (char*) kmalloc(MAX(strlen(new), strlen(old)) + 1))) {
+        ERROR("Could not allocate buffer for file name\n");
+        result = -ENOMEM;
+        goto exit;
+    }
+    split_path(parent_dir, new, new_name, 0);
+    /*
+     * First get link to new and old parent inode
+     */
+    if (0 == (new_parent_inode = fs_get_inode_for_name(parent_dir))) {
+        result = -ENOENT;
+        goto exit;
+    }
+    split_path(parent_dir,old, old_name, 0);
+    /*
+     * If the new path is a directory, 
+     * return EEXIST
+     */
+    if (0 == strlen(old_name)) {
+         result = -EEXIST;
+         goto exit;
+    }
+    /*
+     * It is not allowed to link . or ..
+     */
+    if ((0 == strcmp(old_name, ".")) || (0 == strcmp(old_name, ".."))) {
+         result = -EEXIST;
+         goto exit;
+    }
+    if (0 == (old_parent_inode = fs_get_inode_for_name(parent_dir))) {
+        result =  -EEXIST;
+        goto exit;
+    }
+    FS_DEBUG("New parent inode is %d, old parent inode is %d\n", new_parent_inode->inode_nr,
+               old_parent_inode->inode_nr);
+    /*
+     * If the parent inode of new is not on the same device as old, fail
+     */
+    if (new_parent_inode->dev != old_inode->dev) {
+         result = -EXDEV;
+         goto exit;
+    }
+    /*
+     * If the new file exists, return an error
+    */
+    new_inode = fs_get_inode_for_name(new);
+    if (new_inode) {
+        INODE_RELEASE(new_inode);
+        result =  -EEXIST;
+        goto exit;
+    }
+    /*
+     * Now lock new parent inode
+     */
+    rw_lock_get_write_lock(&new_parent_inode->rw_lock);
+    /*
+     * Add directory entry pointing to old to new directory
+     */
+    FS_DEBUG("Adding new link for %s to target directory\n", new_name);
+    rc = new_parent_inode->iops->inode_link(new_parent_inode, new_name, old_inode);
+    /*
+     * Release lock on new parent inode again
+     */
+    rw_lock_release_write_lock(&new_parent_inode->rw_lock);
+     /*
+      * If the link operation has failed, return
+      */
+     if (rc) {
+        FS_DEBUG("Return code of inode_link is %d\n", rc);
+        result = -EIO;
+        goto exit;
+    }
+
+exit:
+    /*
+     * Drop references again
+     */
+    INODE_RELEASE(old_inode);
+    INODE_RELEASE(old_parent_inode);
+    INODE_RELEASE(new_parent_inode);
+    /*
+     * and free used memory
+     */
+    if (old_name)
+        kfree((void*) old_name);
+    if (new_name)
+        kfree((void*) new_name);
+    if (parent_dir)
+        kfree((void*) parent_dir);
+    return result;
+}
+
+
+/*
  * Clone the process table entry of a given process
  * Parameters:
  * @source_pid - the id of the source process
