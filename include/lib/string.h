@@ -23,6 +23,7 @@ char* strdup(const char* src);
 void* memmove(void *s1, const void *s2, size_t n);
 char *strpbrk(const char *s1, const char *s2);
 char *strncat(char* s1, const char* s2, size_t n);
+int strcoll(const char *s1, const char *s2);
 
 
 

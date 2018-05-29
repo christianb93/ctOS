@@ -492,3 +492,13 @@ char *strncat(char* s1, const char* s2, size_t n) {
     return s1;
 }
 
+
+/*
+ * Implementation of POSIX strcoll. 
+ * 
+ * As we currently only support the POSIX / C locale, this
+ * is the same as strcmp
+ */
+int strcoll(const char *s1, const char *s2) {
+    return strcmp(s1, s2);
+}
