@@ -6,7 +6,7 @@ clean:
 
 
 dist:
-	(cd .. ; tar cvf /tmp/ctOS.bin.tar bin/ctOSkernel bin/ctOSkernel1 bin/hdimage bin/cdimage.iso bin/run.sh bin/if_up.sh bin/if_down.sh bin/bochs.rc ; )
+	(cd .. ; tar cvf /tmp/ctOS.bin.tar bin/ctOSkernel bin/ctOSkernel1 bin/hdimage bin/cdimage.iso bin/efiimage bin/run.sh bin/if_up.sh bin/if_down.sh bin/bochs.rc ; )
 	cp /tmp/ctOS.bin.tar .
 	gzip ctOS.bin.tar
 	rm -f ctOS.bin.tar
