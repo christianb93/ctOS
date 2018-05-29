@@ -38,6 +38,32 @@ int wctomb(char *s, wchar_t wchar) {
     return -1;
 }
 
+
+/*
+ * If s is not a null pointer, mbtowc() shall determine the number of bytes that constitute the character pointed to by s. 
+ * It shall then determine the wide-character code for the value of type wchar_t that corresponds to that character. 
+ * (The value of the wide-character code corresponding to the null byte is 0.) 
+ * If the character is valid and pwc is not a null pointer, mbtowc() shall store the wide-character code in the object pointed to by pwc.
+ * 
+ * BASED ON: POSIX 2004
+ *
+ * LIMITATIONS:
+ *
+ * Only the C / POSIX locale is supported, i.e. trivial conversion of ASCII codes 0 - 127 to their
+ * corresponding wide char and multibyte characters
+ *
+ */
+int mbtowc(wchar_t * pwc, const char * s, size_t n) {
+    if (0 == s)
+        return 0;
+    if ((0 <= *s) && (*s <= 127)) {
+        if (pwc)
+            *pwc = *s;
+        return 1;
+    }
+    return -1;
+}
+
 /*
  * Get the current locale
  */
