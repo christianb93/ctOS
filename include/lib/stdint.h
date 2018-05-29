@@ -30,6 +30,7 @@ typedef long long int intmax_t;
 typedef unsigned long long int uintmax_t;
 
 #define INT64_C(c) c ## LL
+#define __INT64_C(c) c ## LL
 
 #define UINT64_C(c) c ## ULL
 
