@@ -193,6 +193,11 @@ typedef struct {
  */
 #define MM_STACK_PAGES_TASK 4
 /*
+ * The initial size of the user space stack
+ * in pages.
+ */
+#define MM_STACK_PAGES_TASK_USER 32
+/*
  * Number of pages which we leave empty between two consecutive
  * stacks for two tasks within the same process
  */

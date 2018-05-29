@@ -2037,7 +2037,7 @@ u32 do_sbrk(u32 size) {
 }
 
 /*
- * Initialize the user area and allocate MM_STACK_PAGES_TASK pages for the user space stack
+ * Initialize the user area and allocate MM_STACK_PAGES_TASK_USER pages for the user space stack
  * Note that this function will not unmap any pages. It does not do page table locking and should only
  * be called once per process
  * Return value:
@@ -2053,7 +2053,7 @@ u32 mm_init_user_area() {
     /*
      * Allocate pages for stack if not yet mapped
      */
-    for (page = MM_PAGE(MM_VIRTUAL_TOS_USER) - MM_STACK_PAGES_TASK + 1; page
+    for (page = MM_PAGE(MM_VIRTUAL_TOS_USER) - MM_STACK_PAGES_TASK_USER + 1; page
             <= MM_PAGE(MM_VIRTUAL_TOS_USER); page++) {
         if (!mm_page_mapped(MM_PAGE_START(page))) {
             if (0 == (phys_page = mm_get_phys_page())) {
