@@ -70,6 +70,7 @@ void sync(void);
 unsigned int alarm(unsigned int seconds);
 int getdtablesize(void);
 int getpagesize(void);
+int fchown(int fildes, uid_t owner, gid_t group);
 
 
 #endif /* _UNISTD_H_ */

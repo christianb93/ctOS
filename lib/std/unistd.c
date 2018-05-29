@@ -571,3 +571,18 @@ int getdtablesize(void) {
 int getpagesize() {
   return 4096;  
 }
+
+
+/*
+ * Change the owner of a file. As file access rights are not yet supported by ctOS, this is
+ * a dummy implementation
+ */
+int fchown(int fildes, uid_t owner, gid_t group) {
+    /*
+     * We only support owner 0 and group 0
+     */
+    if ((owner != 0) || (group != 0)) {
+        return EINVAL;
+    }
+    return 0;
+}
