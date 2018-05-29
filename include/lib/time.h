@@ -26,5 +26,6 @@ char* asctime(const struct tm*);
 char* ctime(const time_t*);
 struct tm *gmtime(const time_t *timep);
 size_t strftime(char* s, size_t maxsize, const char* format, const struct tm* timeptr);
+void tzset();
 
 #endif /* _TIME_H_ */

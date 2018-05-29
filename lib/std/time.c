@@ -509,3 +509,11 @@ size_t strftime(char* s, size_t maxsize, const char* format, const struct tm* ti
     s[bytes_written] = 0;
     return bytes_written;
 }
+
+/*
+ * Set the current timezone based on the value of the environment variable TZ
+ * As only UTC is currently supported by ctOS, this function does nothing
+ */
+void tzset() {
+
+}
