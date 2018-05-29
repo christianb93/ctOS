@@ -13,5 +13,7 @@ int ispunct(int);
 int isprint(int);
 int isblank(int);
 int isgraph(int);
+int toupper(int c);
+int tolower(int c);
 
 #endif

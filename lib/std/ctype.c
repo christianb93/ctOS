@@ -155,3 +155,29 @@ int iscntrl(int x) {
             return 1;
     return 0;
 }
+
+/*
+ * Convert a character to an upper character if the character is a lower character 
+ * (in the POSIX locale, these are * exactly the 26 characters a-z)
+ * 
+ * Return the original character otherwise
+ */
+int toupper(int x) {
+    if (((x) >= 'a') && ((x)<='z')) {
+        return (x - 'a' + 'A');
+    }
+    return x;
+}
+
+/*
+ * Convert a character to a lower character if the character is an upper character 
+ * (in the POSIX locale, these are * exactly the 26 characters A-Z)
+ * 
+ * Return the original character otherwise
+ */
+int tolower(int x) {
+    if (((x) >= 'A') && ((x)<='Z')) {
+        return (x - 'A' + 'a');
+    }
+    return x;
+}
