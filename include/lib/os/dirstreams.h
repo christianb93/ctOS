@@ -42,3 +42,4 @@ typedef struct  {
 int __ctOS_dirstream_open(__ctOS_dirstream_t* stream, int fd);
 __ctOS_direntry_t* __ctOS_dirstream_readdir(__ctOS_dirstream_t* stream);
 void __ctOS_dirstream_close(__ctOS_dirstream_t* stream);
+int __ctOS_dirstream_rewind(__ctOS_dirstream_t* stream);

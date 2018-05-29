@@ -18,5 +18,6 @@ typedef __ctOS_dirstream_t DIR;
 DIR* opendir(const char* dirname);
 struct dirent* readdir(DIR* dirp);
 int closedir(DIR* dirp);
+void rewinddir(DIR* dirp);
 
 #endif /* _DIRENT_H_ */

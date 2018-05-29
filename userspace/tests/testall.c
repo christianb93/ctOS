@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-static char* tests[] = {"testwait", "testfiles", "testjc", "testsignals", "testpipes", "testfork", "testmisc"};
+static char* tests[] = {"testwait", "testfiles", "testjc", "testsignals", "testpipes", "testfork", "testmisc", "testatexit"};
 
 #define NR_OF_TESTS  (sizeof(tests) / sizeof(char*))
 

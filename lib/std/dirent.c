@@ -100,3 +100,17 @@ int closedir(DIR* dirp) {
     __ctOS_dirstream_close(dirp);
     return 0;
 }
+
+
+/*
+ * Rewind a directory stream
+ *
+ * BASED ON: POSIX 2004
+ *
+ * LIMITATIONS: none
+ *
+ *
+ */
+void rewinddir(DIR* dirp) {
+    __ctOS_dirstream_rewind(dirp);
+}

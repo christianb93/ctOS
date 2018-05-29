@@ -89,3 +89,36 @@ void __ctOS_dirstream_close(__ctOS_dirstream_t* stream) {
     if (stream->buffer)
         free((void*) stream->buffer);
 }
+
+/*
+ * Rewind a directory stream. We assume that the stream has been opened 
+ * and refers to a valid file descriptor
+ * Parameter:
+ * @stream - stream to use
+ * Returns:
+ * 0 upon success
+ */
+int __ctOS_dirstream_rewind(__ctOS_dirstream_t* stream) {
+    /*
+     * We give up if there is no buffer allocated yet, in this case
+     * the stream has most likely not been opened. Same thing
+     * if there is no valid file descriptor
+     */
+    if (0 == stream->buffer) {
+        return ENOBUFS;
+    }
+    if (-1 == stream->fd) {
+        return EINVAL;
+    }
+    /*
+     * Reset the buffer control variables
+     */
+    stream->buf_index = 0;
+    stream->buf_end = -1;
+    stream->filpos = 0;    
+    /*
+     * and rewind the actual file
+     */
+    __ctOS_lseek(stream->fd, 0, SEEK_SET);
+    return 0;
+}

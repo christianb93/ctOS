@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <dirent.h>
 
 /*
  * Macro for assertions in unit test cases
@@ -340,6 +341,87 @@ int testcase11() {
     return 0;
 }
 
+/*
+ * Testcase 12:
+ * read an entry from the root directory
+ */
+int testcase12() {
+    DIR* dirp;
+    ASSERT((dirp = opendir("/")));
+    closedir(dirp);
+    return 0;
+}
+
+/*
+ * Testcase 13:
+ * loop once through the root directory and 
+ * make sure that we have seen /tests at least once
+ */
+int testcase13() {
+    DIR* dirp;
+    struct dirent* dirent;
+    int have_tests_dir = 0;
+    ASSERT((dirp = opendir("/")));
+    /*
+     * Now loop through the directory entries
+     */
+    while ((dirent = readdir(dirp))) {
+        if (0 == strcmp("tests", dirent->d_name)) {
+            have_tests_dir = 1;
+        }
+    }
+    closedir(dirp);
+    ASSERT(1 == have_tests_dir);
+    return 0;
+}
+
+/*
+ * Testcase 14:
+ * loop once through the root directory and 
+ * make sure that we have seen /tests at least once. Then
+ * rewind the directory and repeat the exercise
+ */
+int testcase14() {
+    DIR* dirp;
+    struct dirent* dirent;
+    int have_tests_dir = 0;
+    int entries = 0;
+    int i = 0;
+    ASSERT((dirp = opendir("/")));
+    /*
+     * Now loop through the directory entries for the first time
+     */
+    while ((dirent = readdir(dirp))) {
+        if (0 == strcmp("tests", dirent->d_name)) {
+            have_tests_dir = 1;
+        }
+        entries++;
+    }
+    /*
+     * Rewind
+     */
+    rewinddir(dirp);
+    /*
+     * And repeat the exercise
+     */
+    have_tests_dir = 0;
+    while ((dirent = readdir(dirp))) {
+        if (0 == strcmp("tests", dirent->d_name)) {
+            have_tests_dir = 1;
+        }
+        i++;
+    } 
+    /*
+     * Verify that we have seen the same number of entries and 
+     * that we have seen tests again
+     */
+    ASSERT(i == entries);
+    ASSERT(have_tests_dir);
+    closedir(dirp);
+    ASSERT(1 == have_tests_dir);
+    return 0;
+}
+
 int main() {
     INIT;
     RUN_CASE(1);
@@ -353,6 +435,9 @@ int main() {
     RUN_CASE(9);
     RUN_CASE(10);
     RUN_CASE(11);
+    RUN_CASE(12);    
+    RUN_CASE(13);    
+    RUN_CASE(14);    
     END;
 }
 

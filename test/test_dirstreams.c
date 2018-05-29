@@ -24,6 +24,7 @@ void win_kputchar(win_t* win, char c) {
  */
 static int filpos = 0;
 static int getdent_called = 0;
+static int lseek_called = 0;
 int __ctOS_getdent(int fd, __ctOS_direntry_t* direntry) {
     getdent_called = 1;
     if (filpos >9)
@@ -33,6 +34,16 @@ int __ctOS_getdent(int fd, __ctOS_direntry_t* direntry) {
     memset((void*) direntry->name, '0'+filpos, 3);
     filpos++;
     return 0;
+}
+
+/*
+ * Stub for ctOS_lseek
+ */
+off_t __ctOS_lseek(int fd, off_t offset, int whence) {
+    if ((0 == fd) && (0 == offset) && (SEEK_SET == whence)) {
+        filpos = 0;
+        lseek_called = 1;
+    }
 }
 
 /***************************************
@@ -146,6 +157,37 @@ int testcase6() {
 }
 
 
+/*
+ * Testcase 7: read from a directory stream until all directory entries have been read. Then
+ * rewind the stream and read the first entry again
+ */
+int testcase7() {
+    int i;
+    int rc;
+    __ctOS_dirstream_t stream;
+    __ctOS_direntry_t* direntry;
+    ASSERT(0==__ctOS_dirstream_open(&stream, 0));
+    filpos = 0;
+    for (i=0;i<10;i++) {
+        ASSERT(__ctOS_dirstream_readdir(&stream));
+    }
+    ASSERT(0==__ctOS_dirstream_readdir(&stream));
+    /*
+     * Now rewind the stream
+     */
+    rc = __ctOS_dirstream_rewind(&stream);
+    ASSERT(0 == rc);
+    /*
+     * Assert that this did result in a call to lseek
+     */
+    ASSERT(1 == lseek_called);
+    /*
+     * Read one entry 
+     */
+    ASSERT((direntry = __ctOS_dirstream_readdir(&stream)));
+    return 0;
+}
+
 int main() {
     INIT;
     RUN_CASE(1);
@@ -154,5 +196,6 @@ int main() {
     RUN_CASE(4);
     RUN_CASE(5);
     RUN_CASE(6);
+    RUN_CASE(7);
     END;
 }

@@ -127,7 +127,7 @@ test_getopt: test_getopt.c ../lib/std/getopt.o kunit.o
 test_setjmp: test_setjmp.c kunit.o ../lib/internal/setjmp.o
 	gcc -o test_setjmp test_setjmp.c kunit.o ../lib/internal/setjmp.o -iquote../include -m32 -Wno-implicit-function-declaration
 	
-test_dirstreams: test_dirstreams.c kunit.o
+test_dirstreams: test_dirstreams.c kunit.o ../lib/internal/dirstreams.o
 	gcc -o test_dirstreams -fno-builtin test_dirstreams.c kunit.o ../lib/internal/dirstreams.o -iquote../include -m32 -Wno-implicit-function-declaration
 	 
 test_env: test_env.c kunit.o ../lib/std/env.o
