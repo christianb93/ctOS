@@ -2320,7 +2320,6 @@ int testcase58() {
     ssize_t ret;
     inode_t* inode;
     inode_t* next_inode;
-    reset();
     fs_ext2_init();
     super = fs_ext2_get_superblock(DEVICE(MAJOR_RAMDISK, 0));
     ASSERT(super);
@@ -3220,7 +3219,8 @@ int testcase74() {
 }
 
 /*
- * Testcase 75: truncate an inode (sampleC)
+ * Testcase 75: truncate an inode (sampleC). Note that this is large
+ * enough so that we have to walk all blocklist components
  */
 int testcase75() {
     superblock_t* super;
@@ -3236,7 +3236,7 @@ int testcase75() {
     ASSERT(inode);
     ASSERT(inode->iops);
     ASSERT(inode->iops->inode_trunc);
-    ASSERT(0==inode->iops->inode_trunc(inode));
+    ASSERT(0==inode->iops->inode_trunc(inode, 0));
     ASSERT(0==inode->size);
     inode->iops->inode_release(inode);
     return 0;
@@ -3398,6 +3398,176 @@ int testcase78() {
     return 0;
 }
 
+/*
+ * Testcase 79: truncate an inode (sampleC) that uses triple indirect
+ * blocks to a size that needs the same number of blocks
+ */
+int testcase79() {
+    superblock_t* super;
+    inode_t* inode;
+    fs_ext2_init();
+    super = fs_ext2_get_superblock(DEVICE(MAJOR_RAMDISK, 0));
+    ASSERT(super);
+    ext2_metadata_t* ext2_meta = (ext2_metadata_t*) super->data;
+    ASSERT(ext2_meta);
+    ext2_superblock_t* ext2_super = ext2_meta->ext2_super;
+    ASSERT(super->get_inode);
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_C_INODE);
+    ASSERT(inode);
+    ASSERT(inode->iops);
+    ASSERT(inode->iops->inode_trunc);
+    /*
+     * Determine new target size
+     */
+    int target_size = (inode->size / 1024) * 1024 +1 ;
+    ASSERT(target_size < inode->size);
+    ASSERT(0==inode->iops->inode_trunc(inode, target_size));
+    ASSERT(target_size==inode->size);
+    inode->iops->inode_release(inode);
+    return 0;
+}
+
+/*
+ * Testcase 80: truncate an inode that only uses direct blocks to a size
+ * that requires one block less
+ */
+int testcase80() {
+    char buffer[512];
+    superblock_t* super;
+    inode_t* inode;
+    fs_ext2_init();
+    super = fs_ext2_get_superblock(DEVICE(MAJOR_RAMDISK, 0));
+    ASSERT(super);
+    ext2_metadata_t* ext2_meta = (ext2_metadata_t*) super->data;
+    ASSERT(ext2_meta);
+    ext2_superblock_t* ext2_super = ext2_meta->ext2_super;
+    ASSERT(super->get_inode);
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_D_INODE);
+    ASSERT(inode);
+    ASSERT(inode->iops);
+    ASSERT(inode->iops->inode_trunc);
+    /*
+     * Make sure that the file occupies one block only
+     */
+    ASSERT(10 == inode->size);
+    memset(buffer, 1, 512);
+    fs_ext2_inode_write(inode, 512, 10, buffer);
+    fs_ext2_inode_write(inode, 512, 10+512, buffer);
+    inode->iops->inode_release(inode);
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_D_INODE);
+    ASSERT(1034 == inode->size);
+    int target_size = (inode->size / 1024) * 1024 - 1 ;
+    ASSERT(target_size < inode->size);
+    /*
+     * Now truncate
+     */
+    ASSERT(0==inode->iops->inode_trunc(inode, target_size));
+    ASSERT(target_size==inode->size);
+    inode->iops->inode_release(inode);
+    return 0;
+}
+
+/*
+ * Testcase 81: truncate an inode that uses indirect blocks by one block - inode
+ * still has indirect blocks afterwards
+ */
+int testcase81() {
+    char buffer[1024];
+    superblock_t* super;
+    inode_t* inode;
+    fs_ext2_init();
+    super = fs_ext2_get_superblock(DEVICE(MAJOR_RAMDISK, 0));
+    ASSERT(super);
+    ext2_metadata_t* ext2_meta = (ext2_metadata_t*) super->data;
+    ASSERT(ext2_meta);
+    ext2_superblock_t* ext2_super = ext2_meta->ext2_super;
+    ASSERT(super->get_inode);
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_A_INODE);
+    ASSERT(inode);
+    ASSERT(inode->iops);
+    /*
+     * Make sure that we have no indirect blocks yet
+     */
+    ext2_inode_t* ext2_inode =((ext2_inode_data_t*) inode->data)->ext2_inode; 
+    ASSERT(0 == ext2_inode->indirect1);
+    /*
+     * Append bytes until we have an indirect block
+     */
+    memset(buffer, 1, 1024);
+    while ( 0 == ext2_inode->indirect1) {
+        fs_ext2_inode_write(inode, 1024, inode->size, buffer);
+    }
+    ASSERT(ext2_inode->indirect1);
+    ASSERT(0 == ext2_inode->indirect2);
+    /*
+     * Do one more
+     */
+    fs_ext2_inode_write(inode, 1024, inode->size, buffer); 
+    /*
+     * and write to disk
+     */
+    inode->iops->inode_release(inode);
+    /*
+     * Now read the inode again
+     */
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_A_INODE);
+    ext2_inode =((ext2_inode_data_t*) inode->data)->ext2_inode; 
+    ASSERT(ext2_inode->indirect1);    
+    /*
+     * Print out blocklist
+     */
+    /*
+     * Truncate by one block 
+     */
+    int target_size = (inode->size / 1024) * 1024 - 1 ;
+    ASSERT(0 == fs_ext2_inode_trunc(inode, target_size));
+    ASSERT(target_size == inode->size);
+    /*
+     * The inode should still have an indirect block now
+     */
+    ASSERT(ext2_inode->indirect1);     
+    inode->iops->inode_release(inode);
+    return 0;
+}
+
+/*
+ * Testcase 82: truncate an inode that uses indirect blocks by one block - inode
+ * has no indirect blocks any more afterwards
+ */
+int testcase82() {
+    char buffer[1024];
+    superblock_t* super;
+    inode_t* inode;
+    fs_ext2_init();
+    super = fs_ext2_get_superblock(DEVICE(MAJOR_RAMDISK, 0));
+    ASSERT(super);
+    ext2_metadata_t* ext2_meta = (ext2_metadata_t*) super->data;
+    ASSERT(ext2_meta);
+    ext2_superblock_t* ext2_super = ext2_meta->ext2_super;
+    ASSERT(super->get_inode);
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_A_INODE);
+    ASSERT(inode);
+    ASSERT(inode->iops);
+    /*
+     * We should still have one indirect block from the last testcase
+     */
+    ext2_inode_t* ext2_inode =((ext2_inode_data_t*) inode->data)->ext2_inode; 
+    ASSERT(ext2_inode->indirect1);
+    ASSERT(0 == ext2_inode->indirect2);
+    /*
+     * Truncate by one block 
+     */
+    int target_size = (inode->size / 1024) * 1024 - 1 ;
+    ASSERT(0 == fs_ext2_inode_trunc(inode, target_size));
+    ASSERT(target_size == inode->size);
+    /*
+     * The inode should not have an indirect block any more
+     */
+    ASSERT(0 == ext2_inode->indirect1);     
+    inode->iops->inode_release(inode);
+    return 0;
+}
+
 
 int main() {
     INIT;
@@ -3459,27 +3629,34 @@ int main() {
     RUN_CASE(55);
     RUN_CASE(56);
     RUN_CASE(57);
+    reset();
     RUN_CASE(58);
-    RUN_CASE(59);
-    RUN_CASE(60);
-    RUN_CASE(61);
-    RUN_CASE(62);
-    RUN_CASE(63);
-    RUN_CASE(64);
-    RUN_CASE(65);
-    RUN_CASE(66);
-    RUN_CASE(67);
-    RUN_CASE(68);
-    RUN_CASE(69);
-    RUN_CASE(70);
-    RUN_CASE(71);
-    RUN_CASE(72);
-    RUN_CASE(73);
+    RUN_CASE(59);    
+    RUN_CASE(60);    
+    RUN_CASE(61);    
+    RUN_CASE(62);    
+    RUN_CASE(63);    
+    RUN_CASE(64);    
+    RUN_CASE(65);    
+    RUN_CASE(66);    
+    RUN_CASE(67);    
+    RUN_CASE(68);    
+    RUN_CASE(69);    
+    RUN_CASE(70);    
+    RUN_CASE(71);    
+    RUN_CASE(72);    
+    RUN_CASE(73);    
     RUN_CASE(74);
     RUN_CASE(75);
     RUN_CASE(76);
     RUN_CASE(77);
+    reset();
     RUN_CASE(78);
+    reset();
+    RUN_CASE(79);
+    RUN_CASE(80);
+    RUN_CASE(81);
+    RUN_CASE(82);
     /*
      * Uncomment the following line to save a copy of the changed image back to disk as rdimage.new
      * for further analysis (for instance with fsck.ext2 -f -v)

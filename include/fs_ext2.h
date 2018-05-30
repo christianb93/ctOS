@@ -179,7 +179,7 @@ ssize_t fs_ext2_inode_read(struct _inode_t* inode, ssize_t bytes, off_t offset,
         void* data);
 ssize_t fs_ext2_inode_write(struct _inode_t* inode, ssize_t bytes, off_t offset,
         void* data);
-int fs_ext2_inode_trunc(struct _inode_t* inode);
+int fs_ext2_inode_trunc(struct _inode_t* inode, u32 new_size);
 int fs_ext2_get_direntry(struct _inode_t* inode, off_t index,
         direntry_t* direntry);
 inode_t* fs_ext2_create_inode(inode_t* dir, char* name, int mode);

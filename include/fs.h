@@ -41,7 +41,7 @@ struct _superblock_t;
 typedef struct {
     ssize_t (*inode_read)(struct _inode_t* inode, ssize_t bytes, off_t offset, void* data);
     ssize_t (*inode_write)(struct _inode_t* inode, ssize_t bytes, off_t offset, void* data);
-    int (*inode_trunc)(struct _inode_t* inode);
+    int (*inode_trunc)(struct _inode_t* inode, u32 new_size);
     int (*inode_get_direntry)(struct _inode_t* inode, off_t index, direntry_t* direntry);
     struct _inode_t* (*inode_create)(struct _inode_t* parent, char* name, int mode);
     int (*inode_unlink)(struct _inode_t* parent, char* name, int flags);

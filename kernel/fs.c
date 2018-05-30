@@ -2189,7 +2189,7 @@ int do_open(char* path, int flags, int mode) {
     if ((S_ISREG(inode->mode)) && (flags & (O_RDWR+O_WRONLY)) && (flags & O_TRUNC)) {
         FS_DEBUG("Truncating file\n");
         rw_lock_get_write_lock(&inode->rw_lock);
-        if ((rc = inode->iops->inode_trunc(inode))) {
+        if ((rc = inode->iops->inode_trunc(inode, 0))) {
             FS_DEBUG("Truncate failed with rc %d\n", rc);
             rw_lock_release_write_lock(&inode->rw_lock);
             inode->iops->inode_release(inode);

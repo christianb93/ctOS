@@ -44,7 +44,7 @@ The following operations are part of the inode_ops structure.
 
 * read bytes from an inode (`inode_read`)
 * write bytes to an inode (`inode_write`)
-* truncate an inode (`inode_trunc`)
+* truncate an inode (`inode_trunc`) to a given size
 * for inodes of type directory: iterate through the directory entries within the inode (`inode_get_direntry`)
 * indicate to the file system that the pointer to the inode is duplicated so that the reference count on the inode needs to be increased (`inode_clone`)
 * release the inode (`inode_release`) - if this is the last reference to the inode, the inode will be evicted from the cache. If in addition the link count reaches zero on disk, the inode is deleted from disk
@@ -1010,7 +1010,7 @@ However, having the basic building blocks described above in place, writing to a
 
 Additional block allocations are necessary when we cross the boundaries of the regions described by direct, indirect and double indirect blocks. To illustrate the mechanism needed for these special cases let us look at the example of a file which originally only occupies two blocks on the disk, and assume that we write more than 12 kB of data to the file, so that we cross the boundary of block 12 and hence need an indirect block. From `fs_ext_inode_rw`, we will then first call `walk_blocklist`. This function will walk the twelve direct blocks. After block two, it will start to allocate blocks and update the blocklist passed to it (which is actually a part of the inode) with the newly allocated blocks. When this function returns, `walk_indirect_blocklist` will be called next, passing the number of the indirect block as stored in the inode as block number. As this number is zero, a new block will be allocated and its block number will be put into the field i_indirect1 of the inode. Using a copy of this block in memory as blocklist, `walk_blocklist` will then be called again. As all blocks in the direct block are still zero, `walk_blocklist` will allocate more blocks and update the indirect block with their block numbers. It will then return 1 in the dirty flag so that `walk_indirect_blocklist` knows that the blocklist has been changed and writes the indirect block back to disk.
 
-Allocating and deallocating inodes### 
+### Allocating and deallocating inodes
 
 Allocating and deallocating inodes is very similar to allocating and deallocating blocks, given that the involved data structures are very similar in nature. If a new inode needs to be allocated, we first need to scan the block group descriptor table to find a block group in which there is a free inode. We then read the inode bitmap for this block group, locate a free slot, mark the slot as used and write the bitmap back to disk. Again, the corresponding counters in the superblock and the block group descriptor need to be updated as well and written to the device.
 

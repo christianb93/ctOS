@@ -154,7 +154,8 @@ typedef struct _blocklist_walk_t {
     u32 offset;                                  // offset into first block at which we start processing
     dev_t device;                                // device from which we read or to which we write
     int allocate;                                // if this flag is set, new blocks will be allocated during the walk if needed
-    int deallocate;                              // if this is set indirect blocks will be deallocated after visiting them
+    int deallocate;                              // if this is set indirect blocks will be deallocated after visiting them if they are empty
+    int zero;                                    // if this is set, a block will be set to zero in the inode blocklist after visiting it
     ext2_metadata_t* ext2_meta;                  // ext2 metadata structure
     u32 block_group_nr;                          // number of block group in which the inode we process is located
     ext2_inode_t* ext2_inode;                    // the inode which we process
@@ -611,7 +612,6 @@ static int deallocate_block(ext2_metadata_t* ext2_meta, u32 block_nr) {
     u32 index;
     ext2_bgd_t* bgd;
     u8 block_bitmap[BLOCK_SIZE];
-    EXT2_DEBUG("Deallocating block %d\n", block_nr);
     /*
      * Determine block group number and index within group
      */
@@ -1533,6 +1533,7 @@ static int truncate_block(blocklist_walk_t* request, u32 block_nr) {
             ERROR("Could not deallocate block %d\n", block_nr);
             return EIO;
         }
+        request->ext2_inode->i_blocks-=2;
     }
     request->bytes_processed += request->last_byte - request->first_byte + 1;
     request->blocks_processed++;
@@ -1611,6 +1612,14 @@ static int walk_blocklist(blocklist_walk_t* request, u32* blocklist,
             ERROR("Error while processing block %d", blocklist[i]);
             return EIO;
         }
+        /*
+         * If the flag request->zero is set, set the blocklist entry in the inode to zero. We also mark
+         * the blocklist as dirty so it will be written back to disk
+         */
+        if (1 == request->zero) {
+            blocklist[i] = 0;
+            *dirty = 1;
+        }
     }
     return 0;
 }
@@ -1640,6 +1649,7 @@ static int walk_indirect_block(blocklist_walk_t* request, u32 indirect_start,
     u32 actual_end;
     int blocklist_dirty = 0;
     int errno = 0;
+    int indirect_block_empty = 0;
     /*
      * Determine first and last indirect block to read
      */
@@ -1687,16 +1697,27 @@ static int walk_indirect_block(blocklist_walk_t* request, u32 indirect_start,
             return EIO;
         }
     }
+    indirect_block_empty = (0 == ((u32*)(indirect_block))[0]);
     kfree((void*) indirect_block);
+
     /*
      * If requested deallocate indirect block
      */
     if (*block_nr && (1 == request->deallocate)) {
-        if (deallocate_block(request->ext2_meta, *block_nr)) {
-            ERROR("Could not deallocate indirect block %d\n", *block_nr);
-            return EIO;
+        if (indirect_block_empty) {
+            EXT2_DEBUG("Deallocating indirect block %d\n", *block_nr);
+            if (deallocate_block(request->ext2_meta, *block_nr)) {
+                ERROR("Could not deallocate indirect block %d\n", *block_nr);
+                return EIO;
+            }
+            request->ext2_inode->i_blocks-=2;
+            *dirty=1;
+        }
+        else {
+            EXT2_DEBUG("Skipping deallocation as block %d is not empty\n", *block_nr);
         }
     }
+    
     return 0;
 }
 
@@ -1792,6 +1813,7 @@ static int walk_double_indirect_block(blocklist_walk_t* request,
             ERROR("Could not deallocate indirect block %d\n", *block_nr);
             return EIO;
         }
+        request->ext2_inode->i_blocks-=2;
     }
     return 0;
 }
@@ -1871,6 +1893,7 @@ static int walk_triple_indirect_block(blocklist_walk_t* request,
             ERROR("Could not deallocate indirect block %d\n", *block_nr);
             return EIO;
         }
+        request->ext2_inode->i_blocks-=2;
     }
     return 0;
 }
@@ -1900,16 +1923,19 @@ static void init_request(blocklist_walk_t* request, ext2_inode_t* ext2_inode,
     if (EXT2_OP_READ == op) {
         request->allocate = 0;
         request->deallocate = 0;
+        request->zero = 0;
         request->process_block = read_block;
     }
     else  if (EXT2_OP_WRITE == op) {
         request->allocate = 1;
         request->deallocate = 0;
+        request->zero = 0;
         request->process_block = write_block;
     }
     else if (EXT2_OP_TRUNC == op) {
         request->allocate = 0;
         request->deallocate = 1;
+        request->zero = 1;
         request->process_block = truncate_block;
     }
     else
@@ -2001,6 +2027,7 @@ static ssize_t fs_ext2_inode_rw(struct _inode_t* inode, ssize_t bytes,
          * starting at the address of direct block first_block within
          * the inode data structure
          */
+        EXT2_DEBUG("Doing walk in direct area\n");
         if (walk_blocklist(&request, ext2_inode->direct + request.first_block,
                 direct_end - request.first_block + 1, &blocklist_dirty)) {
             ERROR("Error while reading from direct area\n");
@@ -2013,6 +2040,7 @@ static ssize_t fs_ext2_inode_rw(struct _inode_t* inode, ssize_t bytes,
      */
     if ((request.blocks_processed < request.last_block - request.first_block
             + 1) && (request.first_block <= EXT2_LAST_INDIRECT)) {
+        EXT2_DEBUG("Doing walk in indirect area\n");
         if (walk_indirect_block(&request, EXT2_LAST_DIRECT + 1,
                 &(ext2_inode->indirect1), &blocklist_dirty)) {
             ERROR("Error while reading from indirect area\n");
@@ -2136,33 +2164,67 @@ ssize_t fs_ext2_inode_write(struct _inode_t* inode, ssize_t bytes,
  * 0 upon successful completion
  * EIO if an I/O error occured
  */
-int fs_ext2_inode_trunc(inode_t* inode) {
-    int i;
+int fs_ext2_inode_trunc(inode_t* inode, u32 new_size) {
+    int new_blocks = 0;
+    int old_blocks = 0;
     ext2_inode_t* ext2_inode = ((ext2_inode_data_t*) inode->data)->ext2_inode;
     ext2_metadata_t* ext2_meta = ((ext2_inode_data_t*) inode->data)->ext2_meta;
+    /*
+     * We do not yet support enlarging a file via truncate
+     */
+    if (new_size > ext2_inode->i_size) {
+        EXT2_DEBUG("Target size exceeding current size not yet supported\n");
+        return EINVAL;
+    }
     /*
      * Do nothing if the inode is not a regular file or a directory
      */
     if ((!S_ISREG(inode->mode)) && (!S_ISDIR(inode->mode)))
         return 0;
     /*
-     * Deallocate all blocks occupied by the inode
+     * Figure out how many data blocks we need now and after the operation
      */
-    EXT2_DEBUG("Deallocating all blocks occupied by inode on disk\n");
-    if (fs_ext2_inode_rw(inode, inode->size, 0, 0, EXT2_OP_TRUNC) < 0) {
-        return EIO;
-    }
-    for (i = 0;i < 12; i++)
-        ext2_inode->direct[i]=0;
-    ext2_inode->indirect1 = 0;
-    ext2_inode->indirect2 = 0;
-    ext2_inode->indirect3 = 0;
+    EXT2_DEBUG("Current value of i_blocks: %d\n", ext2_inode->i_blocks);
+    new_blocks = (new_size / BLOCK_SIZE) + (new_size % BLOCK_SIZE ? 1 : 0);
+    old_blocks = (ext2_inode->i_size / BLOCK_SIZE) + (ext2_inode->i_size % BLOCK_SIZE ? 1 : 0);
     /*
-     * Set size of inode and number of blocks to zero
+     * Deallocate all blocks occupied by the inode exceeding the target size. 
+     * Note that this will also update the direct blocklist inside the inode.
      */
-    ext2_inode->i_blocks=0;
-    ext2_inode->i_size = 0;
-    inode->size = 0;
+    if (new_blocks != old_blocks) {
+        EXT2_DEBUG("Deallocating blocks starting at byte offset %d occupied by inode on disk\n", new_blocks*BLOCK_SIZE);
+        if (fs_ext2_inode_rw(inode, (old_blocks - new_blocks) * BLOCK_SIZE, new_blocks*BLOCK_SIZE, 0, EXT2_OP_TRUNC) < 0) {
+            return EIO;
+        }
+        /*
+         * See whether we still have indirect blocks
+         */
+        if (new_blocks <= (EXT2_LAST_DIRECT+1)) {
+            EXT2_DEBUG("No indirect blocks any more\n");
+            ext2_inode->indirect1 = 0;
+        }
+        /*
+         * Do we still have double indirect blocks?
+         */
+        if (new_blocks <= (EXT2_LAST_INDIRECT+1)) {
+            EXT2_DEBUG("No double indirect blocks any more\n");
+            ext2_inode->indirect2 = 0;
+        }
+        /*
+         * and what about triple indirect blocks*
+         */
+        if (new_blocks <= (EXT2_LAST_DOUBLE_INDIRECT+1)) {
+            EXT2_DEBUG("No triple indirect blocks any more\n");
+            ext2_inode->indirect3 = 0;
+        }
+    }
+    /*
+     * Set size of inode to new value. Note that during deallocation,
+     * the i_blocks value has already been updated
+     */
+    ext2_inode->i_size = new_size;
+    inode->size = new_size;
+    EXT2_DEBUG("Current value of i_blocks: %d\n", ext2_inode->i_blocks);
     /*
      * Write inode back to disk
      */
@@ -2183,7 +2245,7 @@ static void wipe_inode(inode_t* inode) {
      * Deallocate all blocks occupied by the inode
      */
     EXT2_DEBUG("Deallocating all blocks occupied by inode on disk\n");
-    if (fs_ext2_inode_trunc(inode)) {
+    if (fs_ext2_inode_trunc(inode, 0)) {
         ERROR("Could not truncate inode, proceeding anyway\n");
     }
     /*
@@ -2694,7 +2756,7 @@ static int prep_dir_for_deletion(inode_t* dir, inode_t* parent, int flags) {
      * Truncate directory and adapt link counts to reflect removal of dot
      */
     if (0 == (flags & FS_UNLINK_NOTRUNC)) {
-        fs_ext2_inode_trunc(dir);
+        fs_ext2_inode_trunc(dir, 0);
         ext2_inode->i_link_count = 1;
         dir->link_count = 1;
     }
