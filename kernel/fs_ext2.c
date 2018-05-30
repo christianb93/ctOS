@@ -1625,6 +1625,20 @@ static int walk_blocklist(blocklist_walk_t* request, u32* blocklist,
 }
 
 /*
+ * Check whether an indirect block is empty, i.e. whether all entries
+ * are zero. 
+ */
+static int blocklist_is_empty(u32* indirect_block, u32 blocks) {
+    int i;
+    for (i = 0; i < blocks; i++) {
+        if (indirect_block[i]) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/*
  * Utility function to read or write all blocks referred by an indirect block
  * This function will load an indirect block, i.e. a block containing
  * dword pointers to blocks on disk. Based upon the request structure, it
@@ -1697,7 +1711,17 @@ static int walk_indirect_block(blocklist_walk_t* request, u32 indirect_start,
             return EIO;
         }
     }
-    indirect_block_empty = (0 == ((u32*)(indirect_block))[0]);
+    /*
+     * We need a special processing for a truncate. We know that the part of
+     * the blocklist that we have visited, i.e. starting at entry 
+     * (actual_start - indirect_start)
+     * has been zeroed out by the walk. For a truncate, we also truncate right
+     * to the end of the file, so we always walk a full blocklist or to the end of
+     * the file. So in order to check that we can now safely deallocate the block,
+     * we only have to check that there are no further non-zero entries 
+     * in the first few entries that we have not seen
+     */
+    indirect_block_empty = blocklist_is_empty(indirect_block, actual_start - indirect_start);
     kfree((void*) indirect_block);
 
     /*
@@ -1712,12 +1736,15 @@ static int walk_indirect_block(blocklist_walk_t* request, u32 indirect_start,
             }
             request->ext2_inode->i_blocks-=2;
             *dirty=1;
+            /*
+             * Signal to the caller that we have deallocated the entire block
+             */
+            *block_nr = 0;
         }
         else {
             EXT2_DEBUG("Skipping deallocation as block %d is not empty\n", *block_nr);
         }
     }
-    
     return 0;
 }
 
@@ -1754,6 +1781,7 @@ static int walk_double_indirect_block(blocklist_walk_t* request,
     /*
      * Read double indirect block into memory first
      */
+    EXT2_DEBUG("Starting walk through double indirect block %d, reading data from disk\n", *block_nr);
     double_indirect_block = load_indirect_block(request, block_nr, dirty, &errno);
     if (0 == double_indirect_block) {
         if (errno) {
@@ -1782,6 +1810,7 @@ static int walk_double_indirect_block(blocklist_walk_t* request,
         /*
          * Now process this indirect block
          */
+        EXT2_DEBUG("Calling walk_indirect_block on entry %d\n", block_ptr);
         if (walk_indirect_block(request, indirect_start, double_indirect_block
                 + block_ptr, &blocklist_dirty)) {
             ERROR("Reading indirect block failed\n");
@@ -1804,16 +1833,25 @@ static int walk_double_indirect_block(blocklist_walk_t* request,
             return EIO;
         }
     }
+    int double_indirect_block_empty = blocklist_is_empty(double_indirect_block, block_ptr);
     kfree(double_indirect_block);
     /*
-     * If requested deallocate double indirect block
+     * If requested deallocate double indirect block but only
+     * if no blocks are used in front of the area that we have walked
      */
     if (*block_nr && (1 == request->deallocate)) {
-        if (deallocate_block(request->ext2_meta, *block_nr)) {
-            ERROR("Could not deallocate indirect block %d\n", *block_nr);
-            return EIO;
+        if (double_indirect_block_empty) {
+            EXT2_DEBUG("Deallocating double indirect block %d\n", *block_nr);
+            if (deallocate_block(request->ext2_meta, *block_nr)) {
+                ERROR("Could not deallocate double indirect block %d\n", *block_nr);
+                return EIO;
+            }
+            request->ext2_inode->i_blocks-=2;
+            *block_nr = 0;
         }
-        request->ext2_inode->i_blocks-=2;
+        else {
+            EXT2_DEBUG("Skipping deallocation as double indirect block %d is not empty\n", *block_nr);
+        }
     }
     return 0;
 }
@@ -1884,16 +1922,23 @@ static int walk_triple_indirect_block(blocklist_walk_t* request,
             return EIO;
         }
     }
+    int triple_indirect_block_empty = blocklist_is_empty(triple_indirect_block, block_ptr);
     kfree((void*)triple_indirect_block);
     /*
      * If requested deallocate triple indirect block
      */
     if (*block_nr && (1 == request->deallocate)) {
-        if (deallocate_block(request->ext2_meta, *block_nr)) {
-            ERROR("Could not deallocate indirect block %d\n", *block_nr);
-            return EIO;
+        if (triple_indirect_block_empty) {
+            if (deallocate_block(request->ext2_meta, *block_nr)) {
+                ERROR("Could not deallocate indirect block %d\n", *block_nr);
+                return EIO;
+            }
+            request->ext2_inode->i_blocks-=2;
+            *block_nr = 0;
         }
-        request->ext2_inode->i_blocks-=2;
+        else {
+            EXT2_DEBUG("Skipping deallocation of triple indirect block %d as block is not empty\n", *block_nr);
+        }
     }
     return 0;
 }
@@ -2169,6 +2214,7 @@ int fs_ext2_inode_trunc(inode_t* inode, u32 new_size) {
     int old_blocks = 0;
     ext2_inode_t* ext2_inode = ((ext2_inode_data_t*) inode->data)->ext2_inode;
     ext2_metadata_t* ext2_meta = ((ext2_inode_data_t*) inode->data)->ext2_meta;
+    EXT2_DEBUG("Truncating inode %d from size %d to target size %d\n", inode->inode_nr, inode->size, new_size);
     /*
      * We do not yet support enlarging a file via truncate
      */
@@ -2184,7 +2230,6 @@ int fs_ext2_inode_trunc(inode_t* inode, u32 new_size) {
     /*
      * Figure out how many data blocks we need now and after the operation
      */
-    EXT2_DEBUG("Current value of i_blocks: %d\n", ext2_inode->i_blocks);
     new_blocks = (new_size / BLOCK_SIZE) + (new_size % BLOCK_SIZE ? 1 : 0);
     old_blocks = (ext2_inode->i_size / BLOCK_SIZE) + (ext2_inode->i_size % BLOCK_SIZE ? 1 : 0);
     /*

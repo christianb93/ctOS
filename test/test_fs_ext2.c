@@ -238,6 +238,49 @@ void save() {
     write(fd, (void*) image, TEST_IMAGE_SIZE);
 }
 
+/*******************************************************************
+ * Some functions to validate test results                         *
+ ******************************************************************/
+ 
+#define BITFIELD_GET_BIT(field, bit)   (((*(field + (bit / 8))) >> (bit % 8)) & 0x1)
+
+
+/*
+ * Check whether a block is allocated
+ * Parameter:
+ * @ext2_meta - the metadata structure of the file system
+ * @block_nr - the number of the block to be deallocated
+ * Return value:
+ * 0 if the block is free
+ * 1 otherwise
+ */
+static int is_block_allocated(ext2_metadata_t* ext2_meta, u32 block_nr) {
+    u32 block_group_nr;
+    u32 index;
+    ext2_bgd_t* bgd;
+    u8 block_bitmap[1024];
+    /*
+     * Determine block group number and index within group
+     */
+    block_group_nr = (block_nr - 1) / ext2_meta->ext2_super->s_blocks_per_group;
+    index = (block_nr - 1) % ext2_meta->ext2_super->s_blocks_per_group;
+    if (block_group_nr >= ext2_meta->bgdt_size) {
+        printf("Invalid block group number %d\n", block_group_nr);
+        return -1;
+    }
+    /*
+     * Get entry in block group descriptor table and read block bitmap into
+     * memory
+     */
+    bgd = ext2_meta->bgdt+block_group_nr;
+    if (bc_read_bytes(bgd->bg_block_bitmap, 1024, (void*) block_bitmap, ext2_meta->device, 0)) {
+        printf("Could not read block bitmap from disk\n");
+        return -1;
+    }
+    return (BITFIELD_GET_BIT(block_bitmap, index));
+}
+
+
 /*
  * Testcase 1
  * Tested function: probe
@@ -3099,7 +3142,7 @@ int testcase72() {
 /*
  * Testcase 73
  * Tested function: fs_ext2_unlink_inode
- * Testcase: remove a file which occupies space in the direct, indirect and dobule indirect area and check that the count of free blocks
+ * Testcase: remove a file which occupies space in the direct, indirect and double indirect area and check that the count of free blocks
  * is increased again
  */
 int testcase73() {
@@ -3144,8 +3187,7 @@ int testcase73() {
     ASSERT(ext2_inode);
     used_blocks = ext2_inode->i_blocks / 2;
     fs_ext2_inode_release(inode);
-    /*  - deallocate indirect blocks as well when removing a file
-     *
+    /*  
      * Now remove file
      */
     ASSERT(0==fs_ext2_unlink_inode(root_inode, "sampleB", 0));
@@ -3538,6 +3580,7 @@ int testcase82() {
     char buffer[1024];
     superblock_t* super;
     inode_t* inode;
+    u32 indirect1;
     fs_ext2_init();
     super = fs_ext2_get_superblock(DEVICE(MAJOR_RAMDISK, 0));
     ASSERT(super);
@@ -3552,7 +3595,7 @@ int testcase82() {
      * We should still have one indirect block from the last testcase
      */
     ext2_inode_t* ext2_inode =((ext2_inode_data_t*) inode->data)->ext2_inode; 
-    ASSERT(ext2_inode->indirect1);
+    ASSERT((indirect1 = ext2_inode->indirect1));
     ASSERT(0 == ext2_inode->indirect2);
     /*
      * Truncate by one block 
@@ -3565,6 +3608,187 @@ int testcase82() {
      */
     ASSERT(0 == ext2_inode->indirect1);     
     inode->iops->inode_release(inode);
+    /*
+     * We should now have written back to disk
+     * and can validate that the block has been deallocated
+     */
+    ASSERT(0 == is_block_allocated(ext2_meta, indirect1));
+    return 0;
+}
+
+/*
+ * Testcase 83: truncate an inode with a hole
+ * We simulate the following scenario:
+ * - an inode has direct and three indirect blocks
+ * - the first indirect block is not yet allocated (a "hole")
+ * - we then truncate to remove the last block
+ */
+int testcase83() {
+    char buffer[1024];
+    superblock_t* super;
+    inode_t* inode;
+    u32 indirect1;
+    u32 first_indirect, second_indirect, third_indirect;
+    fs_ext2_init();
+    super = fs_ext2_get_superblock(DEVICE(MAJOR_RAMDISK, 0));
+    ASSERT(super);
+    ext2_metadata_t* ext2_meta = (ext2_metadata_t*) super->data;
+    ASSERT(ext2_meta);
+    ext2_superblock_t* ext2_super = ext2_meta->ext2_super;
+    ASSERT(super->get_inode);
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_A_INODE);
+    ASSERT(inode);
+    ASSERT(inode->iops);
+    /*
+     * From the last testcase, we do not have an indirect block any more,
+     * but all direct blocks are used
+     */
+    ext2_inode_t* ext2_inode =((ext2_inode_data_t*) inode->data)->ext2_inode; 
+    ASSERT(ext2_inode->direct[11]);
+    ASSERT(0 == ext2_inode->indirect1);
+    ASSERT(0 == ext2_inode->indirect2);
+    /*
+     * Now we create a hole. The direct area ends at byte 12 * 1024, and we write 1024 bytes to
+     * offset 13 * 1024 and 14 * 1024
+     */
+    memset(buffer, 1, 1024);
+    fs_ext2_inode_write(inode, 1024, 13*1024, buffer);
+    fs_ext2_inode_write(inode, 1024, 14*1024, buffer);
+    /* 
+     * Release inode and get it again to force flush to the disk
+     */
+    inode->iops->inode_release(inode);
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_A_INODE);
+    ext2_inode =((ext2_inode_data_t*) inode->data)->ext2_inode; 
+    /*
+     * This should have allocated an indirect block
+     * Get it into the buffer and read the first entries
+     * The first entry should be zero, the second and third different from zero
+     */
+    indirect1 = ext2_inode->indirect1;
+    ASSERT(ext2_inode->indirect1);
+    bc_read_bytes(ext2_inode->indirect1, 1024, (void*) buffer, inode->dev, 0);
+    first_indirect = ((u32*) buffer)[0];
+    second_indirect = ((u32*) buffer)[1];
+    third_indirect = ((u32*) buffer)[2];
+    ASSERT(0 == first_indirect);
+    ASSERT(second_indirect);
+    ASSERT(third_indirect);
+    /*
+     * Make sure that the second and third are allocated
+     */
+    ASSERT(is_block_allocated(ext2_meta, second_indirect));
+    ASSERT(is_block_allocated(ext2_meta, third_indirect));
+    /*
+     * Now we truncate so that the last block is deallocated
+     */
+     
+    int target_size = inode->size - 1024;
+    ASSERT(0 == fs_ext2_inode_trunc(inode, target_size));
+    /*
+     * Release inode again to write to disk
+     */
+    inode->iops->inode_release(inode);
+    /*
+     * Now get inode again and verify results
+     */
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_A_INODE);
+    ext2_inode =((ext2_inode_data_t*) inode->data)->ext2_inode; 
+    /*
+     * Check size and block allocations
+     */
+    ASSERT(0 == is_block_allocated(ext2_meta, third_indirect));
+    ASSERT(1 == is_block_allocated(ext2_meta, second_indirect));
+    ASSERT(1 == is_block_allocated(ext2_meta, indirect1));
+    ASSERT(ext2_inode->indirect1);
+    inode->iops->inode_release(inode);        
+    return 0;
+}
+
+/*
+ * Testcase 84: truncate an inode with a double indirect block
+ * such that the double indirect block remains allocated
+ */
+int testcase84() {
+    char buffer[1024];
+    char double_indirect[1024];
+    u32 block1, block2;
+    superblock_t* super;
+    inode_t* inode;
+    int i;
+    u32 indirect1;
+    u32 indirect2;
+    fs_ext2_init();
+    super = fs_ext2_get_superblock(DEVICE(MAJOR_RAMDISK, 0));
+    ASSERT(super);
+    ext2_metadata_t* ext2_meta = (ext2_metadata_t*) super->data;
+    ASSERT(ext2_meta);
+    ext2_superblock_t* ext2_super = ext2_meta->ext2_super;
+    ASSERT(super->get_inode);
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_A_INODE);
+    ASSERT(inode);
+    ASSERT(inode->iops);
+    /*
+     * From the last testcase, we know that this inode has indirect blocks. Fill up to 
+     * the full number of indirect blocks (256)
+     */
+    memset(buffer, 1, 1024);
+    for (i = 0; i < 256; i++)
+        fs_ext2_inode_write(inode, 1024, (12+i)*1024, buffer);
+    /*
+     * Now we want to add a double indirect block that contains two additional
+     * indirect blocks. So we have to write 2*256 additional blocks
+     */
+    for (i = 0; i < 2*256; i++)
+        fs_ext2_inode_write(inode, 1024, (12+256+i)*1024, buffer); 
+    /* 
+     * Release inode and get it again to force flush to the disk
+     */
+    inode->iops->inode_release(inode);
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_A_INODE);
+    ext2_inode_t* ext2_inode =((ext2_inode_data_t*) inode->data)->ext2_inode; 
+    /*
+     * This should have allocated an indirect block
+     * Get it into the buffer and read the first entries
+     */
+    indirect1 = ext2_inode->indirect1;
+    indirect2 = ext2_inode->indirect2;
+    ASSERT(ext2_inode->indirect1);
+    bc_read_bytes(ext2_inode->indirect1, 1024, (void*) buffer, inode->dev, 0);
+    for (i = 0; i < 256; i++)
+        ASSERT(((u32*) buffer)[i]);
+    ASSERT(ext2_inode->indirect2);
+    /*
+     * Read the double indirect block
+     */
+    memset(double_indirect, 0, 1024);
+    bc_read_bytes(indirect2, 1024, double_indirect, DEVICE(MAJOR_RAMDISK, 0), 0);
+    /*
+     * The first and second entry should be used, the third should be zero
+     */
+    block1 = ((u32*) double_indirect)[0];
+    block2 = ((u32*) double_indirect)[1];
+    ASSERT(block1);
+    ASSERT(block2);
+    ASSERT(0 == ((u32*) double_indirect)[2]);
+    /*
+     * Let us now truncate by 256 blocks. That should deallocate
+     * block2, but block1 should remain allocated and the indirect2 block
+     * itself should remain allocated
+     */
+    int target_size = inode->size - 256*1024;
+    ASSERT(0 == fs_ext2_inode_trunc(inode, target_size));
+    inode->iops->inode_release(inode);        
+    /*
+     * Reload and check
+     */
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_A_INODE);
+    ext2_inode =((ext2_inode_data_t*) inode->data)->ext2_inode; 
+    ASSERT(target_size == inode->size);
+    ASSERT(is_block_allocated(ext2_meta, indirect2));
+    ASSERT(is_block_allocated(ext2_meta, block1));
+    ASSERT(0 == is_block_allocated(ext2_meta, block2));
+    inode->iops->inode_release(inode);        
     return 0;
 }
 
@@ -3657,6 +3881,8 @@ int main() {
     RUN_CASE(80);
     RUN_CASE(81);
     RUN_CASE(82);
+    RUN_CASE(83);
+    RUN_CASE(84);
     /*
      * Uncomment the following line to save a copy of the changed image back to disk as rdimage.new
      * for further analysis (for instance with fsck.ext2 -f -v)
