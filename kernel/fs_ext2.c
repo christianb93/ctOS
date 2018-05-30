@@ -2215,12 +2215,18 @@ int fs_ext2_inode_trunc(inode_t* inode, u32 new_size) {
     ext2_inode_t* ext2_inode = ((ext2_inode_data_t*) inode->data)->ext2_inode;
     ext2_metadata_t* ext2_meta = ((ext2_inode_data_t*) inode->data)->ext2_meta;
     EXT2_DEBUG("Truncating inode %d from size %d to target size %d\n", inode->inode_nr, inode->size, new_size);
-    /*
-     * We do not yet support enlarging a file via truncate
-     */
     if (new_size > ext2_inode->i_size) {
-        EXT2_DEBUG("Target size exceeding current size not yet supported\n");
-        return EINVAL;
+        EXT2_DEBUG("Target size exceeding current size, adding hole\n");
+        /*
+         * In this case, we simply set the size to the target size without allocating any
+         * new blocks - we create a hole
+         */
+        inode->size = new_size;
+        ext2_inode->i_size = new_size;
+        if (put_inode(ext2_meta, inode)) {
+            return EIO;
+        }
+        return 0;
     }
     /*
      * Do nothing if the inode is not a regular file or a directory

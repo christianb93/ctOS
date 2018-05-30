@@ -3792,6 +3792,129 @@ int testcase84() {
     return 0;
 }
 
+/*
+ * Testcase 85: use truncate to add a hole to a file which only
+ * has direct blocks before
+ */
+int testcase85() {
+    char buffer[1024];
+    superblock_t* super;
+    inode_t* inode;
+    ext2_inode_t* ext2_inode;
+    int old_blocks;
+    fs_ext2_init();
+    super = fs_ext2_get_superblock(DEVICE(MAJOR_RAMDISK, 0));
+    ASSERT(super);
+    ext2_metadata_t* ext2_meta = (ext2_metadata_t*) super->data;
+    ASSERT(ext2_meta);
+    ext2_superblock_t* ext2_super = ext2_meta->ext2_super;
+    ASSERT(super->get_inode);
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_D_INODE);
+    ASSERT(inode);
+    ASSERT(inode->iops);
+    ASSERT(inode->iops->inode_trunc);
+    /*
+     * Make sure that the file occupies two blocks (one full blocks and
+     * 10 bytes from the next block)
+     */
+    ASSERT(10 == inode->size);
+    memset(buffer, 1, 1024);
+    fs_ext2_inode_write(inode, 1024, 10, buffer);
+    inode->iops->inode_release(inode);
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_D_INODE);
+    ASSERT(1034 == inode->size);
+    /*
+     * Now truncate - we add one additional block
+     */
+    ext2_inode =((ext2_inode_data_t*) inode->data)->ext2_inode;
+    old_blocks = ext2_inode->i_blocks;
+    int target_size = 1034 + 1024;
+    fs_ext2_inode_trunc(inode, target_size);
+    inode->iops->inode_release(inode);
+    /*
+     * Reload and check
+     */
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_D_INODE); 
+    ext2_inode =((ext2_inode_data_t*) inode->data)->ext2_inode;
+    /*
+     * We should not have allocated any additional blocks
+     */
+    ASSERT(old_blocks == ext2_inode->i_blocks);
+    /*
+     * but the size should be correct
+     */
+    ASSERT(target_size == ext2_inode->i_size);
+    ASSERT(target_size == inode->size);
+    /*
+     * If we read from the inode, we should get zeros
+     */
+    memset(buffer, 2, 1024);
+    fs_ext2_inode_read(inode, 10, 1040, buffer);
+    for (int i = 0; i < 10; i++)
+        ASSERT(0 == buffer[i]);
+    inode->iops->inode_release(inode);
+    return 0;
+}
+
+/*
+ * Testcase 86: use truncate to add a hole to a file which only
+ * has direct blocks before - add a "virtual" indirect block
+ */
+int testcase86() {
+    char buffer[1024];
+    superblock_t* super;
+    inode_t* inode;
+    ext2_inode_t* ext2_inode;
+    int old_blocks;
+    fs_ext2_init();
+    super = fs_ext2_get_superblock(DEVICE(MAJOR_RAMDISK, 0));
+    ASSERT(super);
+    ext2_metadata_t* ext2_meta = (ext2_metadata_t*) super->data;
+    ASSERT(ext2_meta);
+    ext2_superblock_t* ext2_super = ext2_meta->ext2_super;
+    ASSERT(super->get_inode);
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_D_INODE);
+    ASSERT(inode);
+    ASSERT(inode->iops);
+    ASSERT(inode->iops->inode_trunc);
+    /*
+     * We use the inode from the previous testcase
+     */
+    ASSERT(2058 == inode->size);
+    /*
+     * Now truncate. At the moment, the file virtually occupies
+     * three blocks. Blow it up to 20
+     */
+    ext2_inode =((ext2_inode_data_t*) inode->data)->ext2_inode;
+    old_blocks = ext2_inode->i_blocks;
+    int target_size = inode->size + 13*1024;
+    fs_ext2_inode_trunc(inode, target_size);
+    inode->iops->inode_release(inode);
+    /*
+     * Reload and check
+     */
+    inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), SAMPLE_D_INODE); 
+    ext2_inode =((ext2_inode_data_t*) inode->data)->ext2_inode;
+    /*
+     * We should not have allocated any additional blocks
+     */
+    ASSERT(old_blocks == ext2_inode->i_blocks);
+    /*
+     * but the size should be correct
+     */
+    ASSERT(target_size == ext2_inode->i_size);
+    ASSERT(target_size == inode->size);
+    /*
+     * If we read from the inode, we should get zeros
+     */
+    memset(buffer, 2, 1024);
+    fs_ext2_inode_read(inode, 10, target_size - 10, buffer);
+    for (int i = 0; i < 10; i++)
+        ASSERT(0 == buffer[i]);
+    inode->iops->inode_release(inode);
+    return 0;
+}
+
 
 int main() {
     INIT;
@@ -3883,6 +4006,9 @@ int main() {
     RUN_CASE(82);
     RUN_CASE(83);
     RUN_CASE(84);
+    reset();
+    RUN_CASE(85);
+    RUN_CASE(86);
     /*
      * Uncomment the following line to save a copy of the changed image back to disk as rdimage.new
      * for further analysis (for instance with fsck.ext2 -f -v)
