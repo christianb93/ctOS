@@ -4,8 +4,8 @@ CC = gcc $(CCFLAGS)
 LD = ld -Ttext 0x40000000 -melf_i386 -e _start
 LIBS = kunit.o ../../lib/std/crt1.o ../../lib/std/crt.a ../../lib/os/libos.a 
 UNATTENDED = testjc.o testwait.o testfiles.o testsignals.o testpipes.o testfork.o testmisc.o 
-OBJ = kunit.o $(UNATTENDED) testrawcons.o testnet.o testall.o testtty.o
-EXEC = testfiles testfork testmisc testpipes testrawcons testtty testsignals testwait testjc testall testnet testatexit
+OBJ = kunit.o $(UNATTENDED) testrawcons.o testnet.o testall.o testtty.o testhello.o
+EXEC = testfiles testfork testmisc testpipes testrawcons testtty testsignals testwait testjc testall testnet testatexit testhello	
 
 
 kunit.o: ../../test/kunit.c
@@ -47,6 +47,9 @@ testnet: testnet.o kunit.o
 testatexit: testatexit.o kunit.o
 	$(LD) testatexit.o $(LIBS) -o testatexit
 
+
+testhello: testhello.o 
+	$(LD) testhello.o $(LIBS) -o testhello
 
 
 all: $(OBJ) $(EXEC) 

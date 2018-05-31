@@ -263,6 +263,104 @@ int testcase4() {
 }
 
 /*
+ * Testcase 5: test the execl system call
+ * Here we fork off a process and in the child call
+ * testhello using exec. We then check that the file
+ * that testhello has created is there and remove it
+ * again
+ */
+int testcase5() {
+    struct stat mystat;
+    int pid = 0;
+    /*
+     * First check that the testfile is NOT there and
+     * remove it if it exists
+     */
+    if (0 == stat("hello", &mystat)) {
+        unlink("hello");
+        ASSERT(stat("hello", &mystat));
+    }
+    /*
+     * Now fork off a process
+     */
+    pid = fork();
+    if (pid < 0) {
+        printf("Could not fork child, exiting\n");
+        _exit(1);
+    }
+    if (0 == pid) {
+        /*
+         * Child
+         */
+        execl("testhello", "testhello", 0);
+        /*
+         * We should never get here
+         */
+        ASSERT(0);
+    }
+    /*
+     * We only reach this point if we are the parent
+     * Wait for child to complete
+     */
+    waitpid(pid, 0, 0);
+    /*
+     * Now verify that the file has been created
+     */
+    ASSERT(0 == stat("hello", &mystat));
+    unlink("hello");
+    return 0;
+}
+
+/*
+ * Testcase 6: test the execl system call with two arguments
+ * Here we fork off a process and in the child call
+ * testhello using exec. We then check that the file
+ * that testhello has created is there and remove it
+ * again
+ */
+int testcase6() {
+    struct stat mystat;
+    int pid = 0;
+    /*
+     * First check that the testfile is NOT there and
+     * remove it if it exists
+     */
+    if (0 == stat("hello", &mystat)) {
+        unlink("hello");
+        ASSERT(stat("hello", &mystat));
+    }
+    /*
+     * Now fork off a process
+     */
+    pid = fork();
+    if (pid < 0) {
+        printf("Could not fork child, exiting\n");
+        _exit(1);
+    }
+    if (0 == pid) {
+        /*
+         * Child
+         */
+        execl("testhello", "testhello", "a", 0);
+        /*
+         * We should never get here
+         */
+        ASSERT(0);
+    }
+    /*
+     * We only reach this point if we are the parent
+     * Wait for child to complete
+     */
+    waitpid(pid, 0, 0);
+    /*
+     * Now verify that the file has been created
+     */
+    ASSERT(0 == stat("hello", &mystat));
+    // unlink("hello");
+    return 0;
+}
+
+/*
  * Main
  */
 int main() {
@@ -271,5 +369,7 @@ int main() {
     RUN_CASE(2);
     RUN_CASE(3);
     RUN_CASE(4);
+    RUN_CASE(5);
+    RUN_CASE(6);
     END;
 }

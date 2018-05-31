@@ -11,6 +11,7 @@
 #include "lib/sys/ioctl.h"
 #include "lib/sys/stat.h"
 #include "lib/string.h"
+#include "lib/limits.h"
 
 extern char** environ;
 
@@ -50,46 +51,162 @@ int execl(const char* path, const char* arg0, ...) {
     va_list ap;
     int i;
     /*
-     * First scan list to see how many arguments we have
+     * First scan list to see how many additional arguments
+     * we have after the path (including arg0)
      */
-    va_start(ap, arg0);
-    while (1) {
-        arg = va_arg(ap, char*);
-        if (arg) {
-            argc++;
-        }
-        else {
-            break;
-        }
+    if (arg0) {
+        va_start(ap, arg0);
+        while (1) {
+            arg = va_arg(ap, char*);
+            if (arg) {
+                argc++;
+            }
+            else {
+                break;
+            }
+        }   
+    va_end(ap);    
     }
-    va_end(ap);
     /*
-     * Now build up array and scan list a second time
+     * Now build up array and scan list a second time. Note that POSIX makes
+     * it the responsibility of the caller to make sure that the first argument
+     * is the filename, we do not do this and make no assumptions on the content
+     * of arg0 and the other arguments. Thus our array will have argc + 1 elements
+     * 
+     * argv[0]    <---- arg0
+     * argv[argc] <---- 0
+     * 
+     * Note that POSIX asks the caller to make sure that the variable list
+     * of arguments is NULL terminated. However, we do not rely on this and
+     * add a trailing NULL to be on the safe side.
      */
     argv = (char**) malloc(sizeof(char*)*(argc+1));
     if (0==argv) {
         errno = ENOMEM;
         return -1;
     }
-    va_start(ap, arg0);
-    for (i=0;i<argc-1;i++) {
-        arg = va_arg(ap, char*);
-        argv[i+1]=arg;
+    if (arg0) {
+        va_start(ap, arg0);
+        for (i=1;i<argc;i++) {
+            arg = va_arg(ap, char*);
+            argv[i]=arg;
+        }
+        va_end(ap);
     }
-    va_end(ap);
+    argv[0] = (char*) arg0;
     argv[argc]=0;
-    argv[0]=(char*) arg0;
     return execvp(path, argv);
 }
 
 /*
- * Execute a program image, using the PATH
+ * Execute a program image, using a filename FILE
+ * 
+ * The argument file is used to construct a pathname that identifies the new process image file. If the file argument 
+ * contains a <slash> character, the file argument is used as the pathname for this file. Otherwise, the path prefix for this file is 
+ * obtained by a search of the directories passed as the environment variable PATH. If this environment variable is not set, the default PATH
+ * "/bin:/usr/bin" is used
+ *
  */
-int execlp(const char* path, const char* arg0, ...) {
+int execlp(const char* file, const char* arg0, ...) {
     /*
-     * TODO: implement this!
+     * This is a bit ugly at the moment - we should move the code that this
+     * has in common with execl into a separate function at some point...
      */
-    return EIO;
+    int argc = 1;
+    char* arg;
+    char** argv;
+    va_list ap;
+    const char* executable = 0;
+    char* path;
+    char* line;
+    char* ptr;
+    struct stat mystat;
+    char buffer[PATH_MAX+1];
+    int i;
+    /*
+     * We need to determine the full path of the executable. First we check whether the 
+     * filename contains a slash, in this case we use it as is
+     */
+    if (0 == file) {
+        return -1;
+    }
+    if (strrchr(file, '/')) {
+        executable = file;
+    }
+    /*
+     * If this did not work, we have to find the path
+     */
+    if (0 == executable) {
+        path = getenv("PATH");
+        if (0 == path)
+            path = "/bin:/usr/bin";
+        /*
+         * We need to make a copy as
+         * we will use strok
+         */
+        line = malloc(strlen(path) + 1);
+        if (0 == line) {
+            return -1;
+        }
+        strcpy(line, path);
+        /*
+         * Now walk the path components
+         */
+        ptr = strtok(line, ":");
+        while (ptr) {
+            /*
+             * Assemble the full file name, ignoring names
+             * that exceed the maximum size
+             */
+            if (strlen(ptr) + strlen(file) < PATH_MAX) {
+                memset(buffer, 0, PATH_MAX);
+                strcpy(buffer, ptr);
+                if (ptr[strlen(ptr)-1] != '/')
+                    strcpy(buffer + strlen(buffer), "/");
+                strcpy(buffer + strlen(buffer), file);
+                if (0 == __ctOS_stat(buffer, &mystat)) {
+                    executable = buffer;
+                    break;
+                }
+            }
+            ptr = strtok(NULL, ":");
+        }
+        free(line);
+    }
+    /*
+     * 
+     * Scan list to see how many additional arguments
+     * we have after the path (including arg0)
+     */
+    if (arg0) {
+        va_start(ap, arg0);
+        while (1) {
+            arg = va_arg(ap, char*);
+            if (arg) {
+                argc++;
+            }
+            else {
+                break;
+            }
+        }   
+    va_end(ap);    
+    }
+    argv = (char**) malloc(sizeof(char*)*(argc+1));
+    if (0==argv) {
+        errno = ENOMEM;
+        return -1;
+    }
+    if (arg0) {
+        va_start(ap, arg0);
+        for (i=1;i<argc;i++) {
+            arg = va_arg(ap, char*);
+            argv[i]=arg;
+        }
+        va_end(ap);
+    }
+    argv[0] = (char*) arg0;
+    argv[argc]=0;
+    return execvp(executable, argv);
 }
 
 /*

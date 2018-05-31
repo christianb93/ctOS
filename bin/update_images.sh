@@ -14,7 +14,7 @@ function copyFiles() {
     e2cp ../userspace/cli $1:bin
     e2cp ../userspace/init $1:bin
     e2cp ../userspace/args $1:bin
-    for i in testjc testwait testfiles testsignals testpipes testfork testmisc testtty testatexit testall testnet
+    for i in testjc testwait testfiles testsignals testpipes testfork testmisc testtty testatexit testall testnet testhello
     do
         e2cp ../userspace/tests/$i $1:tests
     done
