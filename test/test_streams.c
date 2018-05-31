@@ -590,6 +590,286 @@ int testcase25() {
     return 0;
 }
 
+/*
+ * Testcase 26: Test freadahead
+ */
+int testcase26() {
+    __ctOS_stream_t stream;
+    int readahead = 0;
+    filpos = 0;
+    read_called = 0;
+    write_called = 0;
+    setup_testfile();
+    ASSERT(0==__ctOS_stream_open(&stream, 9));
+    ASSERT(0 == __ctOS_stream_freadahead(&stream));
+    /*
+     * This will return only one character, but 
+     * cause the buffer to be filled
+     */
+    ASSERT('a'==__ctOS_stream_getc(&stream));
+    ASSERT(read_called);
+    /* 
+     * Get number of characters that we can read without subsequent
+     * access to the file
+     */
+    readahead = __ctOS_stream_freadahead(&stream);
+    ASSERT(readahead);
+    /*
+     * Now read that number of bytes and verify
+     * that we do really not read
+     */
+    read_called = 0;
+    for (int i = 0; i < readahead; i++) {
+        ASSERT((readahead - i) == __ctOS_stream_freadahead(&stream));
+        ASSERT(__ctOS_stream_getc(&stream));
+    }
+    ASSERT(0 == read_called);
+    /*
+     * Do one more read
+     */
+    ASSERT(__ctOS_stream_getc(&stream));
+    /*
+     * Now we should have accessed the file
+     */
+    ASSERT(read_called);
+    return 0;
+}
+
+/*
+ * Testcase 27: Test freadahead in combination with ungetc
+ */
+int testcase27() {
+    __ctOS_stream_t stream;
+    int readahead = 0;
+    filpos = 0;
+    read_called = 0;
+    write_called = 0;
+    setup_testfile();
+    ASSERT(0==__ctOS_stream_open(&stream, 9));
+    ASSERT(0 == __ctOS_stream_freadahead(&stream));
+    /*
+     * This will return only one character, but 
+     * cause the buffer to be filled
+     */
+    ASSERT('a'==__ctOS_stream_getc(&stream));
+    ASSERT(read_called);
+    /* 
+     * Get number of characters that we can read without subsequent
+     * access to the file
+     */
+    readahead = __ctOS_stream_freadahead(&stream);
+    ASSERT(readahead);
+    /*
+     * Now put one byte back into the stream
+     */
+    __ctOS_stream_ungetc(&stream, 't');
+    /*
+     * This should have increased
+     * readahead by one
+     */
+    ASSERT((readahead + 1) == __ctOS_stream_freadahead(&stream));
+    return 0;
+}
+
+/*
+ * Testcase 28: Test freadptr
+ */
+int testcase28() {
+    __ctOS_stream_t stream;
+    int readahead = 0;
+    const char* ptr;
+    size_t sizep;
+    char c1, c2;
+    filpos = 0;
+    read_called = 0;
+    write_called = 0;
+    setup_testfile();
+    ASSERT(0==__ctOS_stream_open(&stream, 9));
+    ASSERT(0 == __ctOS_stream_freadahead(&stream));
+    /*
+     * This will return only one character, but 
+     * cause the buffer to be filled
+     */
+    ASSERT('a'==__ctOS_stream_getc(&stream));
+    ASSERT(read_called);
+    /* 
+     * Get number of characters that we can read without subsequent
+     * access to the file
+     */
+    readahead = __ctOS_stream_freadahead(&stream);
+    ASSERT(readahead);
+    /*
+     * Now get the pointer to the data
+     */
+    ASSERT((ptr = __ctOS_stream_freadptr(&stream, &sizep)));
+    ASSERT(sizep == readahead);
+    /*
+     * Get the first byte. Then compare this with the
+     * result of getc
+     */
+    c1 = *ptr;
+    ASSERT((c2 = __ctOS_stream_getc(&stream)));
+    ASSERT(c1 == c2);
+    return 0;
+}
+
+/*
+ * Testcase 29: Test freadptr - read last byte from buffer
+ */
+int testcase29() {
+    __ctOS_stream_t stream;
+    int readahead = 0;
+    const char* ptr;
+    size_t sizep;
+    char c1, c2;
+    filpos = 0;
+    read_called = 0;
+    write_called = 0;
+    setup_testfile();
+    ASSERT(0==__ctOS_stream_open(&stream, 9));
+    ASSERT(0 == __ctOS_stream_freadahead(&stream));
+    /*
+     * This will return only one character, but 
+     * cause the buffer to be filled
+     */
+    ASSERT('a'==__ctOS_stream_getc(&stream));
+    ASSERT(read_called);
+    /* 
+     * Read until freadahead is one
+     */
+     while (__ctOS_stream_freadahead(&stream) > 1) {
+         __ctOS_stream_getc(&stream);
+     }
+     ASSERT(1 == __ctOS_stream_freadahead(&stream));
+    /*
+     * Now get the pointer to the data
+     */
+    ASSERT((ptr = __ctOS_stream_freadptr(&stream, &sizep)));
+    ASSERT(sizep == 1);
+    /*
+     * Get the byte. Then compare this with the
+     * result of getc
+     */
+    c1 = *ptr;
+    ASSERT((c2 = __ctOS_stream_getc(&stream)));
+    ASSERT(c1 == c2);
+    /*
+     * As we have now no data anymore, the next call to
+     * freadptr should return 0
+     */
+    ASSERT(0 == __ctOS_stream_freadptr(&stream, &sizep));
+    ASSERT(0 == sizep);
+    return 0;
+}
+
+/*
+ * Testcase 30: Test freadptr - do ungetc
+ */
+int testcase30() {
+    __ctOS_stream_t stream;
+    int readahead = 0;
+    const char* ptr;
+    size_t sizep;
+    char c1, c2;
+    filpos = 0;
+    read_called = 0;
+    write_called = 0;
+    setup_testfile();
+    ASSERT(0==__ctOS_stream_open(&stream, 9));
+    ASSERT(0 == __ctOS_stream_freadahead(&stream));
+    /*
+     * This will return only one character, but 
+     * cause the buffer to be filled
+     */
+    ASSERT('a'==__ctOS_stream_getc(&stream));
+    ASSERT(read_called);
+    /*
+     * Do an ungetc
+     */
+    __ctOS_stream_ungetc(&stream, 'c');
+    /*
+     * Now get the pointer to the data
+     */
+    ptr = __ctOS_stream_freadptr(&stream, &sizep);
+    ASSERT(sizep == 0);
+    ASSERT(ptr == 0);
+    return 0;
+}
+
+/*
+ * Testcase 31: Test freadptrinc 
+ */
+int testcase31() {
+    __ctOS_stream_t stream;
+    int readahead = 0;
+    const char* ptr1;
+    const char* ptr2;
+    size_t sizep;
+    char c1, c2;
+    filpos = 0;
+    read_called = 0;
+    write_called = 0;
+    setup_testfile();
+    ASSERT(0==__ctOS_stream_open(&stream, 9));
+    ASSERT(0 == __ctOS_stream_freadahead(&stream));
+    /*
+     * This will return only one character, but 
+     * cause the buffer to be filled
+     */
+    ASSERT('a'==__ctOS_stream_getc(&stream));
+    ASSERT(read_called);
+    /*
+     * Now get the pointer to the data
+     */
+    ptr1 = __ctOS_stream_freadptr(&stream, &sizep);
+    ASSERT(sizep );
+    ASSERT(ptr1);
+    /*
+     * Seek across one byte
+     */
+    __ctOS_stream_freadptrinc(&stream, 1);
+    ptr2 = __ctOS_stream_freadptr(&stream, &sizep);
+    ASSERT(ptr2 == (ptr1 + 1));
+    return 0;
+}
+
+/*
+ * Testcase 32: Test fpurge
+ */
+int testcase32() {
+    __ctOS_stream_t stream;
+    int readahead = 0;
+    const char* ptr1;
+    const char* ptr2;
+    size_t sizep;
+    char c1, c2;
+    filpos = 0;
+    read_called = 0;
+    write_called = 0;
+    setup_testfile();
+    ASSERT(0==__ctOS_stream_open(&stream, 9));
+    ASSERT(0 == __ctOS_stream_freadahead(&stream));
+    /*
+     * This will return only one character, but 
+     * cause the buffer to be filled. As the buffer size
+     * is BUFSIZ = 256 and is therefore identical to the 
+     * file size, this will read the entire file into the buffer
+     */
+    ASSERT('a'==__ctOS_stream_getc(&stream));
+    ASSERT(read_called);
+    /*
+     * Now call fpurge
+     */
+    __ctOS_stream_fpurge(&stream);
+    /*
+     * Read once more. As we have already exhausted the file, this
+     * should give -1
+     */
+    ASSERT(-1 ==  __ctOS_stream_getc(&stream));
+    return 0;
+}
+
+
 int main() {
     INIT;
     RUN_CASE(1);
@@ -616,5 +896,12 @@ int main() {
     RUN_CASE(23);
     RUN_CASE(24);
     RUN_CASE(25);
+    RUN_CASE(26);
+    RUN_CASE(27);
+    RUN_CASE(28);
+    RUN_CASE(29);
+    RUN_CASE(30);
+    RUN_CASE(31);
+    RUN_CASE(32);
     END;
 }

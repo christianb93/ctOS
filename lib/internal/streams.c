@@ -403,3 +403,84 @@ int __ctOS_stream_geteof(__ctOS_stream_t* stream) {
 int __ctOS_stream_geterror(__ctOS_stream_t* stream) {
     return stream->error;
 }
+
+/*
+ * Set the error code of a stream
+ */
+int __ctOS_stream_seterror(__ctOS_stream_t* stream) {
+    return stream->error;
+}
+
+/*
+ * Return the number of bytes that we can still read from the stream
+ * without having to read from the underlying file descriptor
+ */
+int __ctOS_stream_freadahead(__ctOS_stream_t* stream) {
+    if (0 == stream)
+        return 0;
+    return (stream->ungetc_flag + stream->buf_end + 1 - stream->buf_index);
+}
+
+/*
+ * Return true if the stream is currently doing reading.
+ */
+int __ctOS_stream_freading(__ctOS_stream_t* stream) {
+    if (0 == stream)
+        return 0;
+    return (0 == stream->dirty);
+}
+
+/*
+ * Return a pointer to the part of the input buffer which 
+ * has been read from the file descriptor, but not yet by 
+ * the application. The number of bytes available in this
+ * buffer are written to sizep
+ * 
+ * If there is no buffered data, this function returns 0.
+ * The function will also return 0 if there is a char in the
+ * ungetc buffer
+ */
+const char*  __ctOS_stream_freadptr(__ctOS_stream_t* stream, size_t* sizep) {
+    int retval = 0;
+    if (stream->ungetc_flag) {
+        retval = 0;
+    }
+    else {
+        retval = __ctOS_stream_freadahead(stream);
+    }
+    if (sizep)
+        *sizep = retval;
+    return (retval == 0 ? 0 : (const char*) (stream->buffer + stream->buf_index));
+}
+
+/*
+ * Consume increment bytes from the buffered input, ignoring bytes put back
+ * into the stream using ungetc. If the increment is larger than the current
+ * size of the buffer (i.e. the size of the buffer returned by __ctOS_stream_freadptr),
+ * the maximum possible increment will be applied
+ */
+void __ctOS_stream_freadptrinc(__ctOS_stream_t* stream, size_t increment) {
+    size_t actual_increment = stream->buf_end + 1 - stream->buf_index;
+    if (increment < actual_increment)
+        actual_increment = increment;
+    stream->buf_index += actual_increment;
+}
+
+/*
+ * Purge a stream
+ * 
+ * If the stream is in output mode, all data that has been written to 
+ * the stream but not yet to the underlying file is discarded and the
+ * output buffer is cleared.
+ *
+ * If the stream is in input mode, all data that has been read from the 
+ * file but not yet by the application is discarded. The next read
+ * will deliver data from the current offset into the file as if
+ * the data that is still in the buffered were consumed by the application
+ */
+int __ctOS_stream_fpurge(__ctOS_stream_t* stream) {
+    stream->buf_end = -1;
+    stream->buf_index = 0;
+    stream->ungetc_flag = 0;
+    return 0;
+}

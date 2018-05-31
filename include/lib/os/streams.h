@@ -46,5 +46,8 @@ unsigned int __ctOS_stream_tell(__ctOS_stream_t* stream);
 void __ctOS_stream_clearerr(__ctOS_stream_t* stream);
 int __ctOS_stream_geteof(__ctOS_stream_t* stream);
 int __ctOS_stream_geterror(__ctOS_stream_t* stream);
+int __ctOS_stream_freadahead(__ctOS_stream_t* stream);
+const char*  __ctOS_stream_freadptr(__ctOS_stream_t* stream, size_t* sizep);
+int __ctOS_stream_fpurge(__ctOS_stream_t* stream);
 
 #endif /* __STREAMS_H_ */
