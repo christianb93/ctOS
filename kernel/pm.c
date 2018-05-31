@@ -2465,6 +2465,7 @@ static int setup_user_stack(u32* user_space_stack, char** argv, char** env,
     u32* env_pointers;
     char* last_arg;
     char* last_env_string;
+    int arg_len = 0;
     int i;
     u32 lowest_byte = *user_space_stack - stack_size + 1;
     /*
@@ -2475,12 +2476,14 @@ static int setup_user_stack(u32* user_space_stack, char** argv, char** env,
      */
     if (argv) {
         while (argv[argc]) {
-            (*user_space_stack) -= (strlen(argv[argc]) + 1);
-            if (*user_space_stack < lowest_byte)
+            arg_len = strlen(argv[argc]);
+            (*user_space_stack) -= (arg_len + 1);
+            if ((*user_space_stack) < lowest_byte) {
+                ERROR("Stack size exhausted\n");    
                 return E2BIG;
-            memcpy((void*) (*user_space_stack), (void*) argv[argc], strlen(
-                    argv[argc]));
-            *((char*) (*user_space_stack + strlen(argv[argc]))) = 0;
+            }
+            memset((void*) (*user_space_stack), 0, arg_len+1);
+            memcpy((void*) (*user_space_stack), (void*) argv[argc], arg_len);
             argc++;
         }
     }
@@ -2493,12 +2496,12 @@ static int setup_user_stack(u32* user_space_stack, char** argv, char** env,
      */
     if (env) {
         while (env[envc]) {
-            (*user_space_stack) -= (strlen(env[envc]) + 1);
+            arg_len = strlen(env[envc]);
+            (*user_space_stack) -= (arg_len + 1);
             if (*user_space_stack < lowest_byte)
                 return E2BIG;
-            memcpy((void*) (*user_space_stack), (void*) env[envc], strlen(
-                    env[envc]));
-            *((char*) (*user_space_stack + strlen(env[envc]))) = 0;
+            memset((void*) (*user_space_stack), 0, arg_len+1);
+            memcpy((void*) (*user_space_stack), (void*) env[envc], arg_len);
             envc++;
         }
     }
@@ -2596,6 +2599,70 @@ static int setup_user_stack(u32* user_space_stack, char** argv, char** env,
 }
 
 /*
+ * This utility function will clone an array of strings,
+ * i.e. a null-terminated array of char-pointers. The needed
+ * memory will be allocated using kmalloc
+ */
+static char** clone_string_list(char** list) {
+    int entries;
+    char** new_list;
+    if (0 == list)
+        return 0;
+    /*
+     * First determine number of entries,
+     * excluding the terminating zero
+     */
+    entries = 0;
+    while (list[entries]) {
+        entries++;
+    }
+    /*
+     * Allocate memory needed for that, including one slot
+     * for the trailing zero
+     */
+    new_list = (char**) kmalloc((entries+1)*sizeof(char*));
+    if (0 == new_list) {
+        ERROR("Could not allocate memory for table copy\n");
+        return 0;
+    }
+    /*
+     * Now allocate and copy the individual strings
+     */
+    for (int i = 0; i < entries; i++) {
+        new_list[i] = kmalloc(strlen(list[i]+1));
+        if (0 == new_list[i]) {
+            for (int j=0; j < i; j++) {
+                kfree(new_list[j]);
+            }
+            kfree(new_list);
+            ERROR("Could not allocate memory for table copy\n");
+            return 0;
+        }
+        strcpy(new_list[i], list[i]);
+    }
+    /*
+     * Finally do the trailing zero
+     */
+    new_list[entries] = 0;
+    return new_list;
+}
+
+/*
+ * Free all entries in a string list
+ * and the list itself
+ */
+static void free_string_list(char** list) {
+    if (0 == list)
+        return;
+    int entries = 0;
+    while (list[entries]) {
+        kfree(list[entries]);
+        entries++;
+    }
+    kfree(list);
+}
+
+/*
  * Load a program and execute it.
  * Parameter:
  * @path - name of ELF executable to run
@@ -2615,11 +2682,23 @@ int do_exec(char* path, char** argv, char** envp, ir_context_t* ir_context) {
     proc_t* proc = procs + pm_get_pid();
     int i;
     struct __ctOS_stat mystat;
+    char mypath[PATH_MAX+2];
+    char** myenv = 0;
+    char** myargv = 0;
+    if (0 == path)
+        return EINVAL;
     /*
      * Stat file
      */
     if (do_stat(path, &mystat)) {
         return ENOEXEC;
+    }
+    /*
+     * If the path name is exceeding the maximum return an error
+     */
+    if (strlen(path) > PATH_MAX) {
+        ERROR("Path name too long\n");
+        return E2BIG;
     }
     /*
      * Validate executable to do some basic checks before
@@ -2650,8 +2729,27 @@ int do_exec(char* path, char** argv, char** envp, ir_context_t* ir_context) {
      */
     fs_on_exec(proc->id);
     /*
-     * Set up user space memory layout.
+     * Set up user space memory layout. Note that this will return the top
+     * of the new user space stack. As we will modify this a few lines below, we
+     * must, starting at this point, no longer trust any data that is located in
+     * the user space - this implies in particular to our path variables, the environment
+     * and the arguments as we do not know where the userspace program calling us
+     * has placed this data. 
      */
+    strcpy(mypath, path);
+    if (envp) {
+        if (0 == (myenv = clone_string_list(envp))) {
+            ERROR("No memory for environment copy\n");
+            return ENOMEM;
+        }
+    }
+    if (argv) {
+        if (0 == (myargv = clone_string_list(argv))) {
+            ERROR("No memory for argv copy\n");
+            free_string_list(myenv);
+            return ENOMEM;
+        }
+    }
     if (0 == (user_space_stack = mm_init_user_area())) {
         ERROR("Could not prepare user space for program execution\n");
         proc->force_exit = 1;
@@ -2666,10 +2764,12 @@ int do_exec(char* path, char** argv, char** envp, ir_context_t* ir_context) {
      * have already been overwritten when we call setup_user_stack or - even worse - removed
      * so that we would produce a page fault
      */
-    if (setup_user_stack(&user_space_stack, argv, envp, MM_PAGE_SIZE)) {
+    if (setup_user_stack(&user_space_stack, myargv, myenv, MM_PAGE_SIZE)) {
         ERROR("Stack area not sufficient for arguments\n");
         return E2BIG;
     }
+    free_string_list(myargv);
+    free_string_list(myenv);
     /*
      * Set all user supplied signal handler back to default. We do not need a lock
      * here as all other tasks are gone already
@@ -2684,8 +2784,8 @@ int do_exec(char* path, char** argv, char** envp, ir_context_t* ir_context) {
      * Load executable. If that fails, return but set exit flag
      * so that we will never return to user space
      */
-    if (elf_load_executable(path, &entry_point, 0)) {
-        ERROR("Could not load executable\n");
+    if (elf_load_executable(mypath, &entry_point, 0)) {
+        ERROR("Could not load executable %s\n", path);
         proc->force_exit = 1;
         return ENOEXEC;
     }
