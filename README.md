@@ -32,7 +32,7 @@ Currently, the following features have been implemented:
     * IDE hard drive
     * AHCI hard drive
     * PCI bus
-* Support for ext2 and FAT16 file systems
+* Support for ext2 file system
 * Interrupt routing via PIC, APIC and MSI
 * A full networking stack, supporting ARP, ICMP, IP, UDP, TCP and DNS resolution
 * A simple user-space command line utility
