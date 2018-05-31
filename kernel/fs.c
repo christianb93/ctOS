@@ -3345,7 +3345,7 @@ int do_link(char* old, char* new) {
       */
      if (rc) {
         FS_DEBUG("Return code of inode_link is %d\n", rc);
-        result = -EIO;
+        result = -rc;
         goto exit;
     }
 
