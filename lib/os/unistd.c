@@ -77,3 +77,7 @@ int __ctOS_setsid() {
 pid_t __ctOS_getsid(pid_t pid) {
     return __ctOS_syscall(__SYSNO_GETSID, 1, pid);
 }
+
+int __ctOS_ftruncate(int fd, off_t size) {
+    return __ctOS_syscall(__SYSNO_FTRUNCATE, fd, size);
+}

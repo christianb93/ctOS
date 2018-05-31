@@ -20,6 +20,9 @@ int __ctOS_link(const char *path1, const char *path2) {
     return -1;
 }
 
+int __ctOS_ftruncate(int fd, off_t size) {
+    return -1;
+}
 
 void win_putchar(win_t* win, u8 c) {
     write(1, &c, 1);

@@ -26,6 +26,10 @@ int __ctOS_link(const char *path1, const char *path2) {
     return -ENOENT;
 }
 
+int __ctOS_ftruncate(int fd, off_t size) {
+    return -1;
+}
+
 /*
  * Implementation of kputchar so that we can use kprintf
  */

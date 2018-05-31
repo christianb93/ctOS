@@ -550,13 +550,18 @@ struct _inode_t* dummy_inode_create(struct _inode_t* parent, char* name, int mod
     return 0;
 }
 
+int __fat16_trunc_called = 0;
+int fat_16_trunc(inode_t* inode, u32 size) {
+    __fat16_trunc_called = 1;
+    return 0;
+}
 
 /*
  * fat16 iops
  */
 static inode_ops_t fat16_iops = {
         fat16_read,
-        fat16_write,0,
+        fat16_write,fat_16_trunc,
         fat16_inode_get_direntry, fat16_create_inode, unlink_inode,
         inode_clone,
         inode_release};
@@ -2961,7 +2966,114 @@ int testcase101() {
     return 0;
 }
 
+/*
+ * Testcase 102:
+ * Tested function: fs_ftruncate
+ * Testcase: open a file for writing, then truncate
+ */
+int testcase102() {
+    inode_t* inode;
+    fat16_probe_result = 1;
+    open_file_t* of;
+    char data[6];
+    data[5] = 0;
+    setup();
+    fs_fat16_result = &fat16_superblock;
+    ASSERT(0==fs_init(0));
+    of = fs_open(&fat16_hello_inode, 0);
+    ASSERT(of);
+    ASSERT(of->inode);
+    /*
+     * Now do the actual truncate
+     */
+    __fat16_trunc_called = 0;
+    ASSERT(0 == fs_ftruncate(of, 0));
+    ASSERT(__fat16_trunc_called);
+    return 0;
+}
 
+/*
+ * Testcase 103
+ * Tested function: fs_ftruncate
+ * Testcase: call ftruncate on a directory
+ */
+int testcase103() {
+    inode_t* inode;
+    open_file_t* of;
+    setup();
+    ASSERT(0==fs_init(0));
+    inode = fs_get_inode_for_name("/tmp");
+    of = fs_open(inode, 0);
+    __fat16_trunc_called = 0;
+    ASSERT(-EPERM == fs_ftruncate(of, 0));
+    ASSERT(0 == __fat16_trunc_called);
+}
+
+/*
+ * Testcase 104
+ * Tested function: do_ftruncate
+ * Testcase: call ftruncate on a file descriptor open for writing
+ */
+int testcase104() {
+    inode_t* inode;
+    int fd;
+    setup();
+    ASSERT(0==fs_init(0));
+    fd = do_open("/hello", O_RDWR, 0);
+    __fat16_trunc_called = 0;
+    ASSERT(0 == do_ftruncate(fd, 0));
+    ASSERT(1 == __fat16_trunc_called);
+    return 0;
+}
+
+/*
+ * Testcase 105
+ * Tested function: do_ftruncate
+ * Testcase: call ftruncate on a file descriptor open for reading
+ */
+int testcase105() {
+    inode_t* inode;
+    int fd;
+    setup();
+    ASSERT(0==fs_init(0));
+    fd = do_open("/hello", O_RDONLY, 0);
+    __fat16_trunc_called = 0;
+    ASSERT(-EINVAL == do_ftruncate(fd, 0));
+    ASSERT(0 == __fat16_trunc_called);
+    return 0;
+}
+
+/*
+ * Testcase 106
+ * Tested function: do_ftruncate
+ * Testcase: call ftruncate on an invalid file descriptor
+ */
+int testcase106() {
+    inode_t* inode;
+    setup();
+    ASSERT(0==fs_init(0));
+    __fat16_trunc_called = 0;
+    ASSERT(-EBADF == do_ftruncate(42, 0));
+    ASSERT(0 == __fat16_trunc_called);
+    return 0;
+}
+
+/*
+ * Testcase 107
+ * Tested function: do_ftruncate
+ * Testcase: call ftruncate on a file descriptor with a negative target size
+ */
+int testcase107() {
+    inode_t* inode;
+    int fd;
+    setup();
+    ASSERT(0==fs_init(0));
+    fd = do_open("/hello", O_RDWR, 0);
+    __fat16_trunc_called = 0;
+    ASSERT(-EINVAL == do_ftruncate(fd, -1));
+    ASSERT(0 == __fat16_trunc_called);
+    return 0;
+}
 
 int main() {
     INIT;
@@ -3066,6 +3178,12 @@ int main() {
     RUN_CASE(99);
     RUN_CASE(100);
     RUN_CASE(101);
+    RUN_CASE(102);
+    RUN_CASE(103);
+    RUN_CASE(104);
+    RUN_CASE(105);
+    RUN_CASE(106);
+    RUN_CASE(107);
     END;
 }
 

@@ -622,8 +622,31 @@ int link(const char *path1, const char *path2) {
 } 
 
 /*
- * TODO: actually implement this
+ * ftruncate - truncate a file to a given length
+ * 
+ * This function will truncate the file referred to be the file descriptor fildes to the length given by the second parameter. If
+ * the file is not a regular file or not open for writing, the operation will fail. 
+ * 
+ * If the file size is increased by this operation, i.e. if the new length exceeds the current length of the file, the extra bytes
+ * will read as zero until the new space is filled by a write operation.
+ * 
+ * Errors:
+ * EIO if an IO error occurred
+ * EBADF if the file does not refer to an open file
+ * EINVAL if the size is less than zero
+ * EINVAL if the file has not been opened for writing
+ * EPERM if the file is not a regular file
+ * 
+ * Returns:
+ * 0 upon success
+ * -1 if an error occurred (then errno will be set)
+ * 
  */
 int ftruncate(int fildes, off_t length) {
-    return EIO;
+    int rc = __ctOS_ftruncate(fildes, length);
+    if (rc < 0) {
+        errno = -rc;
+        return -1;
+    }
+    return 0;
 }

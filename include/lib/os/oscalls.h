@@ -83,5 +83,6 @@ int __ctOS_getsockaddr(int fd, struct sockaddr* laddr, struct sockaddr* faddr, s
 int __ctOS_setsid();
 pid_t __ctOS_getsid(pid_t pid);
 int __ctOS_link(const char *path1, const char *path2);
+int __ctOS_ftruncate(int fd, off_t size);
 
 #endif /* __OSCALLS_H_ */

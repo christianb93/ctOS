@@ -179,6 +179,8 @@ void fs_on_exec(int);
 void fs_clone(u32 source_pid, u32 target_pid);
 int fs_print_open_files();
 int fs_get_dirname(inode_t* inode, char* buffer, size_t n);
+ssize_t fs_ftruncate(open_file_t* file, off_t size);
+
 /*
  * The public interface below this line corresponds to system calls
  * and does not know anything about inodes
@@ -222,5 +224,6 @@ int do_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* errorfds, str
 int do_ioctl(int fd, unsigned int cmd, void* arg);
 int do_setsockopt(int fd, int level, int option, void* option_value, unsigned int option_len);
 int do_getsockaddr(int fd, struct sockaddr* laddr, struct sockaddr* faddr, socklen_t* addrlen);
+int do_ftruncate(int fd, off_t size);
 
 #endif /* _FS_H_ */

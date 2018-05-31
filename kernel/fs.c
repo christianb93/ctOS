@@ -1781,6 +1781,46 @@ ssize_t fs_write(open_file_t* file, size_t bytes, void* buffer) {
 }
 
 /*
+ * Truncate an open file
+ * Parameter:
+ * @file - the open file to which to write
+ * @size - the new target size
+ * Return value:
+ * -EIO if an IO error occurred
+ * -EPERM if the file is not a regular file
+ * -EOPNOTSUPP if the file system does not support the truncate operation
+ * 0 upon success
+ * Locks:
+ * file->sem - the semaphore protecting the inner state of the file
+ * file->inode->rw_lock - the write lock on the file
+ */
+ssize_t fs_ftruncate(open_file_t* file, off_t size) {
+    int rc = 0;
+    /*
+     * If the file is a regular file, call the truncate function
+     */
+    KASSERT(file->inode->mode);
+    if (S_ISREG(file->inode->mode)) {
+        FS_DEBUG("ftruncate called for regular file, getting locks\n");
+        sem_down(&file->sem);
+        rw_lock_get_write_lock(&file->inode->rw_lock);
+        if (file->inode->iops->inode_trunc) {
+            rc = file->inode->iops->inode_trunc(file->inode, size);
+        }
+        else {
+            rc = EOPNOTSUPP;
+        }
+        rw_lock_release_write_lock(&file->inode->rw_lock);
+        sem_up(&file->sem);
+    }
+    else
+        return -EPERM;
+    if (rc > 0)
+        return -rc;
+    return 0;
+}
+
+/*
  * Seek position within open file
  * Parameter:
  * @fd - file
@@ -2133,6 +2173,14 @@ static inode_t* check_inode(int create, int excl, char* path, int mode, int* sta
  *
  */
 int do_open(char* path, int flags, int mode) {
+    /*
+     * A few comments on flags and mode. The system call
+     * The system call open accepts two parameters: flags
+     * and mode. The flags are the second parameter to the
+     * libc open function. The mode is the optional (third) parameter
+     * and set to zero unless O_CREAT is set in the flags field. It
+     * sets the file mode bits defined in stat.h
+     */
     int pid = pm_get_pid();
     int fd = -1;
     int rc;
@@ -2404,6 +2452,44 @@ ssize_t do_write(int fd, void* buffer, size_t bytes) {
         return -EBADF;
     }
     rc = fs_write(of, bytes, buffer);
+    /*
+     * Call close to decrease reference count again
+     */
+    fs_close(of);
+    return rc;
+}
+
+/*
+ * Implementation of the ftruncate system call
+ * Parameter:
+ * @fd - file descriptor
+ * @size - target size 
+ * Return value:
+ * -EIO if an IO error occurred
+ * -EBADF if the file does not refer to an open file
+ * -EINVAL if the size is less than zero
+ * -EINVAL if the file has not been opened for writing
+ * -EPERM if the file is not a regular file
+ * 0 upon success
+ * 
+ */
+int do_ftruncate(int fd, off_t size) {
+    int pid = pm_get_pid();
+    open_file_t* of;
+    ssize_t rc = 0;
+    if (size < 0) {
+        return -EINVAL;
+    }
+    if (0 == (of = get_file(fs_process + pid, fd))) {
+        return -EBADF;
+    }
+    if (O_RDONLY == (of->flags & O_ACCMODE)) {
+        return -EINVAL;
+    }
+    /*
+     * Call fs_truncate
+     */
+    rc = fs_ftruncate(of, size);
     /*
      * Call close to decrease reference count again
      */

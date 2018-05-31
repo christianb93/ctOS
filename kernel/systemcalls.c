@@ -863,6 +863,18 @@ SYSENTRY(setsid) {
 SYSENTRY(getsid) {
     return do_getsid(ir_context->ebx);
 }
+
+/*
+ * ftruncate
+ * Parameter:
+ * ebx - file descriptor
+ * ecx - new size
+ */
+SYSENTRY(ftruncate) {
+    return do_ftruncate(ir_context->ebx, ir_context->ecx);
+}
+
+
 /*
  * This array contains all system call entry points and defines the mapping of
  * system call numbers to functions
@@ -878,7 +890,7 @@ static st_handler_t systemcalls[] = { fork_entry,
         dup2_entry, fstat_entry, times_entry, getcwd_entry, tcgetattr_entry, time_entry, tcsetattr_entry, socket_entry,
         connect_entry, send_entry, recv_entry, listen_entry, bind_entry, accept_entry, select_entry, alarm_entry,
         sendto_entry, recvfrom_entry, setsockopt_entry, utime_entry, chmod_entry, getsockaddr_entry, mkdir_entry,
-        sigsuspend_entry, rename_entry, setsid_entry, getsid_entry, link_entry};
+        sigsuspend_entry, rename_entry, setsid_entry, getsid_entry, link_entry, ftruncate_entry};
 
 #define SYSTEM_CALL_ENTRIES (sizeof(systemcalls) / sizeof(st_handler_t))
 
