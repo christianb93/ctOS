@@ -36,7 +36,7 @@ ssize_t read(int fd, void *buf, size_t count);
 ssize_t write(int fd, const char* buffer, size_t bytes);
 int close(int fd);
 int unlink(const char* path);
-int rmdir(char* path);
+int rmdir(const char* path);
 off_t lseek(int fd, off_t offset, int whence);
 int execve(const char *path, char *const argv[], char *const envp[]);
 int execvp(const char *path, char *const argv[]);

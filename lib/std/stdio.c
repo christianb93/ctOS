@@ -492,7 +492,7 @@ size_t fread(void* ptr, size_t size, size_t nitems, FILE* stream) {
  * @nitems - number of objects to write
  * @stream - the stream to which we write
  */
-size_t fwrite(void* ptr, size_t size, size_t nitems, FILE* stream) {
+size_t fwrite(const void* ptr, size_t size, size_t nitems, FILE* stream) {
     unsigned char* src = (unsigned char*) ptr;
     size_t i = 0;
     size_t j = 0;

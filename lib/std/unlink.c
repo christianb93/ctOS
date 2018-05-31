@@ -59,7 +59,7 @@ int unlink (char* path) {
  *
  * none
  */
-int rmdir(char* path) {
+int rmdir(const char* path) {
     struct stat mystat;
     /*
      * First stat the directory
@@ -72,5 +72,5 @@ int rmdir(char* path) {
         errno = ENOTDIR;
         return -1;
     }
-    return __do_unlink(path);
+    return __do_unlink((char*) path);
 }
