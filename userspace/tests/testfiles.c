@@ -499,6 +499,61 @@ int testcase15() {
     return 0;
 }
 
+/*
+ * Testcase 16
+ * Create a new file and write some data to it. Then truncate the file to
+ * a smaller size
+ */
+int testcase16() {
+    struct stat mystat;
+    int fd;
+    char data[16];
+    /*
+     * Check that testtmp1 is not there
+     */
+    int rc = stat("testtmp1", &mystat);
+    ASSERT(-1 == rc);
+    /*
+     * Create it
+     */
+    fd=open("testtmp1", O_CREAT, S_IRWXU);
+    ASSERT(fd);
+    /*
+     * Now write some data to the file. We write 16 bytes
+     */
+    for (int i = 0; i < 16; i++)
+        data[i] = 'b' + i;
+    write(fd, data, 16);
+    close(fd);
+    /*
+     * and stat again
+     */
+    rc = stat("testtmp1", &mystat);
+    ASSERT(0 == rc);    
+    ASSERT(16 == mystat.st_size);
+    /*
+     * Now we truncate down to 10 bytes
+     */
+    fd=open("testtmp1", O_RDWR);
+    ASSERT(fd);
+    rc = ftruncate(fd, 10);
+    ASSERT(0 == rc  );
+    close(fd);
+    /*
+     * and stat again
+     */
+    rc = stat("testtmp1", &mystat);
+    ASSERT(0 == rc);    
+    ASSERT(10 == mystat.st_size);
+    /*
+     * Finally remove the test file again
+     */
+    unlink("testtmp1"); 
+    ASSERT(-1 == stat("testtmp1", &mystat));
+    return 0;
+}
+
+
 
 int main() {
     INIT;
@@ -517,6 +572,7 @@ int main() {
     RUN_CASE(13);    
     RUN_CASE(14);    
     RUN_CASE(15);    
+    RUN_CASE(16);    
     END;
 }
 
