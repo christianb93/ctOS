@@ -767,3 +767,11 @@ int ftruncate(int fildes, off_t length) {
     }
     return 0;
 }
+
+/*
+ * Write buffered contents for a file to disk. As ctOS does not support buffering on the file 
+ * system level, this function does nothing
+ */
+int fsync(int fildes) {
+    return 0;
+}

@@ -408,7 +408,8 @@ int __ctOS_stream_geterror(__ctOS_stream_t* stream) {
  * Set the error code of a stream
  */
 int __ctOS_stream_seterror(__ctOS_stream_t* stream) {
-    return stream->error;
+    stream->error = 1;
+    return 0;
 }
 
 /*

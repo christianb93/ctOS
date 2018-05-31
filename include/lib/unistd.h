@@ -74,5 +74,6 @@ int getpagesize(void);
 int fchown(int fildes, uid_t owner, gid_t group);
 int link(const char *path1, const char *path2);
 int ftruncate(int fildes, off_t length);
+int fsync(int fildes);
 
 #endif /* _UNISTD_H_ */
