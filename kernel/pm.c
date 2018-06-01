@@ -2629,7 +2629,7 @@ static char** clone_string_list(char** list) {
      * Now allocate and copy the individual strings
      */
     for (int i = 0; i < entries; i++) {
-        new_list[i] = kmalloc(strlen(list[i]+1));
+        new_list[i] = kmalloc(strlen(list[i])+1);
         if (0 == new_list[i]) {
             for (int j=0; j < i; j++) {
                 kfree(new_list[j]);
