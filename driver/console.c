@@ -348,6 +348,19 @@ static void set_cursor(win_t* win, int x, int y) {
         _win->cursor_y = _win->char_height - 1;
 }
 
+/*
+ * Move cursor to the next tab stop, or to the right margin 
+ * if there are no more tab stops in the current line
+ */
+static void move_to_next_tab(win_t* win) {
+    if (0 == win)
+        return;
+    int next_tab = (win->cursor_x / TABSIZE) * TABSIZE + TABSIZE;
+    if (next_tab >= win->char_width) 
+        next_tab = win->char_width;
+    win->cursor_x = next_tab;
+}
+
 /****************************************************************************************
  * The next few functions provide the core functionality of the console driver, in      *
  * particular they handle the parsing of escape sequences                               *
@@ -406,6 +419,8 @@ static void plain_putchar(win_t* win, u8 c) {
     if (('\b' == c)  && (_win->cursor_x)) {
         _win->cursor_x--;
     }
+    if ('\t' == c)
+        move_to_next_tab(win);
 }
 
 

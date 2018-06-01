@@ -72,6 +72,11 @@ typedef struct {
  */
 #define RGB8(x, intensity)   ((x) * 0xB0 + (x)*(intensity)*0x4F)
 
+/*
+ * Tabsize. Tabs are at positions n*TABSIZE, n = 0, 1, ....
+ */
+#define TABSIZE 8
+
 void cons_init();
 void kputchar(u8 c);
 void cls(win_t* win);

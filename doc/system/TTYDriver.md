@@ -174,12 +174,12 @@ To read and change the termios structure, the public functions
 ```
 int tty_tcgetattr(minor_dev_t minor, struct termios* termios_p);
 int tty_tcsetattr(minor_dev_t minor, int action, struct termios* termios_p);
-'''
+```
 
 are offered by the TTY driver. These functions are in turn used by the file system when a tcsetattr or tcgetattr system call is processed.
 
-Output processing
------------------
+# Output processing
+
 
 Currently, ctOS supports VGA text mode and a limited VGA graphics mode using a VESA frame buffer. In graphics mode, the kernel has exclusive address to the frame buffer and currently only uses it to display a window in which a text console is emulated and two additional status windows with a fixed layout.
 
