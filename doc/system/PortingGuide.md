@@ -454,6 +454,14 @@ cd $CTOS_PREFIX/build/wget
 make 
 ```  
 
+## Porting coreutils
+
+Porting coreutils has some specific challenges in addition to some of the things we have already seen above. The most difficult part is the **gnulib** that comes as part of the coretuils package. The gnulib is a library on the source code level that aims at encapsulating some of the sytem specific behaviour so that the actual programs are easier to port. It does this, however, in a way that increases the complexity significantly, for instance re-defining and replacing existing library functions and even header files that it thinks are buggy. This can easily trick you into believing that code calls your C library whereas in fact, it calls a part of the gnulib with the same name.
+
+It also has some interesting twists. It does, for instance, define a function called `xnanosleep` that is used by the sleep command line utility. If the underlying system does not implement nanosleep, however, it does not simply fall back to an ordinary sleep, but uses a custom `nanosleep` implementation which behind the scenes uses a `select` system call with a timeout on the standard input. Unfortunately, it does not check the return code of select. As ctOS does only support select for sockets at the time of writing, sleep is broken even though we of course have a system call sleep that we could use, and we have to replace the call to `xnanosleep` by a call to `sleep` to make it work...
+
+Another challenging part are the various utility functions for handling file streams. The gnulib knows the internals of the stream implementation for many existing operating systems and uses that to directly manipulate parts of the FILE structure in order to implement shortcuts. To support this without exposing the internal of the ctOS stream handling, I have added some functions `__ctOS_stream_*` to the internal stream library `lib/internal/streams.c`. These functions are then used in the patches instead of adding code that directly deals with the internal ctOS stream data structure.
+
 
 ### Appendix - creating and using patches
 
