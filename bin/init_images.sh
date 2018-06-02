@@ -47,7 +47,7 @@ fi
 # this first. First we create an empty file
 #
 rm -f ramdisk.img
-dd if=/dev/zero of=ramdisk.img bs=512 count=19136
+dd if=/dev/zero of=ramdisk.img bs=512 count=38272
 
 #
 # Create an ext2 file system on it

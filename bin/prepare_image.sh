@@ -13,7 +13,7 @@ sudo cp ../userspace/cli ../userspace/init ../userspace/args mnt/bin
 sudo mkdir -p mnt/tests
 sudo cp  ../userspace/tests/testjc ../userspace/tests/testwait ../userspace/tests/testfiles ../userspace/tests/testsignals ../userspace/tests/testhello mnt/tests
 sudo cp ../userspace/tests/testpipes ../userspace/tests/testfork ../userspace/tests/testmisc ../userspace/tests/testtty ../userspace/tests/testatexit mnt/tests
-sudo cp ../userspace/tests/testall ../userspace/tests/testnet ../userspace/testtabs mnt/tests
+sudo cp ../userspace/tests/testall ../userspace/tests/testnet ../userspace/tests/testtabs mnt/tests
 if [ -d "import" ]
 then
   sudo cp -r -v ./import/* ./mnt/
