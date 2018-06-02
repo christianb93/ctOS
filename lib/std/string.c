@@ -7,7 +7,8 @@
 #include "lib/errno.h"
 
 /*
- * An array of known errors
+ * An array of known errors. This should be in line with 
+ * include/lib/errors.h
  */
 typedef struct {
     int err_no;
@@ -52,7 +53,19 @@ static __ctOS_error_msg_t __ctOS_error_msg[] = {
         {EAFNOSUPPORT, "Address family not supported"},
         {EADDRNOTAVAIL, "Address not available"},
         {ECONNRESET, "Connection reset by peer"},
-        {ECONNREFUSED, "Connection refused"}
+        {ECONNREFUSED, "Connection refused"},
+        {EMSGSIZE, "Message too long"},
+        {ENOBUFS, "No buffer space available"},
+        {EISCONN, "Endpoint already connected"},
+        {EDOM, "Argument out of domain"},
+        {EILSEQ, "Invalid or incomplete multibyte character"},
+        {EXDEV, "Invalid cross-device link"},
+        {EMLINK, "Too many links"},
+        {EFAULT, "Bad address"},
+        {EOPNOTSUPP, "Operation not supported"},
+        {ELOOP, "Too many levels of symbolic links"},
+        {ENAMETOOLONG, "Name too long"}
+        
 };
 
 /*
