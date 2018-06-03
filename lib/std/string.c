@@ -64,7 +64,8 @@ static __ctOS_error_msg_t __ctOS_error_msg[] = {
         {EFAULT, "Bad address"},
         {EOPNOTSUPP, "Operation not supported"},
         {ELOOP, "Too many levels of symbolic links"},
-        {ENAMETOOLONG, "Name too long"}
+        {ENAMETOOLONG, "Name too long"},
+        {EROFS, "Read-only file system"}
         
 };
 
