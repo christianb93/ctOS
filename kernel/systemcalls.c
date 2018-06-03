@@ -512,8 +512,7 @@ SYSENTRY(getgid) {
  * file descriptor between the do_close and the do_open, it will select a higher file descriptor
  */
 SYSENTRY(dup2) {
-    do_close(ir_context->ecx);
-    return do_dup(ir_context->ebx, ir_context->ecx);
+    return do_dup2(ir_context->ebx, ir_context->ecx);
 }
 
 /*

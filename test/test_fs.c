@@ -3444,7 +3444,140 @@ int testcase117() {
     return 0;
 }
 
+/*
+ * Testcase 118
+ * Tested function: do_dup2
+ * Testcase: open a file and read from it. Then call dup2 and read
+ * again to verify that the new file descriptor is valid and points to the same file
+ * Assume that fd2 is not used yet
+ */
+int testcase118() {
+    inode_t* inode;
+    fat16_probe_result = 1;
+    ext2_probe_result = 1;
+    char data;
+    int of_refcounts;
+    setup();
+    pid = 0;
+    fs_fat16_result = &fat16_superblock;
+    ASSERT(0==fs_init(0));
+    ASSERT(0==do_open("/hello", 0, 0));
+    ASSERT(1==do_read(0, &data, 1));
+    ASSERT('h'==data);
+    /*
+     * Now call dup2
+     */
+    of_refcounts = fs_get_of_refcounts();
+    ASSERT(10==do_dup2(0, 10));
+    /*
+     * As file descriptor 10 was not used, the total
+     * number of refcounts should have increased by one
+     */
+    ASSERT((of_refcounts + 1) == fs_get_of_refcounts());
+    /*
+     * Verify that the new file descriptor 10 works
+     */
+    ASSERT(1==do_read(10, &data, 1));
+    ASSERT('e'==data);
+    ASSERT(1==do_read(0, &data, 1));
+    ASSERT('l'==data);
+    /*
+     * Now close fd 10 and make sure that fd 0 is still readable
+     */
+    ASSERT(0==do_close(10));
+    ASSERT(1==do_read(0, &data, 1));
+    ASSERT('l'==data);
+    ASSERT(0==do_close(0));
+    ASSERT(do_read(0, &data, 1)<0);
+    return 0;
+}
 
+/*
+ * Testcase 119
+ * Tested function: do_dup2
+ * Testcase: open a file and read from it. Then call dup2 and read
+ * again to verify that the new file descriptor is valid and points to the same file
+ * Assume that fd2 is already used
+ */
+int testcase119() {
+    inode_t* inode;
+    fat16_probe_result = 1;
+    ext2_probe_result = 1;
+    char data;
+    int of_refcounts;
+    setup();
+    pid = 0;
+    fs_fat16_result = &fat16_superblock;
+    ASSERT(0==fs_init(0));
+    ASSERT(0==do_open("/hello", 0, 0));
+    ASSERT(1 == do_open("/tmp", 0, 0));
+    ASSERT(1==do_read(0, &data, 1));
+    ASSERT('h'==data);
+    /*
+     * Now call dup2(0,1)
+     */
+    of_refcounts = fs_get_of_refcounts();
+    ASSERT(1==do_dup2(0, 1));
+    /*
+     * As file descriptor 1 was already used, the total
+     * number of refcounts should be the same
+     */
+    ASSERT(of_refcounts  == fs_get_of_refcounts());
+    /*
+     * Verify that the new file descriptor 1 works
+     */
+    ASSERT(1==do_read(1, &data, 1));
+    ASSERT('e'==data);
+    ASSERT(1==do_read(0, &data, 1));
+    ASSERT('l'==data);
+    /*
+     * Now close fd 1 and make sure that fd 0 is still readable
+     */
+    ASSERT(0==do_close(1));
+    ASSERT(1==do_read(0, &data, 1));
+    ASSERT('l'==data);
+    ASSERT(0==do_close(0));
+    ASSERT(do_read(0, &data, 1)<0);
+    return 0;
+}
+
+/*
+ * Testcase 120
+ * Tested function: do_dup2
+ * Testcase: open a file and read from it. Then call dup2 where both arguments are the same
+ */
+int testcase120() {
+    inode_t* inode;
+    fat16_probe_result = 1;
+    ext2_probe_result = 1;
+    char data;
+    int of_refcounts;
+    setup();
+    pid = 0;
+    fs_fat16_result = &fat16_superblock;
+    ASSERT(0==fs_init(0));
+    ASSERT(0==do_open("/hello", 0, 0));
+    ASSERT(1==do_read(0, &data, 1));
+    ASSERT('h'==data);
+    /*
+     * Now call dup2(0,0)
+     */
+    of_refcounts = fs_get_of_refcounts();
+    ASSERT(0==do_dup2(0, 0));
+    /*
+     * As file descriptor 0 was already used, the total
+     * number of refcounts should be the same
+     */
+    ASSERT(of_refcounts  == fs_get_of_refcounts());
+    /*
+     * Make sure that fd 0 is still readable 
+     */
+    ASSERT(1==do_read(0, &data, 1));
+    ASSERT('e'==data);
+    ASSERT(0==do_close(0));
+    ASSERT(do_read(0, &data, 1)<0);
+    return 0;
+}
 
 int main() {
     INIT;
@@ -3565,6 +3698,9 @@ int main() {
     RUN_CASE(115);
     RUN_CASE(116);
     RUN_CASE(117);
+    RUN_CASE(118);
+    RUN_CASE(119);
+    RUN_CASE(120);
     END;
 }
 

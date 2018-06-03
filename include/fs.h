@@ -206,6 +206,7 @@ int do_chmod(char* path, mode_t mode);
 int do_fstat(int fd, struct __ctOS_stat*  buffer);
 int do_rename(char* old, char* new);
 int do_dup(int, int);
+int do_dup2(int, int);
 int do_isatty(int fd);
 mode_t do_umask(mode_t umask);
 int do_pipe(int fd[], int);

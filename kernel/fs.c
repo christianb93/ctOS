@@ -2501,6 +2501,89 @@ int do_dup(int fd, int start) {
 }
 
 /*
+ * Dup2 system call
+ * 
+ * This will duplicate the file descriptor fd1 using fd2 as new
+ * file descriptor and return fd2. If fd2 is already in use, it will be closed.
+ * Special processing applies for the following cases:
+ * - if fd1 and fd2 are equal and fd1 is a valid file descriptor, fd2 is returned without closing it
+ * - if fd2 is outside of the valid range, -EBADF is returned
+ * - if fd1 is not a valid file descriptor, -EBADF is returned without closing fd2
+ * Parameter:
+ * @fd1 - the file descriptor to be duplicated
+ * @fd2 - the new file descriptor
+ * Return value:
+ * a non-negative file descriptor if the operation was successful or -EBADF (see above)
+ * Reference counts:
+ * - increase reference count of existing open file by one
+ * - decrease reference count of fd1 by one
+ * 
+ */
+int do_dup2(int fd1, int fd2) {
+    fs_process_t* self = fs_process + pm_get_pid();
+    open_file_t* old_file;
+    open_file_t* new_file;
+    u32 eflags;
+    /*
+     * Check range for fd1 and fd2
+     */
+    if ((fd1 < 0) || (fd2 < 0))
+        return -EBADF;
+    if ((fd1 >= FS_MAX_FD) || (fd2 >= FS_MAX_FD))
+        return -EBADF;
+    /*
+     * Get spinlock on the file descriptor table. Note that a 
+     * call to fs_close must not be tried while holding the lock
+     * as it might trigger a release of the inode which needs
+     * to write to the disk
+     */
+    spinlock_get(&self->fd_table_lock, &eflags);
+    /*
+     * Get old value of slot fd2. We must do this directly without
+     * calling get_file as we already have the lock
+     * We also do not increase the reference count as we inherit
+     * the reference from the fd table
+     */
+    old_file = self->fd_tables[fd2];
+    /*
+     * Get new file 
+     */
+    new_file = self->fd_tables[fd1];
+    /*
+     * If fd1 is not a valid file descriptor, return 
+     */
+    if (0 == new_file) {
+        spinlock_release(&self->fd_table_lock, &eflags); 
+        return -EBADF;
+    }
+    /*
+     * If fd1 is valid but fd1 and fd2 are equal, return fd2
+     * without closing it
+     */
+    if (fd1 == fd2) {
+        spinlock_release(&self->fd_table_lock, &eflags); 
+        return fd2;
+    }
+    /*
+     * Now make fd2 point to fd1
+     * We will close the original file (old_file) later
+     */
+    self->fd_tables[fd2] = new_file;
+    clone_open_file(new_file);
+    /*
+     * Release spinlock again
+     */
+    spinlock_release(&self  ->fd_table_lock, &eflags); 
+    /*
+     * We can now safely decrease the reference count of the old file
+     * by closing it
+     */
+    if (old_file)
+        fs_close(old_file);
+    return fd2;
+} 
+
+/*
  * Implementation of the read system call
  * Parameter:
  * @fd - file descriptor
