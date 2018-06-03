@@ -165,7 +165,7 @@ typedef struct _fs_process_t {
  * of functions which operate directly on the level of inodes.
  */
 int fs_init(dev_t root);
-inode_t* fs_get_inode_for_name(char* path);
+inode_t* fs_get_inode_for_name(char* path, inode_t* inode_at);
 int fs_mount(inode_t* mount_point, dev_t device, fs_implementation_t* fs);
 int fs_unmount(inode_t* mounted_on);
 ssize_t fs_read(open_file_t* file, size_t bytes, void* buffer);
@@ -188,6 +188,7 @@ ssize_t fs_ftruncate(open_file_t* file, off_t size);
 int do_mount(char* path, dev_t dev, char* fs_name);
 int do_unmount(char* path);
 int do_open(char* path, int flags, int mode);
+int do_openat(char* path, int flags, int mode, int at);
 int do_close(int fd);
 ssize_t do_read(int fd, void* buffer, size_t bytes);
 ssize_t do_write(int fd, void* buffer, size_t bytes);

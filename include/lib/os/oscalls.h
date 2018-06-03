@@ -19,6 +19,7 @@
 ssize_t __ctOS_read(int fd, char* buffer, size_t bytes);
 ssize_t __ctOS_write(int fd, char* buffer, size_t bytes);
 int __ctOS_open(char* path, int flags, int mode);
+int __ctOS_openat(int dirfd, char* path, int flags, int mode);
 int __ctOS_close(int fd);
 void __ctOS__exit(int status);
 pid_t __ctOS_fork();

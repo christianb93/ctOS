@@ -20,6 +20,8 @@
 #define O_APPEND 0x400
 #define O_NONBLOCK 0x800
 
+#define AT_FDCWD -200
+
 /*
  * Commands for fcntl
  */
@@ -36,5 +38,6 @@
 
 int fcntl(int fd, int cmd, ...);
 int open(const char* path, int flags, ...);
+int openat(int dirfd, const char *pathname, int flags, ...);
 
 #endif /* _FCNTL_H_ */

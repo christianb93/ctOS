@@ -130,11 +130,27 @@ SYSENTRY(exit) {
  * Parameters:
  * ebx - pointer to file name
  * ecx - flags
+ * edx - mode
  */
 SYSENTRY(open) {
     VALIDATE(ir_context->ebx, 0, 0);
     return do_open((char*) ir_context->ebx, ir_context->ecx, ir_context->edx);
 }
+
+/*
+ * Systemcall to open a file or directory relative
+ * to a given directory
+ * Parameters:
+ * ebx - file descriptor pointing to a directory
+ * ecx - pointer to file name
+ * edx - flags
+ * esi - mode
+ */
+SYSENTRY(openat) {
+    VALIDATE(ir_context->ecx, 0, 0);
+    return do_openat((char*) ir_context->ecx, ir_context->edx, ir_context->esi, ir_context->ebx);
+}
+
 
 /*
  * Systemcall to read from a directory
@@ -890,7 +906,7 @@ static st_handler_t systemcalls[] = { fork_entry,
         dup2_entry, fstat_entry, times_entry, getcwd_entry, tcgetattr_entry, time_entry, tcsetattr_entry, socket_entry,
         connect_entry, send_entry, recv_entry, listen_entry, bind_entry, accept_entry, select_entry, alarm_entry,
         sendto_entry, recvfrom_entry, setsockopt_entry, utime_entry, chmod_entry, getsockaddr_entry, mkdir_entry,
-        sigsuspend_entry, rename_entry, setsid_entry, getsid_entry, link_entry, ftruncate_entry};
+        sigsuspend_entry, rename_entry, setsid_entry, getsid_entry, link_entry, ftruncate_entry, openat_entry};
 
 #define SYSTEM_CALL_ENTRIES (sizeof(systemcalls) / sizeof(st_handler_t))
 

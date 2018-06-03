@@ -78,6 +78,7 @@
 #define __SYSNO_GETSID 66
 #define __SYSNO_LINK 67
 #define __SYSNO_FTRUNCATE 68
+#define __SYSNO_OPENAT 69
 
 
 unsigned int __ctOS_syscall (unsigned int __sysno, int argc, ...);

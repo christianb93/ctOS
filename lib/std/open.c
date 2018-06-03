@@ -85,6 +85,34 @@ int open(const char* path, int oflag, ...) {
 }
 
 /*
+ * Openat is like open, with one exception. If the additional argument at is not equal
+ * to the special value AT_FDCWD and the path name supplied is a relative path name,
+ * it is assumed that dirfd is a file descriptor referring to an open directory and
+ * the path is interpreted relativ to this directory
+ * In addition to the error codes returned by open, this function might return
+ * EBADF - the file descriptor at does not refer to an open directory
+ */
+int openat(int dirfd, const char* path, int oflag, ...) {
+    int mode = 0;
+    va_list args;
+    va_start(args, oflag);
+    /*
+     * The fourth argument is the mode and only supplied
+     * if O_CREAT is set
+     */
+    if (O_CREAT | oflag) {
+        mode = va_arg(args, int);
+    }
+    int res = __ctOS_openat(dirfd, (char*) path, oflag, mode);
+    if (res<0) {
+         errno = -res;
+         return -1;
+     }
+     return res;
+}
+
+
+/*
  * Create a directory with the specified path name and the specified file access mode which will be modified by the process umask.
  * Only the file permissions bits of mode are evaluated, i.e. mode & 0777.
  *

@@ -88,7 +88,7 @@ static inode_t* root_inode;
  */
 static void validate_superblock(superblock_t* super);
 static void validate_inode(inode_t* inode);
-static inode_t* check_inode(int create, int excl, char* path, int mode, int* status);
+static inode_t* check_inode(int create, int excl, char* path, int mode, int* status, inode_t* at);
 
 
 /*
@@ -559,7 +559,7 @@ int do_mount(char* path, dev_t dev, char* fs_name) {
      * mount point to null to indicate mounting of root directory
      */
     if (strcmp(path, "/")) {
-        mount_point = fs_get_inode_for_name(path);
+        mount_point = fs_get_inode_for_name(path, 0);
         if (0 == mount_point) {
             return EINVAL;
         }
@@ -689,7 +689,7 @@ int do_unmount(char* path) {
      * of the mounted device!
      */
     if (strcmp(path, "/")) {
-        mount_point = fs_get_inode_for_name(path);
+        mount_point = fs_get_inode_for_name(path, 0);
         if (0 == mount_point)
             return EINVAL;
     }
@@ -817,7 +817,7 @@ int do_chdir(char* path) {
         new_cwd = 0;
     }
     else {
-        new_cwd = fs_get_inode_for_name(path);
+        new_cwd = fs_get_inode_for_name(path, 0);
         if (0 == new_cwd) {
             return ENOENT;
         }
@@ -1004,6 +1004,8 @@ static inode_t* scan_directory_by_name_lock(inode_t* dir,
  * function with path="/tmp", you get the root inode of the mounted file system
  * Parameter:
  * @path - the path name
+ * @inode_at - the starting point of the search - if this is null, we start either at the root
+ *             inode (absolute path name) or at the current working directory
  * Locks:
  * mount_point_lock - make sure that the mount point structure remains stable while searching
  * Cross-monitor function calls:
@@ -1011,8 +1013,9 @@ static inode_t* scan_directory_by_name_lock(inode_t* dir,
  * cwd_get()
  * Reference counts:
  * - increase reference count of returned inode by one
+ * - the reference count of the inode_at argument is not changed
  */
-inode_t* fs_get_inode_for_name(char* path) {
+inode_t* fs_get_inode_for_name(char* path, inode_t* inode_at) {
     inode_t* current_inode;
     inode_t* new_inode;
     superblock_t* current_superblock = 0;
@@ -1027,8 +1030,19 @@ inode_t* fs_get_inode_for_name(char* path) {
      * Is this a path name relative to the current working directory?
      */
     if (*ptr != '/') {
-        if (0 == (current_inode = cwd_get()))  {
-            current_inode = root_inode->iops->inode_clone(root_inode);
+        /*
+         * If inode_at is set, start there
+         */
+        if (inode_at) {
+            current_inode = inode_at->iops->inode_clone(inode_at);
+        }
+        /*
+         * otherwise start at current working directory
+         */
+        else { 
+            if (0 == (current_inode = cwd_get()))  {
+                current_inode = root_inode->iops->inode_clone(root_inode);
+            }
         }
     }
     /*
@@ -1920,6 +1934,10 @@ static open_file_t* get_file(fs_process_t* proc, int fd) {
     u32 eflags;
     open_file_t* of = 0;
     KASSERT(proc);
+    if (fd < 0)
+        return 0;
+    if (fd >= FS_MAX_FD)
+        return 0;
     spinlock_get(&proc->fd_table_lock, &eflags);
     of = proc->fd_tables[fd];
     /*
@@ -2040,7 +2058,7 @@ int do_close(int fd) {
 
 
 /****************************************************************************************
- * The following functions are the system call interface for:                           *
+ * The following functions are the system call interface for e.g. (list not complete)   *
  * - open                                                                               *
  * - read                                                                               *
  * - write                                                                              *
@@ -2065,6 +2083,7 @@ int do_close(int fd) {
  * @path - name of new file (full path name)
  * @mode - file permissions (only bits 0777 are set)
  * @status - will be set to 1 if the file exists already
+ * @inode_at - inode at which we start search (i.e. interpret path relative to this inode) or null
  * Return value:
  * a pointer to the newly created inode or null if the inode could not be created
  * Locks:
@@ -2075,7 +2094,7 @@ int do_close(int fd) {
  * If the provided path is itself a directory, this function simply delegates the call to
  * fs_get_inode_for_name
  */
-static inode_t* check_inode(int create, int excl, char* path, int mode, int* status) {
+static inode_t* check_inode(int create, int excl, char* path, int mode, int* status, inode_t* inode_at) {
     char* parent_dir;
     char* name;
     inode_t* parent_inode;
@@ -2086,7 +2105,7 @@ static inode_t* check_inode(int create, int excl, char* path, int mode, int* sta
      */
     if ('/' == path[strlen(path)-1]) {
         FS_DEBUG("This looks like a directory\n");
-        return fs_get_inode_for_name(path);
+        return fs_get_inode_for_name(path, inode_at);
     }
     /*
      * First determine path name of parent directory and get
@@ -2102,7 +2121,7 @@ static inode_t* check_inode(int create, int excl, char* path, int mode, int* sta
     }
     split_path(parent_dir, path, name, 0);
     FS_DEBUG("path = %s, parent_dir = %s, name = %s\n", path, parent_dir, name);
-    if (0 == (parent_inode = fs_get_inode_for_name(parent_dir))) {
+    if (0 == (parent_inode = fs_get_inode_for_name(parent_dir, inode_at))) {
         FS_DEBUG("Invalid pathname %s (path was %s)\n", parent_dir, path);
         kfree((void*) name);
         kfree((void*) parent_dir);
@@ -2152,13 +2171,15 @@ static inode_t* check_inode(int create, int excl, char* path, int mode, int* sta
 
 
 /*
- * Implementation of the open system call. This function will create a new entry in the
+ * Implementation of the openat system call. This function will create a new entry in the
  * table of open files. It will also locate a free file descriptor for the current process
  * and make that file descriptor point to the newly opened file
  * Parameter:
  * @path - the name of the file to be opened
  * @flags - open flags
  * @mode - file mode
+ * @at - a file descriptor relative to which the path is interpreted or AT_FDCWD. If the 
+ *       path is relative or at == AT_FDCWD, this parameter will be ignored
  * Return value:
  * -ENOENT if the file does not exist
  * -ENOMEM if insufficient kernel memory was available
@@ -2172,7 +2193,7 @@ static inode_t* check_inode(int create, int excl, char* path, int mode, int* sta
  * - reference count of inode representing the file is increased by one
  *
  */
-int do_open(char* path, int flags, int mode) {
+int do_openat(char* path, int flags, int mode, int at) {
     /*
      * A few comments on flags and mode. The system call
      * The system call open accepts two parameters: flags
@@ -2185,7 +2206,8 @@ int do_open(char* path, int flags, int mode) {
     int fd = -1;
     int rc;
     inode_t* inode;
-    open_file_t* of;
+    inode_t* inode_at = 0;
+    open_file_t* of = 0;
     fs_process_t* self = fs_process+pid;
     int create = 0;
     int excl = 0;
@@ -2197,18 +2219,61 @@ int do_open(char* path, int flags, int mode) {
     if (flags & O_EXCL)
         excl = 1;
     /*
+     * First see whether at is set
+     * and figure out the corresponding inode
+     */
+    if (at && (at != AT_FDCWD)) {
+        of = get_file(self, at);
+        if (of) {
+            if (of->inode) {
+                inode_at = of->inode->iops->inode_clone(of->inode);
+            }
+            of->ref_count--;
+            of = 0;
+        }
+        else {
+            /*
+             * Parameter at does not refer to a valid 
+             * file descriptor
+             */
+             return -EBADF;
+        }
+    }
+    /*
+     * If we have inode_at but it does not refer to a directory, return EBADF
+     */
+    if (inode_at) {
+        if (!S_ISDIR(inode_at->mode)) {
+            inode_at->iops->inode_release(inode_at);
+            return -EBADF;
+        }
+    }
+    /*
      * Get inode and create it if O_CREAT is requested and the file does
      * not yet exist. If O_CREAT is not set, this will simply get an inode
      */
-    if (0 == (inode = check_inode(create, excl, path, mode & 07777 & ~(self->umask), &status))) {
+    if (0 == (inode = check_inode(create, excl, path, mode & 07777 & ~(self->umask), &status, inode_at))) {
         /*
          * File does not exist or could not be created. If the file existed already
          * and O_CREAT and O_EXCL are set, return EEXIST else return ENOENT
          */
+        if (inode_at)
+            inode_at->iops->inode_release(inode_at);
         if ((1 == status) && (O_CREAT & flags) && (O_EXCL & flags))
             return -EEXIST;
         return -ENOENT;
     }
+    /*
+     * As we have the inode in our hands now, we can safely drop
+     * inode_at again.
+     */
+    if (inode_at) {
+        inode_at->iops->inode_release(inode_at);
+        inode_at = 0;
+    }
+    /*
+     * Validate inode 
+     */
     validate_inode(inode);
     FS_DEBUG("Opening new file\n");
     /*
@@ -2251,6 +2316,14 @@ int do_open(char* path, int flags, int mode) {
     return fd;
 }
 
+
+/*
+ * do_open - simply delegate to do_openat
+ */
+int do_open(char* path, int flags, int mode) {
+    return do_openat(path, flags, mode, 0);
+}
+
 /*
  * Implementation of the mkdir system call
  * Parameter:
@@ -2290,7 +2363,7 @@ int do_mkdir(char* path, int mode) {
     /*
      * Lock parent directory and scan for file
      */
-    if (0 == (parent_inode = fs_get_inode_for_name(parent_dir))) {
+    if (0 == (parent_inode = fs_get_inode_for_name(parent_dir, 0))) {
         FS_DEBUG("Invalid pathname %s (path was %s)\n", parent_dir, path);
         kfree((void*) name);
         kfree((void*) parent_dir);
@@ -2640,7 +2713,7 @@ int do_stat(char* path, struct __ctOS_stat*  buffer) {
     inode_t* inode;
     KASSERT(path);
     FS_DEBUG("Getting inode for path name\n");
-    if (0 == (inode = fs_get_inode_for_name(path))) {
+    if (0 == (inode = fs_get_inode_for_name(path, 0))) {
         return -ENOENT;
     }
     perform_stat(inode, buffer);
@@ -2696,7 +2769,7 @@ int do_utime(char* file, struct utimbuf* times) {
     /*
      * Get reference to inode
      */
-    if (0 == (inode = fs_get_inode_for_name(file))) {
+    if (0 == (inode = fs_get_inode_for_name(file, 0))) {
         return -ENOENT;
     }
     /*
@@ -2745,7 +2818,7 @@ int do_chmod(char* path, mode_t mode) {
     /*
      * Get reference to inode
      */
-    if (0 == (inode = fs_get_inode_for_name(path))) {
+    if (0 == (inode = fs_get_inode_for_name(path, 0))) {
         return -ENOENT;
     }
     /*
@@ -2852,7 +2925,7 @@ int do_unlink(char* path) {
     /*
      * First get a reference to the inode
      */
-    if (0 == (inode = fs_get_inode_for_name(path))) {
+    if (0 == (inode = fs_get_inode_for_name(path, 0))) {
         FS_DEBUG("Could not get reference to inode\n");
         return ENOENT;
     }
@@ -2871,7 +2944,7 @@ int do_unlink(char* path) {
         return ENOMEM;
     }
     split_path(parent_dir, path, name, 0);
-    if (0 == (parent_inode = fs_get_inode_for_name(parent_dir))) {
+    if (0 == (parent_inode = fs_get_inode_for_name(parent_dir, 0))) {
         FS_DEBUG("Invalid pathname %s for parent directory\n", parent_dir);
         kfree((void*) name);
         kfree((void*) parent_dir);
@@ -3012,8 +3085,8 @@ int do_rename(char* old, char* new) {
      * Resolve old and new inode
      */
     FS_DEBUG("Getting old and new inode\n");
-    old_inode = fs_get_inode_for_name(old);
-    new_inode = fs_get_inode_for_name(new);
+    old_inode = fs_get_inode_for_name(old, 0);
+    new_inode = fs_get_inode_for_name(new, 0);
     /*
      * If the old file does not exist, this is an error
      */
@@ -3088,7 +3161,7 @@ int do_rename(char* old, char* new) {
         /*
          * First get link to new and old parent inode
          */
-        if (0 == (new_parent_inode = fs_get_inode_for_name(parent_dir))) {
+        if (0 == (new_parent_inode = fs_get_inode_for_name(parent_dir, 0))) {
             result = -ENOTDIR;
             goto exit;
         }
@@ -3104,7 +3177,7 @@ int do_rename(char* old, char* new) {
             result = -EINVAL;
             goto exit;
         }
-        if (0 == (old_parent_inode = fs_get_inode_for_name(parent_dir))) {
+        if (0 == (old_parent_inode = fs_get_inode_for_name(parent_dir, 0))) {
             result =  -ENOTDIR;
             goto exit;
         }
@@ -3245,7 +3318,7 @@ int do_link(char* old, char* new) {
      * Resolve the old inode
      */
     FS_DEBUG("Getting old inode\n");
-    old_inode = fs_get_inode_for_name(old);
+    old_inode = fs_get_inode_for_name(old, 0);
     /*
      * If the old file does not exist, this is an error
      */
@@ -3285,7 +3358,7 @@ int do_link(char* old, char* new) {
     /*
      * First get link to new and old parent inode
      */
-    if (0 == (new_parent_inode = fs_get_inode_for_name(parent_dir))) {
+    if (0 == (new_parent_inode = fs_get_inode_for_name(parent_dir, 0))) {
         result = -ENOENT;
         goto exit;
     }
@@ -3305,7 +3378,7 @@ int do_link(char* old, char* new) {
          result = -EEXIST;
          goto exit;
     }
-    if (0 == (old_parent_inode = fs_get_inode_for_name(parent_dir))) {
+    if (0 == (old_parent_inode = fs_get_inode_for_name(parent_dir, 0))) {
         result =  -EEXIST;
         goto exit;
     }
@@ -3321,7 +3394,7 @@ int do_link(char* old, char* new) {
     /*
      * If the new file exists, return an error
     */
-    new_inode = fs_get_inode_for_name(new);
+    new_inode = fs_get_inode_for_name(new, 0);
     if (new_inode) {
         INODE_RELEASE(new_inode);
         result =  -EEXIST;
@@ -4386,7 +4459,7 @@ int do_getsockaddr(int fd, struct sockaddr* laddr, struct sockaddr* faddr, sockl
  * Print a list of all open files.
  * Return value:
  * 0 if output is empty
- * number of open files otherwise
+ * number of to open files otherwise
  */
 int fs_print_open_files() {
     open_file_t* of;
@@ -4400,4 +4473,15 @@ int fs_print_open_files() {
     return rc;
 }
 
+/*
+ * Get the sum of all reference counts of all open files
+ */
+int fs_get_of_refcounts() {
+    open_file_t* of;
+    int rc = 0;
+    LIST_FOREACH(open_files_head, of) {
+        rc+=of->ref_count;
+    }
+    return rc;
+}
 

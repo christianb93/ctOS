@@ -30,6 +30,10 @@ int __ctOS_ftruncate(int fd, off_t size) {
     return -1;
 }
 
+int __ctOS_openat(int dirfd, char* path, int flags, int mode) {
+    return -1;
+}
+
 /*
  * Implementation of kputchar so that we can use kprintf
  */

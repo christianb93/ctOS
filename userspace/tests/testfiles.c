@@ -554,6 +554,32 @@ int testcase16() {
 }
 
 
+/*
+ * Testcase 17
+ * Test openat
+ */
+int testcase17() {
+    struct stat mystat;
+    /*
+     * We use openat to open a file for creation in /tmp
+     */
+    int dirfd = open("/tmp", 0, 0);
+    ASSERT(dirfd);
+    int fd = openat(dirfd, "testtmp1", O_CREAT, S_IRWXU);
+    ASSERT(fd);
+    close(fd);
+    close(dirfd);
+    /*
+     * Now stat it
+     */
+    ASSERT(0 == stat("/tmp/testtmp1", &mystat));
+    /*
+     * and remove it again
+     */
+    unlink("/tmp/testtmp1");
+    return 0;
+}
+
 
 int main() {
     INIT;
@@ -572,7 +598,8 @@ int main() {
     RUN_CASE(13);    
     RUN_CASE(14);    
     RUN_CASE(15);    
-    RUN_CASE(16);    
+    RUN_CASE(16);
+    RUN_CASE(17);
     END;
 }
 

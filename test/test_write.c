@@ -24,6 +24,10 @@ int __ctOS_ftruncate(int fd, off_t size) {
     return -1;
 }
 
+int __ctOS_openat(int dirfd, char* path, int flags, int mode) {
+    return -1;
+}
+
 void win_putchar(win_t* win, u8 c) {
     write(1, &c, 1);
 }

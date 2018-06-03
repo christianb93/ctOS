@@ -907,7 +907,7 @@ int testcase4() {
     fs_fat16_result = &fat16_superblock;
     setup();
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("/");
+    inode = fs_get_inode_for_name("/", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr==0);
     ASSERT(inode->dev==0);
@@ -925,7 +925,7 @@ int testcase5() {
     fs_fat16_result = &fat16_superblock;
     setup();
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("/not_there");
+    inode = fs_get_inode_for_name("/not_there", 0);
     ASSERT(0==inode);
     return 0;
 }
@@ -941,7 +941,7 @@ int testcase6() {
     fs_fat16_result = &fat16_superblock;
     setup();
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("/hello");
+    inode = fs_get_inode_for_name("/hello", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr==2);
     ASSERT(inode->dev==0);
@@ -959,7 +959,7 @@ int testcase7() {
     fs_fat16_result = &fat16_superblock;
     setup();
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("/tmp");
+    inode = fs_get_inode_for_name("/tmp", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr==1);
     ASSERT(inode->dev==0);
@@ -977,7 +977,7 @@ int testcase8() {
     fs_fat16_result = &fat16_superblock;
     setup();
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("/tmp/");
+    inode = fs_get_inode_for_name("/tmp/", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr==1);
     ASSERT(inode->dev==0);
@@ -996,7 +996,7 @@ int testcase9() {
     fs_fat16_result = &fat16_superblock;
     setup();
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("/hello/");
+    inode = fs_get_inode_for_name("/hello/", 0);
     ASSERT(0==inode);
     return 0;
 }
@@ -1013,7 +1013,7 @@ int testcase10() {
     fs_fat16_result = &fat16_superblock;
     setup();
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("//");
+    inode = fs_get_inode_for_name("//", 0);
     ASSERT(inode);
     return 0;
 }
@@ -1030,7 +1030,7 @@ int testcase11() {
     fs_fat16_result = &fat16_superblock;
     setup();
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("/tmp/hidden");
+    inode = fs_get_inode_for_name("/tmp/hidden", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr==3);
     ASSERT(inode->dev==0);
@@ -1051,7 +1051,7 @@ int testcase12() {
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
     ASSERT(0==fs_mount(&fat16_tmp_inode, 1, &ext2_impl));
-    inode = fs_get_inode_for_name("/tmp/hidden");
+    inode = fs_get_inode_for_name("/tmp/hidden", 0);
     ASSERT(0==inode);
     return 0;
 }
@@ -1086,7 +1086,7 @@ int testcase14() {
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
     ASSERT(0==fs_mount(&fat16_tmp_inode, 1, &ext2_impl));
-    inode = fs_get_inode_for_name("/tmp/test");
+    inode = fs_get_inode_for_name("/tmp/test", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr==1);
     ASSERT(inode->dev==1);
@@ -1106,7 +1106,7 @@ int testcase15() {
     setup();
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("/tmp/test");
+    inode = fs_get_inode_for_name("/tmp/test", 0);
     ASSERT(0==inode);
     return 0;
 }
@@ -1368,7 +1368,7 @@ int testcase29() {
     setup();
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(DEVICE_NONE));
-    ASSERT(0==fs_get_inode_for_name("/"));
+    ASSERT(0==fs_get_inode_for_name("/", 0));
     return 0;
 }
 
@@ -1400,7 +1400,7 @@ int testcase31() {
     setup();
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
-    tmp_inode = fs_get_inode_for_name("/tmp");
+    tmp_inode = fs_get_inode_for_name("/tmp", 0);
     ASSERT(tmp_inode);
     ASSERT(fs_unmount(tmp_inode));
     return 0;
@@ -1728,7 +1728,7 @@ int testcase47() {
     fs_fat16_result = &fat16_superblock;
     setup();
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("/");
+    inode = fs_get_inode_for_name("/", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr==0);
     ASSERT(inode->dev==0);
@@ -1755,7 +1755,7 @@ int testcase48() {
     fs_fat16_result = &fat16_superblock;
     setup();
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("/");
+    inode = fs_get_inode_for_name("/", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr==0);
     ASSERT(inode->dev==0);
@@ -1787,7 +1787,7 @@ int testcase49() {
     fs_fat16_result = &fat16_superblock;
     setup();
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("/");
+    inode = fs_get_inode_for_name("/", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr==0);
     ASSERT(inode->dev==0);
@@ -1872,7 +1872,7 @@ int testcase53() {
     setup();
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("tmp");
+    inode = fs_get_inode_for_name("tmp", 0);
     ASSERT(inode);
     return 0;
 }
@@ -1889,7 +1889,7 @@ int testcase54() {
     setup();
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("dev/tty");
+    inode = fs_get_inode_for_name("dev/tty", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr == 6);
     return 0;
@@ -1908,7 +1908,7 @@ int testcase55() {
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
     ASSERT(0==do_chdir("/dev"));
-    inode = fs_get_inode_for_name("tty");
+    inode = fs_get_inode_for_name("tty", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr == 6);
     return 0;
@@ -1927,7 +1927,7 @@ int testcase56() {
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
     ASSERT(0==do_chdir("dev"));
-    inode = fs_get_inode_for_name("tty");
+    inode = fs_get_inode_for_name("tty", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr == 6);
     return 0;
@@ -1946,12 +1946,12 @@ int testcase57() {
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
     ASSERT(0==do_chdir("dev"));
-    inode = fs_get_inode_for_name("tty");
+    inode = fs_get_inode_for_name("tty", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr == 6);
     ASSERT(0==do_chdir("/"));
-    ASSERT(fs_get_inode_for_name("dev/tty"));
-    ASSERT(0==fs_get_inode_for_name("tty"));
+    ASSERT(fs_get_inode_for_name("dev/tty", 0));
+    ASSERT(0==fs_get_inode_for_name("tty", 0));
     return 0;
 }
 
@@ -1968,12 +1968,12 @@ int testcase58() {
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
     ASSERT(0==do_chdir("dev"));
-    inode = fs_get_inode_for_name("tty");
+    inode = fs_get_inode_for_name("tty", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr == 6);
     ASSERT(0==do_chdir(".."));
-    ASSERT(fs_get_inode_for_name("dev/tty"));
-    ASSERT(0==fs_get_inode_for_name("tty"));
+    ASSERT(fs_get_inode_for_name("dev/tty", 0));
+    ASSERT(0==fs_get_inode_for_name("tty", 0));
     return 0;
 }
 
@@ -1992,9 +1992,9 @@ int testcase59() {
     pid = 0;
     ASSERT(0==fs_init(0));
     ASSERT(0==do_mount("/tmp", 1, "ext2"));
-    inode1 = fs_get_inode_for_name("/tmp/.");
+    inode1 = fs_get_inode_for_name("/tmp/.", 0);
     ASSERT(inode1);
-    inode2 = fs_get_inode_for_name("/tmp");
+    inode2 = fs_get_inode_for_name("/tmp", 0);
     ASSERT(inode2);
     ASSERT(inode1->dev==inode2->dev);
     ASSERT(inode1->inode_nr==inode2->inode_nr);
@@ -2016,9 +2016,9 @@ int testcase60() {
     pid = 0;
     ASSERT(0==fs_init(0));
     ASSERT(0==do_mount("/tmp", 1, "ext2"));
-    inode1 = fs_get_inode_for_name("/tmp/..");
+    inode1 = fs_get_inode_for_name("/tmp/..", 0);
     ASSERT(inode1);
-    inode2 = fs_get_inode_for_name("/");
+    inode2 = fs_get_inode_for_name("/", 0);
     ASSERT(inode2);
     ASSERT(inode1->dev==inode2->dev);
     ASSERT(inode1->inode_nr==inode2->inode_nr);
@@ -2038,9 +2038,9 @@ int testcase61() {
     setup();
     pid = 0;
     ASSERT(0==fs_init(0));
-    inode1 = fs_get_inode_for_name("/tmp/..");
+    inode1 = fs_get_inode_for_name("/tmp/..", 0);
     ASSERT(inode1);
-    inode2 = fs_get_inode_for_name("/");
+    inode2 = fs_get_inode_for_name("/", 0);
     ASSERT(inode2);
     ASSERT(inode1->dev==inode2->dev);
     ASSERT(inode1->inode_nr==inode2->inode_nr);
@@ -2062,9 +2062,9 @@ int testcase62() {
     pid = 0;
     ASSERT(0==fs_init(0));
     ASSERT(0==do_mount("/tmp", 1, "ext2"));
-    inode1 = fs_get_inode_for_name("/tmp/dir/..");
+    inode1 = fs_get_inode_for_name("/tmp/dir/..", 0);
     ASSERT(inode1);
-    inode2 = fs_get_inode_for_name("/tmp");
+    inode2 = fs_get_inode_for_name("/tmp", 0);
     ASSERT(inode2);
     ASSERT(inode1->dev==inode2->dev);
     ASSERT(inode1->inode_nr==inode2->inode_nr);
@@ -2085,7 +2085,7 @@ int testcase63() {
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
     ASSERT(0==fs_mount(&fat16_usr_local_inode, 1, &ext2_impl));
-    inode = fs_get_inode_for_name("/usr/local/test");
+    inode = fs_get_inode_for_name("/usr/local/test", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr==1);
     ASSERT(inode->dev==1);
@@ -2107,9 +2107,9 @@ int testcase64() {
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
     ASSERT(0==fs_mount(&fat16_usr_local_inode, 1, &ext2_impl));
-    inode1 = fs_get_inode_for_name("/usr/local/..");
+    inode1 = fs_get_inode_for_name("/usr/local/..", 0);
     ASSERT(inode1);
-    inode2 = fs_get_inode_for_name("/usr");
+    inode2 = fs_get_inode_for_name("/usr", 0);
     ASSERT(inode2);
     ASSERT(inode2->inode_nr==inode1->inode_nr);
     ASSERT(inode2->dev==inode2->dev);
@@ -2130,11 +2130,11 @@ int testcase65() {
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
     ASSERT(0==fs_mount(&fat16_usr_local_inode, 1, &ext2_impl));
-    inode = fs_get_inode_for_name("");
+    inode = fs_get_inode_for_name("", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr==fat16_root_inode.inode_nr);
     do_chdir("/usr");
-    inode = fs_get_inode_for_name("");
+    inode = fs_get_inode_for_name("", 0);
     ASSERT(inode);
     ASSERT(inode->inode_nr==fat16_usr_inode.inode_nr);
     return 0;
@@ -2543,7 +2543,7 @@ int testcase84() {
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
     ASSERT(0==fs_mount(&fat16_tmp_inode, 1, &ext2_impl));
-    inode = fs_get_inode_for_name("/tmp");
+    inode = fs_get_inode_for_name("/tmp", 0);
     ASSERT(inode);
     ASSERT(inode->dev==1);
     ASSERT(inode->inode_nr==0);
@@ -2775,7 +2775,7 @@ int testcase96() {
     setup();
     fs_fat16_result = &fat16_superblock;
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("//tmp");
+    inode = fs_get_inode_for_name("//tmp", 0);
     ASSERT(inode);
     ASSERT(inode->dev==0);
     ASSERT(inode->inode_nr==1);
@@ -3002,7 +3002,7 @@ int testcase103() {
     open_file_t* of;
     setup();
     ASSERT(0==fs_init(0));
-    inode = fs_get_inode_for_name("/tmp");
+    inode = fs_get_inode_for_name("/tmp", 0);
     of = fs_open(inode, 0);
     __fat16_trunc_called = 0;
     ASSERT(-EPERM == fs_ftruncate(of, 0));
@@ -3074,6 +3074,255 @@ int testcase107() {
     ASSERT(0 == __fat16_trunc_called);
     return 0;
 }
+
+/*
+ * Testcase 108
+ * Tested function: fs_get_inode_for_name with at != NULL
+ * Testcase: get inode for a relative path name using the at argument
+ */
+int testcase108() {
+    inode_t* inode;
+    fat16_probe_result = 1;
+    fs_fat16_result = &fat16_superblock;
+    setup();
+    ASSERT(0==fs_init(0));
+    /*
+     * We first need to get a reference to /usr
+     */
+    inode_t* usr_inode = fs_get_inode_for_name("/usr", 0);
+    ASSERT(usr_inode);
+    /*
+     * Now we get /usr/local
+     */
+    inode = fs_get_inode_for_name("local", usr_inode);
+    /*
+     * This should be the same as if we were directly using /usr/local
+     */
+    ASSERT(inode);
+    ASSERT(inode->inode_nr == 7);
+    return 0;
+}
+
+
+/*
+ * Testcase 109
+ * Tested function: fs_get_inode_for_name with at != NULL
+ * Testcase: get inode for an absolute path name using the at argument
+ * which should then be ignored
+ */
+int testcase109() {
+    inode_t* inode;
+    fat16_probe_result = 1;
+    fs_fat16_result = &fat16_superblock;
+    setup();
+    ASSERT(0==fs_init(0));
+    /*
+     * We first need to get a reference to /usr
+     */
+    inode_t* usr_inode = fs_get_inode_for_name("/usr", 0);
+    ASSERT(usr_inode);
+    /*
+     * Now we get /usr/local
+     */
+    inode = fs_get_inode_for_name("/usr/local", usr_inode);
+    /*
+     * This should have ignored the inode_at parameter
+     */
+    ASSERT(inode);
+    ASSERT(inode->inode_nr == 7);
+    return 0;
+}
+
+
+/*
+ * Testcase 110
+ * Tested function: fs_get_inode_for_name with at != NULL
+ * Testcase: get inode for a relative path name using the at argument
+ * and verify that the reference count of this inode is not changed
+ */
+int testcase110() {
+    inode_t* inode;
+    fat16_probe_result = 1;
+    fs_fat16_result = &fat16_superblock;
+    setup();
+    ASSERT(0==fs_init(0));
+    int old_ref_count = 0;
+    /*
+     * We first need to get a reference to /usr
+     */
+    inode_t* usr_inode = fs_get_inode_for_name("/usr", 0);
+    ASSERT(usr_inode);
+    old_ref_count = ref_count[usr_inode->inode_nr];
+    /*
+     * Now we get /usr/local
+     */
+    inode = fs_get_inode_for_name("local", usr_inode);
+    /*
+     * This should be the same as if we were directly using /usr/local
+     */
+    ASSERT(inode);
+    ASSERT(inode->inode_nr == 7);
+    /*
+     * and the reference count should not have changed
+     */ 
+    ASSERT(old_ref_count == ref_count[usr_inode->inode_nr]);
+    return 0;
+}
+
+/*
+ * Testcase 111
+ * Tested function: openat at != NULL
+ * Testcase: use openat with a relative path name
+ */
+int testcase111() {
+    inode_t* inode;
+    int old_inode_ref_count = 0;
+    int old_of_refcounts = 0;
+    fat16_probe_result = 1;
+    fs_fat16_result = &fat16_superblock;
+    setup();
+    ASSERT(0==fs_init(0));
+    int dirfd = 0;
+    int fd;
+    /*
+     * We first need to get a reference to /usr. We call this
+     * twice, the second fd should then be 1
+     */
+    do_open("/usr", 0, 0);
+    dirfd = do_open("/usr", 0, 0);
+    ASSERT(dirfd);
+    /*
+     * Now we get /usr/local
+     */
+    old_inode_ref_count = ref_count[4];
+    old_of_refcounts = fs_get_of_refcounts();
+    ASSERT((fd = do_openat("local", 0, 0, dirfd)));
+    ASSERT(old_inode_ref_count == ref_count[4]);
+    /*
+     * We also check that the reference count of the open
+     * file has not been increased
+     */
+    do_close(fd);
+    ASSERT(old_of_refcounts == fs_get_of_refcounts());
+    return 0;
+}
+
+/*
+ * Testcase 112
+ * Tested function: openat at != NULL
+ * Testcase: use openat with a relative path name but with at = AT_FDCWD
+ */
+int testcase112() {
+    inode_t* inode;
+    int rc;
+    int old_inode_ref_count = 0;
+    int old_of_refcounts = 0;
+    fat16_probe_result = 1;
+    fs_fat16_result = &fat16_superblock;
+    setup();
+    ASSERT(0==fs_init(0));
+    int fd;
+    /*
+     * Open one file to make fd > 0
+     */
+    ASSERT(0 == do_open("/", 0, 0));
+    old_inode_ref_count = ref_count[4];
+    old_of_refcounts = fs_get_of_refcounts();
+    /*
+     * This call should fail as we are not in /usr
+     */
+    ASSERT(0 > (fd = do_openat("local", 0, 0, -200)));
+    /*
+     * We also check that the reference counts have not changed
+     */
+    ASSERT(old_inode_ref_count == ref_count[4]);
+    ASSERT(old_of_refcounts == fs_get_of_refcounts());
+    /*
+     * This call should succeed
+     */
+    rc = do_chdir("/usr");
+    ASSERT(0 == rc);
+    old_inode_ref_count = ref_count[4];
+    old_of_refcounts = fs_get_of_refcounts();
+    ASSERT((fd = do_openat("local", 0, 0, -200)));
+    do_close(fd);
+    ASSERT(old_inode_ref_count == ref_count[4]);
+    ASSERT(old_of_refcounts == fs_get_of_refcounts());
+    return 0;
+}
+
+
+/*
+ * Testcase 113
+ * Tested function: openat at != NULL
+ * Testcase: use openat with a relative path name
+ * which does not refer to a directory
+ */
+int testcase113() {
+    inode_t* inode;
+    int old_inode_ref_count = 0;
+    int old_of_refcounts = 0;
+    fat16_probe_result = 1;
+    fs_fat16_result = &fat16_superblock;
+    setup();
+    ASSERT(0==fs_init(0));
+    int dirfd = 0;
+    int fd;
+    /*
+     * We first need to get a reference to /hello. We call this
+     * twice, the second fd should then be 1
+     */
+    do_open("/usr", 0, 0);
+    dirfd = do_open("/hello", 0, 0);
+    ASSERT(dirfd);
+    /*
+     * Now we get /usr/local. This should with -EBADF
+     */
+    old_inode_ref_count = ref_count[4];
+    old_of_refcounts = fs_get_of_refcounts();
+    ASSERT(-115 == (fd = do_openat("local", 0, 0, dirfd)));
+    ASSERT(old_inode_ref_count == ref_count[4]);
+    /*
+     * We also check that the reference count of the open
+     * file has not been increased
+     */
+    ASSERT(old_of_refcounts == fs_get_of_refcounts());
+    return 0;
+}
+
+/*
+ * Testcase 114
+ * Tested function: openat at != NULL
+ * Testcase: use openat with a relative path name
+ * which does not even refer to an open file
+ */
+int testcase114() {
+    inode_t* inode;
+    int old_inode_ref_count = 0;
+    int old_of_refcounts = 0;
+    fat16_probe_result = 1;
+    fs_fat16_result = &fat16_superblock;
+    setup();
+    ASSERT(0==fs_init(0));
+    int dirfd = 0;
+    int fd;
+    dirfd = 1234;
+    /*
+     * Now we get /usr/local. This should with -EBADF
+     */
+    old_inode_ref_count = ref_count[4];
+    old_of_refcounts = fs_get_of_refcounts();
+    ASSERT(-115 == (fd = do_openat("local", 0, 0, dirfd)));
+    ASSERT(old_inode_ref_count == ref_count[4]);
+    /*
+     * We also check that the reference count of the open
+     * file has not been increased
+     */
+    ASSERT(old_of_refcounts == fs_get_of_refcounts());
+    return 0;
+}
+
+
 
 int main() {
     INIT;
@@ -3184,6 +3433,13 @@ int main() {
     RUN_CASE(105);
     RUN_CASE(106);
     RUN_CASE(107);
+    RUN_CASE(108);
+    RUN_CASE(109);
+    RUN_CASE(110);
+    RUN_CASE(111);
+    RUN_CASE(112);
+    RUN_CASE(113);
+    RUN_CASE(114);
     END;
 }
 

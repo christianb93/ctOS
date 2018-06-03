@@ -842,10 +842,10 @@ int testcase15() {
     int fd;
     inode_t* inode1;
     inode_t* inode2;
-    inode1 = fs_get_inode_for_name("/");
+    inode1 = fs_get_inode_for_name("/", 0);
     ASSERT(inode1);
     ASSERT(10 == fs_ext2_print_cache_info());
-    inode2 = fs_get_inode_for_name("/tmp/..");
+    inode2 = fs_get_inode_for_name("/tmp/..", 0);
     ASSERT(inode2);
     ASSERT(12 == fs_ext2_print_cache_info());
     ASSERT(inode1->inode_nr==inode2->inode_nr);
