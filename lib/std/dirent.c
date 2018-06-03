@@ -23,7 +23,6 @@
  */
 DIR* opendir(const char* dirname) {
     int fd;
-    __ctOS_dirstream_t* stream;
     /*
      * Open directory
      */
@@ -33,17 +32,37 @@ DIR* opendir(const char* dirname) {
         return 0;
     }
     /*
+     * and delegate to fdopendir
+     */
+    return fdopendir(fd);
+}
+
+/*
+ * The fdopendir() function is like opendir, except that it expects a file 
+ * descriptor that points to an open directory. The system will take ownership
+ * of the file descriptor
+ *
+ * BASED ON: POSIX 2004
+ *
+ * LIMITATIONS:
+ *
+ * none
+ *
+ */
+DIR* fdopendir(int dirfd) {
+    __ctOS_dirstream_t* stream;
+    /*
      * Allocate memory for stream structure
      */
     stream = (__ctOS_dirstream_t*) malloc(sizeof(__ctOS_dirstream_t));
-    if (0==stream) {
+    if (0 == stream) {
         errno = ENOMEM;
         return 0;
     }
     /*
      * Open stream
      */
-    if(__ctOS_dirstream_open(stream, fd)) {
+    if(__ctOS_dirstream_open(stream, dirfd)) {
         errno = ENOMEM;
         free(stream);
         return 0;

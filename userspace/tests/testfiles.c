@@ -581,6 +581,32 @@ int testcase17() {
 }
 
 
+/*
+ * Testcase 18:
+ * loop once through the root directory and 
+ * make sure that we have seen /tests/testfiles at least once
+ * Use fdopendir
+ */
+int testcase18() {
+    int dirfd;
+    DIR* dirp;
+    struct dirent* dirent;
+    int have_testfiles = 0;
+    ASSERT((dirfd = open("/tests", 0, 0)));
+    ASSERT((dirp = fdopendir(dirfd)));
+    /*
+     * Now loop through the directory entries
+     */
+    while ((dirent = readdir(dirp))) {
+        if (0 == strcmp("testfiles", dirent->d_name)) {
+            have_testfiles = 1;
+        }
+    }
+    closedir(dirp);
+    ASSERT(1 == have_testfiles);
+    return 0;
+}
+
 int main() {
     INIT;
     RUN_CASE(1);
@@ -600,6 +626,7 @@ int main() {
     RUN_CASE(15);    
     RUN_CASE(16);
     RUN_CASE(17);
+    RUN_CASE(18);
     END;
 }
 

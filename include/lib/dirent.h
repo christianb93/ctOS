@@ -16,6 +16,7 @@ struct dirent {
 typedef __ctOS_dirstream_t DIR;
 
 DIR* opendir(const char* dirname);
+DIR *fdopendir(int fd);
 struct dirent* readdir(DIR* dirp);
 int closedir(DIR* dirp);
 void rewinddir(DIR* dirp);
