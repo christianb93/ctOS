@@ -61,6 +61,10 @@ int unlink (char* path) {
  */
 int rmdir(const char* path) {
     struct stat mystat;
+    if (0 == path) {
+        errno = ENOENT;
+        return -1;
+    }
     /*
      * First stat the directory
      */
