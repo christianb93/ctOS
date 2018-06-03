@@ -271,6 +271,20 @@ int chdir(const char* path) {
 }
 
 /*
+ * This is like fchdir, but the target directory is specified by an open file
+ * descriptor that needs to refer to a directory
+ */
+int fchdir(int fildes) {
+    int rc = __ctOS_fchdir(fildes);
+    if (rc) {
+        errno = rc;
+        return -1;
+    }
+    return 0;
+}
+
+
+/*
  * Get the effective user ID of the currently active process
  *
  * The geteuid() function will return the effective user ID of the calling process.

@@ -46,6 +46,7 @@ void _exit(int status);
 unsigned int sleep(unsigned int);
 pid_t getpid();
 int chdir(const char* path);
+int fchdir(int fildes);
 uid_t geteuid();
 int seteuid(uid_t);
 uid_t getuid();

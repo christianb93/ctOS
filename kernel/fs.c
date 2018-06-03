@@ -89,6 +89,7 @@ static inode_t* root_inode;
 static void validate_superblock(superblock_t* super);
 static void validate_inode(inode_t* inode);
 static inode_t* check_inode(int create, int excl, char* path, int mode, int* status, inode_t* at);
+static open_file_t* get_file(fs_process_t* proc, int fd);
 
 
 /*
@@ -827,6 +828,7 @@ int do_chdir(char* path) {
      */
     if (new_cwd) {
         if (!S_ISDIR(new_cwd->mode)) {
+            new_cwd->iops->inode_release(new_cwd);
             return ENOTDIR;
         }
     }
@@ -841,6 +843,60 @@ int do_chdir(char* path) {
         }
     }
     cwd_set(fs_process+pid, new_cwd);
+    return 0;
+}
+
+/*
+ * Set the current working directory to the inode referred to by
+ * the file descriptor fd
+ * Parameters:
+ * @fd - a file descriptor referring to the new working directory
+ * Return values:
+ * 0 if the operation was successful
+ * ENOTDIR if the file descriptor is not a directory
+ * EBADF if the argument does not refer to an open file descriptor
+ * Reference counts:
+ * - drop one reference to old working directory
+ * - increase reference count of new working directory* 
+ */
+int do_fchdir(int fd) {
+    u32 pid;
+    open_file_t* of = 0;
+    inode_t* new_wd = 0;
+    pid = pm_get_pid();
+    if (0 == root_inode)
+        return ENOENT;    
+    /*
+     * Get the open file to which fd refers,
+     * note that this will increase the reference count to
+     * the open file
+     */
+    if ((fd < 0) || (fd >= FS_MAX_FD))
+        return EBADF;
+    of = get_file(fs_process + pid, fd);
+    if (0 == of)
+        return EBADF;
+    if (of->inode) {
+        if (!(S_ISDIR(of->inode->mode))) {
+            fs_close(of);
+            return ENOTDIR;
+        }
+        /*
+         * When we get this point, the file descriptor is valid
+         * and refers to a directory. Increase the reference count of the
+         * inode, drop the reference count of the open file
+         * and replace current working directory
+         */
+        new_wd = of->inode->iops->inode_clone(of->inode); 
+        fs_close(of);
+        cwd_set(fs_process + pid, new_wd);
+    }
+    else {
+        /*
+         * File descriptor does not seem to be valid
+         */
+        return EBADF;
+    }
     return 0;
 }
 
@@ -2228,8 +2284,7 @@ int do_openat(char* path, int flags, int mode, int at) {
             if (of->inode) {
                 inode_at = of->inode->iops->inode_clone(of->inode);
             }
-            of->ref_count--;
-            of = 0;
+            fs_close(of);
         }
         else {
             /*

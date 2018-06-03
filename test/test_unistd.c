@@ -28,6 +28,9 @@ int __ctOS_chdir(char* path) {
     return 0;
 }
 
+int __ctOS_fchdir(int fd) {
+    return -1;
+}
 
 int __ctOS_getuid() {
     return 0;

@@ -3322,6 +3322,128 @@ int testcase114() {
     return 0;
 }
 
+/*
+ * Testcase 115
+ * Tested function: fchdir
+ * Testcase: use fchdir to switch to /usr
+ */
+int testcase115() {
+    inode_t* inode;
+    int old_inode_ref_count = 0;
+    int old_of_refcounts = 0;
+    fat16_probe_result = 1;
+    fs_fat16_result = &fat16_superblock;
+    setup();
+    ASSERT(0==fs_init(0));
+    int dirfd = 0;
+    /*
+     * Get /usr. We call open twice, as the first
+     * open will return 0 in any case
+     */
+    do_open("/usr", 0, 0);
+    dirfd = do_open("/usr", 0, 0);
+    ASSERT(dirfd);
+    /*
+     * Now we chdir to there
+     */
+    old_inode_ref_count = ref_count[4];
+    old_of_refcounts = fs_get_of_refcounts();
+    ASSERT(0 == do_fchdir(dirfd));
+    /*
+     * This will have increased the reference count of
+     * the /usr inode by one
+     */
+    ASSERT((old_inode_ref_count + 1) == ref_count[4]);
+    /*
+     * We also check that the reference count of the open
+     * file has not been increased
+     */
+    ASSERT(old_of_refcounts == fs_get_of_refcounts());
+    /*
+     * Verify that we have actually switched
+     */
+    char* cwd_buffer = (char*) malloc(512);
+    ASSERT(0 == do_getcwd(cwd_buffer, 512));
+    ASSERT(0 == strcmp(cwd_buffer, "/usr"));
+    free(cwd_buffer);
+    return 0;
+}
+
+/*
+ * Testcase 116
+ * Tested function: fchdir
+ * Testcase: do fchdir on an invalid file descriptor
+ */
+int testcase116() {
+    inode_t* inode;
+    int old_inode_ref_count = 0;
+    int old_of_refcounts = 0;
+    fat16_probe_result = 1;
+    fs_fat16_result = &fat16_superblock;
+    setup();
+    ASSERT(0==fs_init(0));
+    int dirfd = 15;
+    /*
+     * Now we chdir to there - this should fail
+     * with EBADF
+     */
+    old_inode_ref_count = ref_count[4];
+    old_of_refcounts = fs_get_of_refcounts();
+    ASSERT(115 == do_fchdir(dirfd));
+    /*
+     * This will leave the reference counts unchanged
+     */
+    ASSERT(old_inode_ref_count == ref_count[4]);
+    ASSERT(old_of_refcounts == fs_get_of_refcounts());
+    /*
+     * Verify that we have actually not switched
+     */
+    char* cwd_buffer = (char*) malloc(512);
+    ASSERT(0 == do_getcwd(cwd_buffer, 512));
+    ASSERT(0 == strcmp(cwd_buffer, "/"));
+    free(cwd_buffer);
+    return 0;
+}
+
+/*
+ * Testcase 117
+ * Tested function: fchdir
+ * Testcase: do fchdir on an invalid file descriptor
+ * that does not refer to a directory
+ */
+int testcase117() {
+    inode_t* inode;
+    int old_inode_ref_count = 0;
+    int old_of_refcounts = 0;
+    int dirfd;
+    fat16_probe_result = 1;
+    fs_fat16_result = &fat16_superblock;
+    setup();
+    ASSERT(0==fs_init(0));
+    do_open("/hello", 0,0);
+    ASSERT((dirfd = do_open("/hello", 0, 0)));
+    /*
+     * Now we chdir to there - this should fail
+     * with ENOTDIR
+     */
+    old_inode_ref_count = ref_count[4];
+    old_of_refcounts = fs_get_of_refcounts();
+    ASSERT(113 == do_fchdir(dirfd));
+    /*
+     * This will leave the reference counts unchanged
+     */
+    ASSERT(old_inode_ref_count == ref_count[4]);
+    ASSERT(old_of_refcounts == fs_get_of_refcounts());
+    /*
+     * Verify that we have actually not switched
+     */
+    char* cwd_buffer = (char*) malloc(512);
+    ASSERT(0 == do_getcwd(cwd_buffer, 512));
+    ASSERT(0 == strcmp(cwd_buffer, "/"));
+    free(cwd_buffer);
+    return 0;
+}
+
 
 
 int main() {
@@ -3440,6 +3562,9 @@ int main() {
     RUN_CASE(112);
     RUN_CASE(113);
     RUN_CASE(114);
+    RUN_CASE(115);
+    RUN_CASE(116);
+    RUN_CASE(117);
     END;
 }
 

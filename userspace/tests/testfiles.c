@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <string.h>
 #include <dirent.h>
+#include <stdlib.h>
 
 /*
  * Macro for assertions in unit test cases
@@ -583,7 +584,7 @@ int testcase17() {
 
 /*
  * Testcase 18:
- * loop once through the root directory and 
+ * loop once through the /tests directory and 
  * make sure that we have seen /tests/testfiles at least once
  * Use fdopendir
  */
@@ -607,6 +608,46 @@ int testcase18() {
     return 0;
 }
 
+
+/*
+ * Testcase 19:
+ * Use fchdir to temporarily switch to the directory /tmp
+ * and back
+ */
+int testcase19() {
+    /*
+     * First remember the current working directory
+     * both as string and as file descriptor
+     */
+    int old_cwd_fd = open(".", 0, 0);
+    ASSERT(old_cwd_fd);
+    char* old_cwd_string = (char*) malloc(512);
+    ASSERT(old_cwd_string);
+    getcwd(old_cwd_string, 511);
+    /*
+     * Now use fchdir to go to /tmp
+     */
+    int new_dir_fd = open("/tmp", 0, 0);
+    ASSERT(new_dir_fd);
+    ASSERT(0 == fchdir(new_dir_fd));
+    /*
+     * Check
+     */
+    char* new_cwd_string = (char*) malloc(512);
+    ASSERT(new_cwd_string);
+    getcwd(new_cwd_string, 511);
+    ASSERT(0 == strcmp("/tmp", new_cwd_string));
+    /*
+     * Switch back
+     */
+    ASSERT(0 == fchdir(old_cwd_fd));
+    getcwd(new_cwd_string, 511);
+    ASSERT(0 == strcmp(new_cwd_string, old_cwd_string));
+    free(old_cwd_string);
+    free(new_cwd_string);
+    return 0;
+}
+
 int main() {
     INIT;
     RUN_CASE(1);
@@ -627,6 +668,7 @@ int main() {
     RUN_CASE(16);
     RUN_CASE(17);
     RUN_CASE(18);
+    RUN_CASE(19);
     END;
 }
 

@@ -34,6 +34,10 @@ int __ctOS_openat(int dirfd, char* path, int flags, int mode) {
     return -1;
 }
 
+int __ctOS_fchdir(int fd) {
+    return -1;
+}
+
 /*
  * Implementation of kputchar so that we can use kprintf
  */

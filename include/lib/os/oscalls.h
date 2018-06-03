@@ -40,6 +40,7 @@ pid_t __ctOS_getpid();
 int __ctOS_sigpending(unsigned int* mask);
 int __ctOS_getdent(int fd, __ctOS_direntry_t* direntry);
 int __ctOS_chdir(char* path);
+int __ctOS_fchdir(int fd);
 int __ctOS_mkdir(char* path, int mode);
 int __ctOS_fcntl(int fd, int cmd, int arg);
 int __ctOS_stat(const char* path, struct stat* buf);

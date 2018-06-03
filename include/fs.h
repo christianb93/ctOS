@@ -198,6 +198,7 @@ int do_utime(char* file, struct utimbuf* times);
 int do_unlink(char* path);
 int do_link(char* path1, char* path2);
 int do_chdir(char* path);
+int do_fchdir(int fd);
 int do_mkdir(char* path, int mode);
 int do_fcntl(int fd, int cmd, int arg);
 int do_stat(char* path, struct __ctOS_stat*  buffer);

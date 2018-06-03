@@ -14,6 +14,10 @@ int __ctOS_chdir(char* path) {
     return __ctOS_syscall(__SYSNO_CHDIR, 1, path);
 }
 
+int __ctOS_fchdir(int fd) {
+    return __ctOS_syscall(__SYSNO_FCHDIR, 1, fd);
+}
+
 int __ctOS_seteuid(uid_t euid) {
     return __ctOS_syscall(__SYSNO_SETEUID, 1, euid);
 }

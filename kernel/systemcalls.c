@@ -331,6 +331,17 @@ SYSENTRY(chdir) {
     return (-1)*do_chdir((char*) ir_context->ebx);
 }
 
+
+/*
+ * Change working directory
+ * Parameters:
+ * ebx - new working directory, specified by an open file descriptor
+ */
+SYSENTRY(fchdir) {
+    return (-1)*do_fchdir(ir_context->ebx);
+}
+
+
 /*
  * Fcntl
  * Parameters:
@@ -906,7 +917,7 @@ static st_handler_t systemcalls[] = { fork_entry,
         dup2_entry, fstat_entry, times_entry, getcwd_entry, tcgetattr_entry, time_entry, tcsetattr_entry, socket_entry,
         connect_entry, send_entry, recv_entry, listen_entry, bind_entry, accept_entry, select_entry, alarm_entry,
         sendto_entry, recvfrom_entry, setsockopt_entry, utime_entry, chmod_entry, getsockaddr_entry, mkdir_entry,
-        sigsuspend_entry, rename_entry, setsid_entry, getsid_entry, link_entry, ftruncate_entry, openat_entry};
+        sigsuspend_entry, rename_entry, setsid_entry, getsid_entry, link_entry, ftruncate_entry, openat_entry, fchdir_entry};
 
 #define SYSTEM_CALL_ENTRIES (sizeof(systemcalls) / sizeof(st_handler_t))
 
