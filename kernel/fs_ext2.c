@@ -2801,7 +2801,7 @@ static int prep_dir_for_deletion(inode_t* dir, inode_t* parent, int flags) {
      */
     if ((0 == fs_ext2_get_direntry(dir, 2, &direntry)) && (0 == (flags & FS_UNLINK_FORCE))) {
         EXT2_DEBUG("Directory not empty\n");
-        return EEXIST;
+        return ENOTEMPTY;
     }
     /*
      * Truncate directory and adapt link counts to reflect removal of dot
@@ -2838,7 +2838,7 @@ static int prep_dir_for_deletion(inode_t* dir, inode_t* parent, int flags) {
  * ENOENT if the entry could not be found
  * EEXIST if the inode is the root directory
  * EEXIST if the inode is a directory which has additional hard links
- * EEXIST if the inode is a non-empty directory
+ * ENOTEMPTY if the inode is a non-empty directory (other than the root directory)
  * EBUSY if the inode is a mount point
  * Supported flags:
  * FS_UNLINK_NOTRUNC - if name is a directory, do not truncate it (but still reduce link count of parent)

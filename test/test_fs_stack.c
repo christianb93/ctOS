@@ -1082,9 +1082,9 @@ int testcase27() {
     do_close(fd);
     ASSERT(0 == do_stat("/tmp/test/myfile", &mystat));
     /*
-     * An attempt to remove the directory should fail now with EEXIST
+     * An attempt to remove the directory should fail now with ENOTEMPTY
      */
-    ASSERT(130 == do_unlink("/tmp/test"));
+    ASSERT(152 == do_unlink("/tmp/test"));
     /*
      * Remove file
      */
@@ -1464,9 +1464,9 @@ int testcase37() {
      */
     ref_count = fs_ext2_print_cache_info();
     /*
-     * Rename file - should return -EEXIST as the target is not emtpy
+     * Rename file - should return -ENOTEMPTY as the target is not emtpy
      */
-    ASSERT(-130 == do_rename("/mydir/newsubdir", "/myseconddir/subdir1"));
+    ASSERT(-152 == do_rename("/mydir/newsubdir", "/myseconddir/subdir1"));
     /*
      * Check reference count
      */

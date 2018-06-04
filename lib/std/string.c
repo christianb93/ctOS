@@ -65,7 +65,8 @@ static __ctOS_error_msg_t __ctOS_error_msg[] = {
         {EOPNOTSUPP, "Operation not supported"},
         {ELOOP, "Too many levels of symbolic links"},
         {ENAMETOOLONG, "Name too long"},
-        {EROFS, "Read-only file system"}
+        {EROFS, "Read-only file system"},
+        {ENOTEMPTY, "Directory not empty"}
         
 };
 

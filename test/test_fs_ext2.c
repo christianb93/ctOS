@@ -3915,6 +3915,47 @@ int testcase86() {
     return 0;
 }
 
+/*
+ * Testcase 87
+ * Tested function: fs_ext2_unlink_inode
+ * Testcase: create a directory below the root directory. Add a file to it and verify that
+ * removing the directory fails with return code ENOTEMPTY
+ */
+int testcase87() {
+    superblock_t* super;
+    inode_t* new_dir;
+    inode_t* root_inode;
+    inode_t* new_inode;
+    ext2_metadata_t* meta;
+    ext2_inode_data_t* inode_data;
+    fs_ext2_init();
+    direntry_t direntry;
+    int i;
+    int found;
+    super = fs_ext2_get_superblock(DEVICE(MAJOR_RAMDISK, 0));
+    ASSERT(super);
+    meta = (ext2_metadata_t*) super->data;
+    ASSERT(super->get_inode);
+    root_inode = super->get_inode(DEVICE(MAJOR_RAMDISK, 0), EXT2_ROOT_INODE);
+    ASSERT(root_inode);
+    ASSERT(root_inode->iops);
+    ASSERT(root_inode->iops->inode_create);
+    /*
+     * Now try to create a directory inside the root directory
+     */
+    new_dir = root_inode->iops->inode_create(root_inode, "newdir", S_IFDIR);
+    ASSERT(new_dir);
+    /*
+     * and a file below it
+     */
+    new_inode = root_inode->iops->inode_create(new_dir, "newfile", 0);
+    ASSERT(new_inode);
+    /*
+     * Now try to remove the directory entry - should fail with ENOTEMPTY
+     */
+    ASSERT(152 == root_inode->iops->inode_unlink(root_inode, "newdir", 0));
+    return 0;
+}
 
 int main() {
     INIT;
@@ -4009,6 +4050,7 @@ int main() {
     reset();
     RUN_CASE(85);
     RUN_CASE(86);
+    RUN_CASE(87);
     /*
      * Uncomment the following line to save a copy of the changed image back to disk as rdimage.new
      * for further analysis (for instance with fsck.ext2 -f -v)

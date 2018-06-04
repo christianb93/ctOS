@@ -57,5 +57,6 @@
 #define ELOOP 10062
 #define ENAMETOOLONG 36
 #define EROFS 151
+#define ENOTEMPTY 152
 
 #endif /* __ERRORS_H_ */

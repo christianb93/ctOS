@@ -3046,7 +3046,8 @@ static int unlink_inode(inode_t* inode, inode_t* dir, char* name) {
  * EIO if the unlink operation could not be completed due to an unexpected error
  * ENOMEM if we are running out of memory
  * EBUSY if the file is a directory and a mount point which is in use
- * EEXIST if the file is a directory which is not empty or has additional hard links
+ * ENOTEMPTY if the file is a directory which is not empty 
+ * EEXIST if the file is a directory which has additional hard links
  * EEXIST if an attempt is made to remove the root directory
  * EINVAL if the last path component is . or ..
  * Locks:
