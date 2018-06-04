@@ -14,7 +14,6 @@ all: $(OBJ) $(EXEC) tests
 %.o: %.c
 	$(CC) -o $@ $<
 
-
 init: init.o ../lib/std/string.o ../lib/std/unistd.o
 	$(LD) init.o  $(LIBS) -o init
 

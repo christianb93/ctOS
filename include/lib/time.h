@@ -19,6 +19,12 @@ struct tm {
     int    tm_isdst; // Daylight Savings flag.
 };
 
+/*
+ * Number of OS clocks per second - need to match the value in timer.h in ctOS/include
+ */
+#define CLOCKS_PER_SEC 100
+
+
 time_t mktime(struct tm*);
 time_t time(time_t* tloc);
 struct tm* localtime(const time_t *timer);
