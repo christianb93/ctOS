@@ -18,6 +18,7 @@ if [ -d "import" ]
 then
   sudo cp -r -v ./import/* ./mnt/
 fi
+sudo cp ../userspace/uname mnt/bin/ctOSuname
 echo "Hello" > /tmp/hello
 sudo cp /tmp/hello mnt
 sudo chown -R $ctOSUser mnt/*

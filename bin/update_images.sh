@@ -18,6 +18,7 @@ function copyFiles() {
     do
         e2cp ../userspace/tests/$i $1:tests
     done
+    e2cp -v ../userspace/uname $1:bin/ctOSuname
     if [ -d "import/bin" ]
     then
         for i in $(ls import/bin)
