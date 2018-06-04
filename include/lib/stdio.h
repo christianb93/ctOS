@@ -21,6 +21,9 @@
  */
 #define EOF -1
 
+#define FOPEN_MAX 8
+
+
 /*
  * Buffering mode
  */
