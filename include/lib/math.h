@@ -15,5 +15,7 @@ double log(double);
 double exp2(double);
 double exp(double);
 double cos(double x);
+double sin(double x);
+double tan(double x);
 
 #endif /* _MATH_H_ */

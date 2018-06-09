@@ -342,6 +342,59 @@ int testcase14() {
     return 0;
 }
 
+/*
+ * Testcase 15
+ * sin
+ */
+int testcase15() {
+    double x = 0.0;
+    double epsilon = 1e-6;
+    double y;
+    double error;
+    for (int i = 0; i < 100; i++) {
+        y = __ctOS_sin(x);
+        error = fabs(y - sin(x));
+        ASSERT(error < epsilon);
+        x = x + 0.1;
+    }
+    return 0;
+}
+
+/*
+ * Testcase 16
+ * tan - no reduction, i.e. argument in range
+ */
+int testcase16() {
+    double x = 0.01;
+    double epsilon = 1e-6;
+    double y;
+    double error;
+    for (int i = 0; i < 100; i++) {
+        y = __ctOS_tan_kernel(x);
+        error = fabs(y - tan(x));
+        ASSERT(error < epsilon);
+        x = x + 0.1;
+    }
+    return 0;
+}
+
+/*
+ * Testcase 17
+ * tan - reduction
+ */
+int testcase17() {
+    double x = 0.0;
+    double epsilon = 1e-5;
+    double y;
+    double error;
+    for (int i = 0; i < 100; i++) {
+        y = __ctOS_tan(x);
+        error = fabs(y - tan(x));
+        ASSERT(error < epsilon);
+        x = x + 0.1;
+    }
+    return 0;
+}
 
 int main() {
     // print_ieee(1.5);
@@ -361,6 +414,9 @@ int main() {
     RUN_CASE(12);
     RUN_CASE(13);
     RUN_CASE(14);
+    RUN_CASE(15);
+    RUN_CASE(16);
+    RUN_CASE(17);
     END;
 }
 

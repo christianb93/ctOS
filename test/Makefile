@@ -11,8 +11,8 @@ test_gdt: test_gdt.c kunit.c ../hw/gdt.o
 test_tools: test_tools.c kunit.c 
 	gcc -o test_tools kunit.c test_tools.c -iquote../include/ -m32	-Wno-implicit-function-declaration
 	
-test_math: test_math.c ../lib/internal/math.o ../lib/internal/exp.o
-	gcc -o test_math kunit.c test_math.c ../lib/internal/math.o ../lib/internal/exp.o -iquote../include -lm -m32 -Wno-implicit-function-declaration
+test_math: test_math.c ../lib/internal/math.o ../lib/internal/exp.o ../lib/internal/tan.o
+	gcc -o test_math kunit.c test_math.c ../lib/internal/math.o ../lib/internal/exp.o ../lib/internal/tan.o -iquote../include -lm -m32 -Wno-implicit-function-declaration
 
 test_idt: test_idt.c kunit.c ../hw/idt.o
 	gcc -o test_idt ../hw/gates.o kunit.c test_idt.c ../hw/idt.o -iquote../include/ -m32 -Wno-implicit-function-declaration

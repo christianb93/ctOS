@@ -77,7 +77,7 @@ typedef struct {
 /*
  * Value of pi
  */
-#define M_PI 3.14159265
+#define M_PI  3.141592653589793238
 
 int __ctOS_isinf(double value);
 int __ctOS_isnan(double value);
@@ -95,5 +95,8 @@ double __ctOS_exp2(double x);
 double __ctOS_exp(double x);
 
 double __ctOS_cos(double x);
+double __ctOS_sin(double x);
+double __ctOS_tan_kernel(double x);
+double __ctOS_tan(double x);
 
 #endif /* _MATHLIB_H_ */

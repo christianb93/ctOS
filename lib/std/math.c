@@ -30,6 +30,15 @@ double cos(double x) {
     return __ctOS_cos(x);
 }
 
+
+double sin(double x) {
+    return __ctOS_sin(x);
+}
+
+double tan(double x) {
+    return __ctOS_tan(x);
+}
+
 /*
  * We simply use
  * log(x) = log2(x) * log(2)

@@ -354,6 +354,10 @@ static double __ctOS_cos_kernel(double x) {
  * Calculate the cosine
  * 
  * Here we do range reduction and then call our kernel function
+ * 
+ * The range reduction that we use here (and for the tan) is far from 
+ * being optimal and reduces the precision significantly, this is clearly
+ * something that could be improved
  */
 double __ctOS_cos(double x) {
     double y;
@@ -392,4 +396,35 @@ double __ctOS_cos(double x) {
         return factor * __ctOS_cos_kernel(x);
     }
         
+}
+
+/*
+ * We simply use the relation
+ * sin(x) = cos(x - pi/2)
+ */
+double __ctOS_sin(double x) {
+    return __ctOS_cos(x - M_PI / 2.0);
+}
+
+
+/*
+ * Calculate the tan 
+ * 
+ * We only do range reduction here and then 
+ * call the FPU based kernel function
+ */
+double __ctOS_tan(double x) {
+    /*
+     * Use periodicity to reduce to the [0,2pi]
+     */
+    if (x < 0) {
+        x = - 1.0 * x;
+    }
+    while (x > 2*M_PI) {
+        x = x - 2*M_PI;
+    } 
+    /*
+     * Now delegate to kernel function
+     */
+    return __ctOS_tan_kernel(x);
 }

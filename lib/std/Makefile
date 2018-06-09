@@ -10,7 +10,7 @@ crt1.o: crt0.c
 
 crt.a: $(OBJ)
 	rm -f crt.a
-	ar rc crt.a $(OBJ) ../internal/heap.o ../internal/streams.o ../internal/setjmp.o ../internal/dirstreams.o ../internal/resolv.o ../internal/pwddb.o ../internal/math.o ../internal/exp.o
+	ar rc crt.a $(OBJ) ../internal/heap.o ../internal/streams.o ../internal/setjmp.o ../internal/dirstreams.o ../internal/resolv.o ../internal/pwddb.o ../internal/math.o ../internal/exp.o ../internal/tan.o
 	
 crti.o: crti.S
 	$(AS) -o crti.o crti.S
@@ -23,9 +23,9 @@ libc.a: $(OBJ)
 	rm -f libc.a
 	ar rc libc.a $(OBJ) ../internal/heap.o ../internal/streams.o ../internal/setjmp.o ../internal/dirstreams.o ../internal/resolv.o ../internal/pwddb.o  ../os/*.o 
 
-libm.a: math.o ../internal/math.o ../internal/exp.o
+libm.a: math.o ../internal/math.o ../internal/exp.o ../internal/tan.o
 	rm -f libm.a
-	ar rc libm.a math.o ../internal/math.o  ../internal/exp.o
+	ar rc libm.a math.o ../internal/math.o  ../internal/exp.o ../internal/tan.o
 		
 clean:
 	rm -f $(OBJ) crt0.o libc.a crt.a libm.a

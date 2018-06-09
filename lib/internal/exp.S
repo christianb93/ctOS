@@ -34,5 +34,4 @@
     # so that st0 contains the result
     #
     faddp
-check:  
     ret
