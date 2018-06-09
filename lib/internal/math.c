@@ -428,3 +428,40 @@ double __ctOS_tan(double x) {
      */
     return __ctOS_tan_kernel(x);
 }
+
+/*
+ * Calculate sinh. We use the relation
+ * 
+ * sinh(x) = 1/2 (e^x - e^{-x})
+ * 
+ * This is probably very prune to cancellation
+ * but simple and we do it anyway...
+ */
+double __ctOS_sinh(double x) {
+    return 0.5 * (__ctOS_exp(x) - __ctOS_exp(-1.0 * x));
+}
+
+/*
+ * Calculate cosh
+ * We use
+ *
+ * cosh(x) = 1/2 (e^x + e^{-x})
+ *
+ */
+double __ctOS_cosh(double x) {
+    return 0.5 * (__ctOS_exp(x) + __ctOS_exp(-1.0 * x));
+}
+
+/*
+ * Calculate tanh
+ * 
+ * We use the relation
+ *
+ * tanh(x) = (e^x - e^{-x}) / (e^x + e^{-x})
+ *
+ */
+ double __ctOS_tanh(double x) {
+     double ex = __ctOS_exp(x);
+     double emx = __ctOS_exp(-1.0 * x);
+     return (ex - emx) / (ex + emx);
+ }

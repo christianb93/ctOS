@@ -17,5 +17,8 @@ double exp(double);
 double cos(double x);
 double sin(double x);
 double tan(double x);
+double cosh(double x);
+double sinh(double x);
+double tanh(double x);
 
 #endif /* _MATH_H_ */

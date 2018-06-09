@@ -39,6 +39,18 @@ double tan(double x) {
     return __ctOS_tan(x);
 }
 
+double cosh(double x) {
+    return __ctOS_cosh(x);
+}
+
+double sinh(double x) {
+    return __ctOS_sinh(x);
+}
+
+double tanh(double x) {
+    return __ctOS_tanh(x);
+}
+
 /*
  * We simply use
  * log(x) = log2(x) * log(2)

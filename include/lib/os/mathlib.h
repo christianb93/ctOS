@@ -99,4 +99,8 @@ double __ctOS_sin(double x);
 double __ctOS_tan_kernel(double x);
 double __ctOS_tan(double x);
 
+double __ctOS_cosh(double x);
+double __ctOS_sinh(double x);
+double __ctOS_tanh(double x);
+
 #endif /* _MATHLIB_H_ */

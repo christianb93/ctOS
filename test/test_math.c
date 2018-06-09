@@ -396,6 +396,60 @@ int testcase17() {
     return 0;
 }
 
+/*
+ * Testcase 18
+ * cosh 
+ */
+int testcase18() {
+    double x = 0.0;
+    double epsilon = 1e-5;
+    double y;
+    double error;
+    for (int i = 0; i < 100; i++) {
+        y = __ctOS_cosh(x);
+        error = fabs(y - cosh(x));
+        ASSERT(error < epsilon);
+        x = x + 0.1;
+    }
+    return 0;
+}
+
+/*
+ * Testcase 19
+ * sinh 
+ */
+int testcase19() {
+    double x = 0.0;
+    double epsilon = 1e-5;
+    double y;
+    double error;
+    for (int i = 0; i < 100; i++) {
+        y = __ctOS_sinh(x);
+        error = fabs(y - sinh(x));
+        ASSERT(error < epsilon);
+        x = x + 0.1;
+    }
+    return 0;
+}
+
+/*
+ * Testcase 20
+ * tanh 
+ */
+int testcase20() {
+    double x = 0.0;
+    double epsilon = 1e-5;
+    double y;
+    double error;
+    for (int i = 0; i < 100; i++) {
+        y = __ctOS_tanh(x);
+        error = fabs(y - tanh(x));
+        ASSERT(error < epsilon);
+        x = x + 0.1;
+    }
+    return 0;
+}
+
 int main() {
     // print_ieee(1.5);
     // print_ieee(sqrt(-1.0));
@@ -417,6 +471,9 @@ int main() {
     RUN_CASE(15);
     RUN_CASE(16);
     RUN_CASE(17);
+    RUN_CASE(18);
+    RUN_CASE(19);
+    RUN_CASE(20);
     END;
 }
 
