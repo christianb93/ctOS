@@ -1,4 +1,4 @@
-OBJ =  heap.o streams.o setjmp.o dirstreams.o resolv.o pwddb.o math.o 
+OBJ =  heap.o streams.o setjmp.o dirstreams.o resolv.o pwddb.o math.o exp.o
 
 all: $(OBJ) 
 	
@@ -8,6 +8,10 @@ all: $(OBJ)
 		
 setjmp.o: setjmp.S
 	$(AS) -o setjmp.o setjmp.S		
+		
+exp.o: exp.S
+	$(AS) -o exp.o exp.S		
+		
 		
 clean:
 	rm -f $(OBJ)

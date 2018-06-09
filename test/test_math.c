@@ -233,6 +233,115 @@ int testcase9() {
     return 0;
 }
 
+/*
+ * Testcase 10
+ * exp2 - no range reduction
+ */
+int testcase10() {
+    double epsilon = 1e-10;
+    /*
+     * exp2(0.5)
+     */
+    double x = 0.5;
+    double y = __ctOS_exp2(x);
+    ASSERT(fabs(y - exp2(x)) < epsilon);
+    /*
+     * exp2(-0.5)
+     */
+    x = -0.5;
+    y = __ctOS_exp2(x);
+    ASSERT(fabs(y - exp2(x)) < epsilon);
+    /*
+     * exp2(1.0)
+     */
+    x = 1.0;
+    y = __ctOS_exp2(x);
+    ASSERT(y == 2.0);
+    /*
+     * exp2(-1.0)
+     */
+    x = -1.0;
+    y = __ctOS_exp2(x);
+    ASSERT(y == 0.5); 
+    return 0;
+}
+
+/*
+ * Testcase 11
+ * exp2 - outside of kernel range
+ */
+int testcase11() {
+    double epsilon = 1e-22;
+    double x = 1.5;
+    double y = __ctOS_exp2(x);
+    ASSERT(fabs(y - exp2(x)) < epsilon);
+    x = 15.5;
+    y = __ctOS_exp2(x);
+    ASSERT(fabs(y - exp2(x)) < epsilon);
+    x = 55.5;
+    y = __ctOS_exp2(x);
+    ASSERT(fabs(y - exp2(x)) < epsilon);
+    x = 100.5;
+    y = __ctOS_exp2(x);
+    ASSERT(fabs(y - exp2(x)) < epsilon);
+    x = 2000.5;
+    y = __ctOS_exp2(x);
+    ASSERT(__ctOS_inf(y));
+    return 0;
+}
+
+
+/*
+ * Testcase 12
+ * exp
+ */
+int testcase12() {
+    double epsilon = 1e-12;
+    double x = 1.5;
+    double y = __ctOS_exp(x);
+    ASSERT(fabs(y - exp(x)) < epsilon);
+    return 0;
+}
+
+/*
+ * Testcase 13
+ * cos - no reduction
+ */
+int testcase13() {
+    double epsilon = 1e-7;
+    double x = 0.0;
+    double y = __ctOS_cos(x);
+    ASSERT(fabs(y - cos(x)) < epsilon);
+    x = 0.1;
+    y = __ctOS_cos(x);
+    ASSERT(fabs(y - cos(x)) < epsilon);
+    x = 0.2;
+    y = __ctOS_cos(x);
+    ASSERT(fabs(y - cos(x)) < epsilon);
+    x = 1.5;
+    y = __ctOS_cos(x);
+    ASSERT(fabs(y - cos(x)) < epsilon);
+    return 0;
+}
+
+/*
+ * Testcase 14
+ * cos - reduction
+ */
+int testcase14() {
+    double x = 0.0;
+    double epsilon = 1e-6;
+    double y;
+    double error;
+    for (int i = 0; i < 100; i++) {
+        y = __ctOS_cos(x);
+        error = fabs(y - cos(x));
+        ASSERT(error < epsilon);
+        x = x + 0.1;
+    }
+    return 0;
+}
+
 
 int main() {
     // print_ieee(1.5);
@@ -247,6 +356,11 @@ int main() {
     RUN_CASE(7);
     RUN_CASE(8);
     RUN_CASE(9);
+    RUN_CASE(10);
+    RUN_CASE(11);
+    RUN_CASE(12);
+    RUN_CASE(13);
+    RUN_CASE(14);
     END;
 }
 

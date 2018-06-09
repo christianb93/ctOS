@@ -69,6 +69,15 @@ typedef struct {
  */
 #define IS_ZERO(x) ((((__ieee754_double_t*)(&x))->exp == 0) && (((__ieee754_double_t*)(&x))->mlow == 0) && (((__ieee754_double_t*)(&x))->mhigh == 0))
 
+/*
+ * Value of ln(2)
+ */
+#define M_LN2 0.69314718056
+
+/*
+ * Value of pi
+ */
+#define M_PI 3.14159265
 
 int __ctOS_isinf(double value);
 int __ctOS_isnan(double value);
@@ -81,6 +90,10 @@ double __ctOS_ceil(double x);
 double __ctOS_floor(double x);
 
 double __ctOS_log2(double x);
+double __ctOS_exp2_kernel(double x);
+double __ctOS_exp2(double x);
+double __ctOS_exp(double x);
 
+double __ctOS_cos(double x);
 
 #endif /* _MATHLIB_H_ */

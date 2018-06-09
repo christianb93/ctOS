@@ -252,3 +252,144 @@ double __ctOS_log2(double x) {
      */
     return log2_kernel(y) + exp;
 }
+
+/*
+ * Return the binary exponential
+ * We split x as
+ * x = floor(x) + x'
+ * with 0 <= x' <= 1 and use the assembler routine in exp.S 
+ * to calculate exp2(x'). We then write
+ * exp2(x) = exp2(floor(x)) * exp2(x')
+ * where the multiplication is done by changing
+ * the exponential
+ */
+double __ctOS_exp2(double x) {
+    /*
+     * We first write x = n + x'
+     */
+    double n = __ctOS_floor(x);
+    double xp = x - n;
+    /*
+     * Now we calculate exp2(xp)
+     */
+    double y = __ctOS_exp2_kernel(xp);
+    /*
+     * We need to multiply the result by
+     * 2**n, i.e. we need to add n to the
+     * exponent of y
+     */
+    if ((n + GET_EXP(y)) > 1024) {
+        /*
+         * Overflow
+         */
+        /* TODO: really raise overflow exception here */
+        return __ctOS_inf();
+    }
+    SET_EXP(y, GET_EXP(y) + ((int) n));
+    return y;
+}
+
+/*
+ * Calculate the exponential
+ *
+ * We use the relation
+ *
+ * exp(x) = 2^{x / ln(2)}
+ * 
+ * which is easily seen by taking the logarithm on both sides
+ *
+ */
+double __ctOS_exp(double x) {
+    double x1 = x / M_LN2;
+    return __ctOS_exp2(x1);
+}
+
+/*
+ * Calculate the cosine
+ * 
+ * Here we use an approximation by polynomials, namely
+ * the approximation
+ * 
+ * cos(x) = P(x^2)
+ * 
+ * with 
+ * 
+ * P(x) = 0.999999953464 - 0.499999053455 x + 0.0416635846769 x^2 - 0.0013853704264 x^3 + 0.00002315393167 x^4;
+ * 
+ * This is the approximation with index 3502 in Harts book 
+ * John F. Hart, Computer approximations, John Wiley & Sons
+ *
+ * This approximation is good on the range [0,pi/2]
+ */
+static double __ctOS_cos_kernel(double x) {
+    double p;
+    double x2;
+    double y;
+    double factor = 1.0;
+    /*
+     * First we use periodicity. We write x = n * 2 * pi + y
+     */
+    y = x;
+    if (y < 0) {
+        y = - 1.0 * x;
+    }
+    while (y > 2*M_PI) {
+        y = y - 2*M_PI;
+    }
+    /*
+     * If y is greater than pi, we reduce further 
+     */
+    x2 = y*y;
+    /*
+     * Now y is in the range [0,2*pi]
+     */
+    /*
+     * Use a Horner schema for the actual calculation
+     */
+    p = 0.999999953464 + x2 * (-0.499999053455  + x2 * (0.0416635846769  + x2* (- 0.0013853704264  + 0.00002315393167 * x2)));
+    return factor * p;
+}
+
+/*
+ * Calculate the cosine
+ * 
+ * Here we do range reduction and then call our kernel function
+ */
+double __ctOS_cos(double x) {
+    double y;
+    double factor = 1.0;
+    /*
+     * First we use periodicity. We write x = n * 2 * pi + y
+     */
+    if (x < 0) {
+        x = - 1.0 * x;
+    }
+    while (x > 2*M_PI) {
+        x = x - 2*M_PI;
+    }
+    /*
+     * If x is between pi and 2pi, we reduce by passing to x-pi
+     * using
+     * cos(x + pi) = -cos(x)
+     */
+    if (x > M_PI){
+        x = x - M_PI;
+        factor = -1.0;
+    }
+    /*
+     * If y is greater than pi / 2, we reduce further,
+     * otherwise we call our kernel function directly
+     */
+    if (x > M_PI / 2.0) {
+        /*
+         * We use the relation 
+         * cos(x) = 2*cos(x/2)*cos(x/2) - 1
+         */
+         y = __ctOS_cos_kernel(x/2.0);
+        return factor*(2*y*y - 1.0);
+    }
+    else {
+        return factor * __ctOS_cos_kernel(x);
+    }
+        
+}
