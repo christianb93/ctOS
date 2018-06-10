@@ -530,6 +530,57 @@ int testcase23() {
     return 0;
 }
 
+/*
+ * Testcase 24
+ * pow
+ */
+int testcase24() {
+    double epsilon = 1e-10;
+    double x = 1.0;
+    double y = 1.0;
+    double r;
+    double error;
+    /*
+     * First we try some small values of x and y
+     */
+    for (int i = 0; i < 50; i++) {
+        r = __ctOS_pow(x, y);
+        error = fabs(r - pow(x,y));
+        // printf("x = %f      y = %f     r = %f   error = %e\n", x, y, r, error);
+        ASSERT(error < epsilon);
+        x = x + 0.1;
+        y = y + 0.1;
+    }
+    /*
+     * Now let us try a few special cases
+     * If x or y is NaN, return NaN
+     */
+    ASSERT(isnan(__ctOS_pow(sqrt(-1.0), 2.0)));
+    ASSERT(isnan(__ctOS_pow(2.0, sqrt(-1.0))));
+    /*
+     * Unless x is 1.0, in this case return 1.0,
+     * or y is 0, in this case return 0.0
+     */
+    ASSERT(1.0 == __ctOS_pow(1.0, sqrt(-1.0))); 
+    ASSERT(1.0 == __ctOS_pow(sqrt(-1.0), 0.0)); 
+    /*
+     * 0.5^inf is 0
+     */
+    ASSERT(0.0 == __ctOS_pow(0.5, __ctOS_inf()));
+    /*
+     * 0.5^-inf is inf
+     */
+    ASSERT(__ctOS_inf(__ctOS_pow(0.5, -1.0 * __ctOS_inf())));
+    /*
+     * 1.5^inf is inf
+     */
+    ASSERT(__ctOS_inf(__ctOS_pow(1.5, __ctOS_inf()))); 
+    /*
+     * 1.5^-inf is 0
+     */
+    ASSERT(0.0 == __ctOS_pow(1.5, -1.0 * __ctOS_inf())); 
+    return 0;
+}
 
 int main() {
     // print_ieee(1.5);
@@ -558,6 +609,7 @@ int main() {
     RUN_CASE(21);
     RUN_CASE(22);
     RUN_CASE(23);
+    RUN_CASE(24);
     END;
 }
 

@@ -63,6 +63,10 @@ double atan(double x) {
     return __ctOS_atan2(x, 1.0);
 }
 
+double pow(double x, double y) {
+    return __ctOS_pow(x,y);
+}
+
 /*
  * We simply use
  * log(x) = log2(x) * log(2)

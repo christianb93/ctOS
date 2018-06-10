@@ -596,3 +596,81 @@ double __ctOS_sqrt(double x) {
     }
     return factor * __ctOS_sqrt_kernel(y);
 }
+
+
+
+/*
+ * Implementation of pow function
+ *
+ * We simply use the relation
+ *
+ * x^y = 2^{y log2(x)}
+ *
+ * and handle some additional special cases.
+ * 
+ * Note that we do not fully implement the standard for negative values
+ * of x, here we always return NaN even if y is an integer
+ */
+double __ctOS_pow(double x, double y) {
+    /*
+     * If x is +1.0, always return 1.0
+     */
+    if ((0 == GET_EXP(x))  && (0 == GET_MANTISSA(x))) {
+        return 1.0;
+    }
+    /*
+     * If y is 0, always return 1.0
+     */
+    if (IS_ZERO(y)) {
+        return 1.0;
+    }
+    /*
+     * If one of the arguments is NaN, return NaN
+     */
+    if (__ctOS_isnan(x) || __ctOS_isnan(y)) {
+        return __ctOS_nan();
+    }
+    /*
+     * If x is 0, return 0
+     */
+    if (IS_ZERO(x)) {
+        return 0.0;
+    }
+    /*
+     * If x is negative, return NaN. We do this even if y is an integer
+     * which is not compliant with the standard
+     */
+    if (GET_SIGN(x)) {
+        /* TODO: return the real value if y is an integer */
+        return __ctOS_nan();
+    }    
+    /*
+     * If y is inf, return 0 or inf depending on the sign
+     * of y and on x
+     */
+    if (__ctOS_isinf(y)) {
+        if (0 == GET_SIGN(y)) {
+            /*
+             * y is +inf. 
+             */
+            if ((x > 1.0) || (x < -1.0)) {
+                return __ctOS_inf();
+            }
+            else {
+                return 0.0;
+            }
+        }
+        else {
+            /*
+             * y is -inf
+             */
+            if ((x > 1.0) || (x < - 1.0)) {
+                return 0.0;
+            }
+            else {
+                return __ctOS_inf();
+            }
+        }
+    }
+    return __ctOS_exp2(y * __ctOS_log2(x));
+}
