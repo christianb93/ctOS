@@ -356,14 +356,22 @@ static double __ctOS_cos_kernel(double x) {
  * Here we do range reduction and then call our kernel function
  * 
  * The range reduction that we use here (and for the tan) is far from 
- * being optimal and reduces the precision significantly, this is clearly
- * something that could be improved
- */
+ * being optimal and reduces the precision significantly. This is a known
+ * difficulty and quite a bit of research has gone into this, see for instance
+ * 
+ * Payne, Hanek, Radian Reduction for trigonometric functions, ACM SIGNUM Newsletter 18 (1), January 1983, pp 19 - 24 
+ * K.C. Ng et al, Argument reductions for large arguments: Good to the Last Bit
+ * N. Brisebarre et. al., A New Range-Reduction Algorithm,  IEEE Transactions on Computers 54 (3), March 2005 
+ * 
+ * In a future release, I will probably implement one of these algorithms, until then bear with me or add the
+ * implementation yourself...
+ * 
+ */ 
 double __ctOS_cos(double x) {
     double y;
     double factor = 1.0;
     /*
-     * First we use periodicity. We write x = n * 2 * pi + y
+     * First we use periodicity. We write x = n * 2 * pi + ym
      */
     if (x < 0) {
         x = - 1.0 * x;
@@ -465,3 +473,126 @@ double __ctOS_cosh(double x) {
      double emx = __ctOS_exp(-1.0 * x);
      return (ex - emx) / (ex + emx);
  }
+ 
+ /*
+  * Kernel function for the square root on (1/2, 1)
+  * 
+  */
+double __ctOS_sqrt_kernel(double x) {
+    const int N = 5;
+    double y = 0.0;
+    /*
+     * As a first approximation and starting point for the Newton 
+     * iterations, we choose the polynomial with index 0011 in 
+     * Harts book:
+     * 
+     * P(x) = 0.093035 + 2.06847 * x - 1.2974 * x^2
+     */
+    y =  0.093035 + 2.06847 * x - 1.2974 * x * x;
+    /*
+     * Now we apply N Newton iterations. This already gives a very good approximation
+     */
+    for (int i = 0; i < N; i++) {
+        y = y + 0.5 * (x / y - y);
+    }
+    return y;
+}
+ 
+ /*
+  * Calculate the square root
+  * 
+  * Following Hart classical book "Computer approximations", we first perform
+  * a range reduction to the interval (1/2, 1) by using the relation 
+  * 
+  * sqrt(x/2) = 1/sqrt(2) sqrt(x)
+  * sqrt(2x ) = sqrt(2) sqrt(x)
+  *
+  * Specifically, if a floating point number is given in normalized form as
+  * 
+  * x = 1.m * 2**e
+  *
+  * then 
+  * 
+  * sqrt(x) = sqrt(1.m / 2) * sqrt(2**e) * sqrt(2)
+  * 
+  * If e is odd, i.e. e = 2k + 1, we can write this as
+  * 
+  * sqrt(x) = sqrt(y) * 2**k * 2
+  *
+  * and if e is even, i.e. e = 2k, this is
+  *
+  * sqrt(x) = sqrt(y) * 2**k * sqrt(2)
+  *
+  * where in both cases y = 1.m / 2
+  *
+  */
+double __ctOS_sqrt(double x) {
+    /*
+     * First we handle a few special cases. 
+     * If the argument is NaN, return NaN
+     */
+     if (__ctOS_isnan(x)) {
+         return x;
+     }
+     /*
+     * If the argument is negative, return NaN
+     */
+    if (GET_SIGN(x)) {
+        return __ctOS_nan();
+    }
+    /*
+     * sqrt(0.0) is 0
+     */
+    if (IS_ZERO(x)) {
+        return x;
+    }
+    /*
+     * If x is +inf, return +inf. Note that we have
+     * already handled the case -inf above
+     */
+    if (__ctOS_isinf(x)) {
+        return x;
+    }
+    /*
+     * Determine the exponent
+     */
+    int e = GET_EXP(x);
+    int k = 0;
+    double factor = 1.0;
+    /*
+     * Determine y = 1.m / 2
+     */
+    double y = x;
+    SET_EXP(y, 0);
+    y = 0.5 * y;
+    /*
+     * Now apply reduction depending on whether e is odd or even
+     */
+    /* TODO: raise overflow and underflow exceptions if needed */
+    if (0 == (e % 2)) {
+        k = e >> 1;
+        /*
+         * Check for overflow or underflow
+         */
+        if (k > 2047) {
+            return __ctOS_inf();
+        }
+        if (k < -2047) {
+            return 0.0;
+        }
+        SET_EXP(factor, k);
+        factor = factor * M_SQRT2;
+    }
+    else {
+        k = (e - 1) >> 1;
+        if (k > 2047) {
+            return __ctOS_inf();
+        }
+        if (k < -2047) {
+            return 0.0;
+        }
+        SET_EXP(factor, k);
+        factor = factor * 2;
+    }
+    return factor * __ctOS_sqrt_kernel(y);
+}

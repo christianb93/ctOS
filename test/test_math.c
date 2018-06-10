@@ -450,6 +450,62 @@ int testcase20() {
     return 0;
 }
 
+/*
+ * Testcase 21
+ * sqrt kernel
+ */
+int testcase21() {
+    double epsilon = 1e-50;
+    double x = 0.5;
+    double y;
+    double error;
+    for (int i = 0; i < 100; i++) {
+        y = __ctOS_sqrt_kernel(x);
+        error = fabs(y - sqrt(x));
+        ASSERT(error < epsilon);
+        x = x + 0.005;
+    }
+    return 0;
+}
+
+
+/*
+ * Testcase 22
+ * sqrt 
+ */
+int testcase22() {
+    double epsilon = 1e-15;
+    double x ;
+    double y;
+    double error;
+    /*
+     * First we take a look at the range between 2 and 12
+     */
+    x = 2.0;
+    for (int i = 0; i < 200; i++) {
+        y = __ctOS_sqrt(x);
+        error = fabs(y - sqrt(x));
+        ASSERT(error < epsilon);
+        x = x + 0.05;
+    }
+    /*
+     * Now we do the more difficult part close to zero
+     */
+    x = 0.0;
+    for (int i = 0; i < 200; i++) {
+        y = __ctOS_sqrt(x);
+        error = fabs(y - sqrt(x));
+        ASSERT(error < epsilon);
+        x = x + 0.000001;
+    } 
+    /*
+     * Now do a few special cases
+     */
+    ASSERT(isnan(__ctOS_sqrt(-1.0)));
+    ASSERT(isnan(__ctOS_sqrt(__ctOS_nan())));
+    ASSERT(isinf(__ctOS_sqrt(1.0 / 0.0)));
+    return 0;
+}
 int main() {
     // print_ieee(1.5);
     // print_ieee(sqrt(-1.0));
@@ -474,6 +530,8 @@ int main() {
     RUN_CASE(18);
     RUN_CASE(19);
     RUN_CASE(20);
+    RUN_CASE(21);
+    RUN_CASE(22);
     END;
 }
 

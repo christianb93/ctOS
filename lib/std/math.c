@@ -51,6 +51,10 @@ double tanh(double x) {
     return __ctOS_tanh(x);
 }
 
+double sqrt(double x) {
+    return __ctOS_sqrt(x);
+}
+
 /*
  * We simply use
  * log(x) = log2(x) * log(2)
