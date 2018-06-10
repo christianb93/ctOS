@@ -55,6 +55,14 @@ double sqrt(double x) {
     return __ctOS_sqrt(x);
 }
 
+double atan2(double y, double x) {
+    return __ctOS_atan2(y, x);
+}
+
+double atan(double x) {
+    return __ctOS_atan2(x, 1.0);
+}
+
 /*
  * We simply use
  * log(x) = log2(x) * log(2)

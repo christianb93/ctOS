@@ -506,6 +506,31 @@ int testcase22() {
     ASSERT(isinf(__ctOS_sqrt(1.0 / 0.0)));
     return 0;
 }
+
+
+/*
+ * Testcase 23
+ * atan2
+ */
+int testcase23() {
+    double epsilon = 1e-15;
+    double x = 0.0;
+    double y;
+    double error;
+    for (int i = 0; i < 1000; i++) {
+        y = __ctOS_atan2(x, 1.0);
+        error = fabs(y - atan(x));
+        // printf("x = %f      y = %f        error = %e\n", x, y, error);
+        ASSERT(error < epsilon);
+        y = __ctOS_atan2(x, 3.0);
+        error = fabs(y - atan2(x, 3.0));
+        ASSERT(error < epsilon);
+        x = x + 0.5;
+    }
+    return 0;
+}
+
+
 int main() {
     // print_ieee(1.5);
     // print_ieee(sqrt(-1.0));
@@ -532,6 +557,7 @@ int main() {
     RUN_CASE(20);
     RUN_CASE(21);
     RUN_CASE(22);
+    RUN_CASE(23);
     END;
 }
 

@@ -111,4 +111,6 @@ double __ctOS_tanh(double x);
 double __ctOS_sqrt_kernel(double x);
 double __ctOS_sqrt(double x);
 
+double __ctOS_atan2(double x, double y);
+
 #endif /* _MATHLIB_H_ */
