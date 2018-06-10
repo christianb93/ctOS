@@ -75,6 +75,10 @@ double pow(double x, double y) {
     return __ctOS_pow(x,y);
 }
 
+double modf(double x, double* iptr) {
+    return __ctOS_modf(x, iptr);
+}
+
 /*
  * We simply use
  * log(x) = log2(x) * log(2)

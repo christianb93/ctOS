@@ -118,5 +118,7 @@ double __ctOS_asin(double x);
 double __ctOS_acos(double x);
 
 double __ctOS_pow(double x, double y);
+double __ctOS_modf(double x, double* iptr);
+
 
 #endif /* _MATHLIB_H_ */

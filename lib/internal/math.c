@@ -745,3 +745,26 @@ double __ctOS_asin(double x) {
 double __ctOS_acos(double x) {
     return M_PI_2 - __ctOS_asin(x);
 }
+
+
+/*
+ * Implementation of modf. This returns the integral part and the fractional part
+ * of a number, both having the same sign as the argument
+ */
+double __ctOS_modf(double x, double* iptr) {
+    if (IS_ZERO(x)) {
+        *iptr = 0.0;
+        return 0.0;
+    }
+    if (GET_SIGN(x)) {
+        /*
+         * x is negative. Then we return as integral part the ceil of x
+         * and as fractional part the difference
+         */
+        *iptr = __ctOS_ceil(x);
+    }
+    else {
+        *iptr = __ctOS_floor(x);
+    }
+    return x - *iptr;
+}

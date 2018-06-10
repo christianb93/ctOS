@@ -622,6 +622,30 @@ int testcase26() {
 }
 
 
+/*
+ * Testcase 27
+ * modf
+ */
+int testcase27() {
+    double epsilon = 1e-14;
+    double x = -2.0;
+    double y1, y2;
+    double error1;
+    double error2;
+    double iptr1, iptr2;
+    for (int i = 0; i < 100; i++) {
+        y1 = __ctOS_modf(x, &iptr1);
+        y2 = modf(x, &iptr2);
+        error1 = fabs(y1 - y2);
+        error2 = fabs(iptr1 - iptr2);
+        // printf("x = %f      y1 = %f   iptr1 = %f     error1 = %e , error2 = %e\n", x, y1, iptr1, error1, error2);
+        ASSERT(error1 < epsilon);
+        ASSERT(error2 < epsilon);
+        x = x + 0.05;
+    }
+    return 0;
+}
+
 int main() {
     // print_ieee(1.5);
     // print_ieee(sqrt(-1.0));
@@ -652,6 +676,7 @@ int main() {
     RUN_CASE(24);
     RUN_CASE(25);
     RUN_CASE(26);
+    RUN_CASE(27);
     END;
 }
 
