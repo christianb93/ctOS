@@ -597,7 +597,12 @@ double __ctOS_sqrt(double x) {
     return factor * __ctOS_sqrt_kernel(y);
 }
 
-
+/*
+ * Atan
+ */
+double __ctOS_atan(double x) {
+    return __ctOS_atan2(x, 1.0);
+}
 
 /*
  * Implementation of pow function
@@ -673,4 +678,70 @@ double __ctOS_pow(double x, double y) {
         }
     }
     return __ctOS_exp2(y * __ctOS_log2(x));
+}
+
+
+/*
+ * Calculate arcsin
+ *
+ * Following Harts book, we use two different relations to relate arcsin
+ * arctan (which we implement in hardware)
+ *
+ * For |x| less than roughly 1/2 sqrt(2), we use the relation
+ * 
+ * arcsin(x) = arctan(x / sqrt(1 - x*x))
+ * 
+ * which behaves nicely for small values of x. For values of |x| between 1/2 sqrt(2) and 1, we use the form
+ *
+ * arcsin(x) = sgn(x) * [pi/2 - arctan(sqrt(1 - x+x) / |x|]
+ *
+ */
+double __ctOS_asin(double x) {
+    double xabs = x;
+    double sgn = 1.0;
+    double y;
+    if ((x > 1.0) || (x < -1.0)) {
+        return __ctOS_nan();
+    }
+    if (x == -1.0) {
+        return M_PI + M_PI_2;
+    }
+    if (x == 1.0) {
+        return M_PI_2;
+    }
+    if (IS_ZERO(x)) {
+        return 0.0;
+    }
+    if (xabs < 0.0) {
+        sgn = -1.0;
+        xabs = -1.0 * x;
+    }
+    y = __ctOS_sqrt(1 - x*x);
+    /*
+     * If x is too close to 1, return NaN
+     */
+    if (__ctOS_isnan(y)) {
+        return y;
+    }
+    if (xabs < 0.5 * M_SQRT2) {
+        return __ctOS_atan(x / y);
+    }
+    else {
+        return sgn*(M_PI_2  - __ctOS_atan(y / xabs));
+    }
+}
+
+/*
+ * Calculation of the inverse cos
+ *
+ * We use the identity
+ * 
+ * arccos(x) = pi/2 - arcsin(x)
+ * 
+ * Note that the range of arcsin is [-pi/2, pi/2]. Therefore the range
+ * of arccos using this formula will be [0,pi]. 
+ *
+ */
+double __ctOS_acos(double x) {
+    return M_PI_2 - __ctOS_asin(x);
 }

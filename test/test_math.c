@@ -582,6 +582,46 @@ int testcase24() {
     return 0;
 }
 
+
+/*
+ * Testcase 25
+ * asin
+ */
+int testcase25() {
+    double epsilon = 1e-15;
+    double x = -0.95;
+    double y;
+    double error;
+    for (int i = 0; i < 39; i++) {
+        y = __ctOS_asin(x);
+        error = fabs(y - asin(x));
+        // printf("x = %f      y = %f        error = %e\n", x, y, error);
+        ASSERT(error < epsilon);
+        x = x + 0.05;
+    }
+    return 0;
+}
+
+/*
+ * Testcase 26
+ * acos
+ */
+int testcase26() {
+    double epsilon = 1e-15;
+    double x = -0.95;
+    double y;
+    double error;
+    for (int i = 0; i < 39; i++) {
+        y = __ctOS_acos(x);
+        error = fabs(y - acos(x));
+        // printf("x = %f      y = %f        error = %e\n", x, y, error);
+        ASSERT(error < epsilon);
+        x = x + 0.05;
+    }
+    return 0;
+}
+
+
 int main() {
     // print_ieee(1.5);
     // print_ieee(sqrt(-1.0));
@@ -610,6 +650,8 @@ int main() {
     RUN_CASE(22);
     RUN_CASE(23);
     RUN_CASE(24);
+    RUN_CASE(25);
+    RUN_CASE(26);
     END;
 }
 

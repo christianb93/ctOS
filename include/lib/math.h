@@ -23,6 +23,8 @@ double tanh(double x);
 double sqrt(double x);
 double atan2(double y, double x);
 double atan(double x);
+double asin(double x);
+double acos(double x);
 double pow(double x, double y);
 
 #endif /* _MATH_H_ */

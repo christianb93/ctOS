@@ -75,9 +75,10 @@ typedef struct {
 #define M_LN2 0.69314718056
 
 /*
- * Value of pi
+ * Value of pi and pi/2
  */
-#define M_PI  3.14159265358979323846
+#define M_PI        3.14159265358979323846
+# define M_PI_2     1.57079632679489661923
 
 /*
  * Value of sqrt(2)
@@ -112,6 +113,10 @@ double __ctOS_sqrt_kernel(double x);
 double __ctOS_sqrt(double x);
 
 double __ctOS_atan2(double x, double y);
+double __ctOS_atan(double x);
+double __ctOS_asin(double x);
+double __ctOS_acos(double x);
+
 double __ctOS_pow(double x, double y);
 
 #endif /* _MATHLIB_H_ */

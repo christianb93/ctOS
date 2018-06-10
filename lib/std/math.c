@@ -60,7 +60,15 @@ double atan2(double y, double x) {
 }
 
 double atan(double x) {
-    return __ctOS_atan2(x, 1.0);
+    return __ctOS_atan(x);
+}
+
+double asin(double x) {
+    return __ctOS_asin(x);
+}
+
+double acos(double x) {
+    return __ctOS_acos(x);
 }
 
 double pow(double x, double y) {
