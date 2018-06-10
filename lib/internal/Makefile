@@ -1,7 +1,6 @@
-OBJ =  heap.o streams.o setjmp.o dirstreams.o resolv.o pwddb.o math.o exp.o tan.o
+OBJ =  heap.o streams.o setjmp.o dirstreams.o resolv.o pwddb.o math.o exp.o tan.o 
 
 all: $(OBJ) 
-	
 	
 %.o: %.c
 	$(CC) -o $@ $<

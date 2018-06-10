@@ -8,9 +8,9 @@ all: $(OBJ) math.o crt.a crt0.o crt1.o libc.a libm.a
 crt1.o: crt0.c
 	$(CC) -DSKIP_INIT_CALL -o crt1.o  crt0.c
 
-crt.a: $(OBJ)
+crt.a: $(OBJ)  ../internal/heap.o ../internal/streams.o ../internal/setjmp.o ../internal/dirstreams.o ../internal/resolv.o ../internal/pwddb.o ../internal/math.o ../internal/exp.o ../internal/tan.o
 	rm -f crt.a
-	ar rc crt.a $(OBJ) ../internal/heap.o ../internal/streams.o ../internal/setjmp.o ../internal/dirstreams.o ../internal/resolv.o ../internal/pwddb.o ../internal/math.o ../internal/exp.o ../internal/tan.o
+	ar rc crt.a $(OBJ)  ../internal/heap.o ../internal/streams.o ../internal/setjmp.o ../internal/dirstreams.o ../internal/resolv.o ../internal/pwddb.o ../internal/math.o ../internal/exp.o ../internal/tan.o
 	
 crti.o: crti.S
 	$(AS) -o crti.o crti.S
@@ -21,7 +21,7 @@ crtn.o: crtn.S
 	
 libc.a: $(OBJ)
 	rm -f libc.a
-	ar rc libc.a $(OBJ) ../internal/heap.o ../internal/streams.o ../internal/setjmp.o ../internal/dirstreams.o ../internal/resolv.o ../internal/pwddb.o  ../os/*.o 
+	ar rc libc.a $(OBJ) ../internal/heap.o ../internal/streams.o ../internal/setjmp.o ../internal/dirstreams.o ../internal/resolv.o ../internal/pwddb.o ../os/*.o ../internal/math.o ../internal/exp.o ../internal/tan.o
 
 libm.a: math.o ../internal/math.o ../internal/exp.o ../internal/tan.o
 	rm -f libm.a
