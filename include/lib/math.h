@@ -27,5 +27,6 @@ double asin(double x);
 double acos(double x);
 double pow(double x, double y);
 double modf(double x, double* iptr);
+double fabs(double x);
 
 #endif /* _MATH_H_ */

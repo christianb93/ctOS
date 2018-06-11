@@ -646,6 +646,21 @@ int testcase27() {
     return 0;
 }
 
+/*
+ * Testcase 28
+ * fabs
+ */
+int testcase28() {
+    ASSERT(fabs(-1.0) == 1.0);
+    ASSERT(fabs(1.0) == 1.0);
+    ASSERT(fabs(-0.0) == 0.0);
+    ASSERT(fabs(0.0) == 0.0);
+    ASSERT(isnan(fabs(sqrt(-1))));
+    ASSERT(isinf(fabs(1.0 / 0.0)));
+    ASSERT(isinf(fabs(- 1.0 / 0.0)));
+    return 0;
+}
+
 int main() {
     // print_ieee(1.5);
     // print_ieee(sqrt(-1.0));
@@ -677,6 +692,7 @@ int main() {
     RUN_CASE(25);
     RUN_CASE(26);
     RUN_CASE(27);
+    RUN_CASE(28);
     END;
 }
 

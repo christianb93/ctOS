@@ -79,6 +79,10 @@ double modf(double x, double* iptr) {
     return __ctOS_modf(x, iptr);
 }
 
+double fabs(double x) {
+    return __ctOS_fabs(x);
+}
+
 /*
  * We simply use
  * log(x) = log2(x) * log(2)

@@ -768,3 +768,25 @@ double __ctOS_modf(double x, double* iptr) {
     }
     return x - *iptr;
 }
+
+/*
+ * Return the absolute value of the argument
+ */
+double __ctOS_fabs(double x) {
+    /*
+     * Check for a few special cases
+     */
+    if (__ctOS_isnan(x)) {
+        return x;
+    }
+    if (__ctOS_isinf(x)) {
+        return __ctOS_inf();
+    }
+    /*
+     * General case
+     */
+    if (GET_SIGN(x)) {
+        return -1.0 * x;
+    }
+    return x;
+}
