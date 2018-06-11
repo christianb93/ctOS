@@ -33,6 +33,7 @@ void exit(int status);
 void qsort(void *base, size_t nel, size_t width, int (*compar)(const void *, const void *));
 void abort();
 char *getenv(const char *name);
+int putenv(char* string);
 int mbtowc(wchar_t* pwc, const char* s, size_t n);
 int mbtowc(wchar_t * pwc, const char * s, size_t n);
 int atexit(void (*func)(void));

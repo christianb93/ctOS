@@ -18,6 +18,8 @@ extern void _init();
 extern void __exit_init_handlers();
 extern void __exit_run_handlers();
 
+char** __ctOS_clone_environ(char**);
+
 #ifdef SKIP_INIT_CALL
     /*
      * We are building the version called crt1.o which will not do the GCC
@@ -31,6 +33,7 @@ extern void __exit_run_handlers();
 extern heap_t __ctOS_heap;
 
 char** environ;
+
 
 /*
  * The heap extension function
@@ -57,8 +60,6 @@ static unsigned int __ctOS_extend_heap(unsigned int size, unsigned int current_t
 void _start(int argc, char** argv, char** envp) {
     unsigned int current_brk;
     unsigned int new_brk;
-    int i;
-    int envc;
     /*
      * Clean up all exit handlers
      */
@@ -98,30 +99,12 @@ void _start(int argc, char** argv, char** envp) {
     /*
      * Set environment environ. As subsequent calls of setenv may want to free memory within the environment
      * array or memory allocated by environment strings, we first place the array itself and all the strings
-     * to which it refers on the heap. First we count how many environment strings we have
+     * to which it refers on the heap. 
      */
-    envc=0;
-    while (envp[envc]) {
-        envc++;
+    environ = __ctOS_clone_environ(envp);
+    if (0 == environ) {
+        printf("Could not allocate space for environment, giving up%d\n");
     }
-    /*
-     * Now we allocate space for i+1 pointers and copy the entire
-     * environment to the heap
-     */
-    environ = (char**) malloc((envc+1)*sizeof(char*));
-    if (0==environ) {
-        printf("Could not allocate memory for environment, giving up\n");
-        _exit(1);
-    }
-    for (i=0;i<envc;i++) {
-        environ[i]=(char*) malloc(strlen(envp[i])+1);
-        if (0==environ[i]) {
-            printf("Could not allocate memory for environment string %d, giving up\n", i);
-            _exit(1);
-        }
-        strcpy(environ[i], envp[i]);
-    }
-    environ[envc]=0;
     /*
      * Run global constructors if requested
      */

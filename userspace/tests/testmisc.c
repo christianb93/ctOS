@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <setjmp.h>
 
+extern char** environ;
+
 
 /*
  * Macro for assertions in unit test cases
@@ -361,6 +363,76 @@ int testcase6() {
 }
 
 /*
+ * Testcase 7
+ * A simple environment test
+ */
+int testcase7() {
+    /*
+     * Add an environment entry using putenv
+     */
+    char* env_string = "testcase7=x";
+    ASSERT(0 == putenv(env_string));
+    /*
+     * Now check that a call to getenv
+     * gives us the correct value
+     */
+    ASSERT(getenv("testcase7"));
+    ASSERT(0 == strcmp("x", getenv("testcase7")));
+    return 0;   
+}
+
+
+/*
+ * Testcase 8
+ * Now we simulate an application taking over environ
+ */
+int testcase8() {
+    char** newenv;
+    char**  lastenv;
+    int entries;
+    /*
+     * First we add an environment entry 
+     */
+    ASSERT(0 == putenv("x=a"));
+    /*
+     * Now assume that an application comes with its own
+     * putenv implementation. First the application will
+     * allocate memory for a new array and copy
+     * the old environment there
+     */
+    entries = 0;
+    while(environ[entries]) {
+        entries++;
+    }
+    newenv = (char**) malloc(sizeof(char*) * (2 + entries));
+    memcpy ((void *) newenv, (void *) environ, entries*sizeof (char *));
+    newenv[entries] = "testcase8=1";
+    newenv[entries +1] = 0;
+    lastenv = newenv;
+    environ = newenv;
+    /*
+     * Now a call to getenv should give us the correct
+     * result
+     */
+    ASSERT(getenv("testcase8"));
+    ASSERT(0 == strcmp("1", getenv("testcase8")));
+    /*
+     * also for old entries
+     */
+    ASSERT(getenv("x"));
+    ASSERT(0 == strcmp("a", getenv("x"))); 
+    /*
+     * The getenv implementation should have changed environ again
+     */
+    ASSERT(lastenv != environ);
+    /*
+     * and we should be able to free lastenv
+     */
+    free(lastenv);
+    return 0;   
+}
+
+/*
  * Main
  */
 int main() {
@@ -371,5 +443,6 @@ int main() {
     RUN_CASE(4);
     RUN_CASE(5);
     RUN_CASE(6);
+    RUN_CASE(7);
     END;
 }
