@@ -432,6 +432,38 @@ int testcase8() {
     return 0;   
 }
 
+
+/*
+ * Testcase 9. Test system
+ */
+int testcase9() {
+    struct stat mystat;
+    /*
+     * Make sure that the file /tmp/testmisc_tc9 does not exist
+     */
+    unlink("/tmp/testmisc_tc9");
+    /*
+     * Check whether we have a shell
+     */
+    int have_shell = system(0);
+    if (0 == have_shell)
+        return 0;
+    /*
+     * Now try to run echo 'test' > /tmp/testmisc_tc9
+     */
+    system("echo \"test\" > /tmp/testmisc_tc9");
+    /*
+     * Check whether the file is there
+     */
+    ASSERT(0 == stat("/tmp/testmisc_tc9", &mystat));
+    /*
+     * and remove it again
+     */
+    unlink("/tmp/testmisc_tc9"); 
+    return 0;
+}
+
+
 /*
  * Main
  */
@@ -444,5 +476,7 @@ int main() {
     RUN_CASE(5);
     RUN_CASE(6);
     RUN_CASE(7);
+    RUN_CASE(8);
+    RUN_CASE(9);
     END;
 }

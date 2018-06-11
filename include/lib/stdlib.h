@@ -37,5 +37,6 @@ int putenv(char* string);
 int mbtowc(wchar_t* pwc, const char* s, size_t n);
 int mbtowc(wchar_t * pwc, const char * s, size_t n);
 int atexit(void (*func)(void));
+int system(const char* command);
 
 #endif
