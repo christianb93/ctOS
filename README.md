@@ -37,8 +37,9 @@ Currently, the following features have been implemented:
 * A full networking stack, supporting ARP, ICMP, IP, UDP, TCP and DNS resolution
 * A simple user-space command line utility
 * A basic POSIX compatible C library
+* A small floating point math library
 
-I did also port a few userspace tools (dash, wget, elvis) to work with ctOS. For licensing reasons, the required patches and build scripts are not contained in this repository but in a [separate repository](https://github.com/christianb93/ctOS_ports) - please have a look at the respective [documentation](https://github.com/christianb93/ctOS_ports/blob/master/README.md) on how to build the ports. The screenshot below, by the way, shows elvis running in ctOS on an QEMU emulator and editing `main.c` of the kernel code.
+I did also port a few userspace tools (dash, wget, elvis, most of the coreutils, a basic interpreter, ...) to work with ctOS. For licensing reasons, the required patches and build scripts are not contained in this repository but in a [separate repository](https://github.com/christianb93/ctOS_ports) - please have a look at the respective [documentation](https://github.com/christianb93/ctOS_ports/blob/master/README.md) on how to build the ports. The screenshot below, by the way, shows elvis running in ctOS on an QEMU emulator and editing `main.c` of the kernel code.
 
 ![ctOS Elvis][4]
 
