@@ -1499,12 +1499,13 @@ int vsprintf(char* s, const char* format, va_list ap) {
  * @ptr - address of a char* ptr which initially points to the % preceding the conversion
  * specification and is advanced until it points to the conversion specifier by this function
  * @suppress_assignment - set to 1 if the specs contain an assignment suppress operator *
+ * @width - field width as extracted from the conversion specification
+ * @l_flags - will be incremented by one for each l flag and by two for each L flag
  * Return value:
  * 0 if no parsing error occurred
  * 1 if a parsing error occurred
  */
-static int parse_conv_specs_scanf(char** ptr, int* suppress_assignment,
-        int* width) {
+static int parse_conv_specs_scanf(char** ptr, int* suppress_assignment, int* width, int* l_flags) {
     int field_length;
     /*
      * Advance to first character after %
@@ -1528,9 +1529,20 @@ static int parse_conv_specs_scanf(char** ptr, int* suppress_assignment,
         *width = __strntoi(*ptr, field_length);
     (*ptr) += field_length;
     /*
-     * Finally parse length modifiers
+     * Finally parse length modifiers. We currently only know
+     * l and L
      */
     field_length = strspn(*ptr, "hljztL");
+    for (int i = 0; i < field_length; i++) {
+        if ((*ptr)[i] == 'l') {
+            if (l_flags)
+                *l_flags += 1;
+        }
+        if ((*ptr)[i] == 'L') {
+            if (l_flags)
+                *l_flags += 2;
+        }
+    }
     (*ptr) += field_length;
     return 0;
 }
@@ -1667,6 +1679,109 @@ static int __consume_int(__ctOS_stream_t* stream, int base, int* int_ptr, int wi
     return read_characters;
 }
 
+
+/*
+ * Consume a floating point number from the stream and convert it to
+ * a double
+ * Parameters:
+ * @stream - the stream
+ * @double_ptr - result of the operation will be stored here
+ * @width - maximum field width, -1 if none
+ * Return value:
+ * number of digits read
+ * EOF if the end of the stream was encountered before any digit could be read
+ */
+static int __consume_double(__ctOS_stream_t* stream, double* double_ptr, int width) {
+    int read_characters = 0;
+    *double_ptr = 0;
+    int digit = 0;
+    int c;
+    int rc;
+    double fraction_base = 0.1;
+    int had_radix = 0;
+    int had_sign = 0;
+    double factor = 1.0;
+    double factor1 = 1.0;
+    int exponent;
+    while ((-1==width) || (read_characters < width)) {
+        c = __ctOS_stream_getc(stream);
+        if (EOF==c) {
+            if (0==read_characters) {
+                return EOF;
+            }
+            else {
+                break;
+            }
+        }
+        if (c == '.') {
+            /*
+             * If we already had a radix character, this is an error
+             */
+            if (1 == had_radix) {
+                __ctOS_stream_ungetc(stream, c);
+                break;
+            }
+            had_radix = 1;
+        }
+        else if ((c == '+') || (c == '-')) {
+            /*
+             * Sign should be first and appear only once
+             */
+            if ((read_characters > 0) || had_sign) {
+                __ctOS_stream_ungetc(stream, c);
+                break;
+            }
+            had_sign = 1;
+            if (c == '-')
+                factor = factor * (-1.0);
+        }
+        else if ((c == 'e') || (c == 'E')) {
+            /*
+             * We have reached the exponent
+             * Read the next part of the stream
+             * which should be an integer
+             */
+            rc = __consume_int(stream, 10, &exponent, ((width==-1) ? -1 : (width-read_characters-1)));
+            if (rc) {
+                read_characters += rc;
+                factor1 = 1.0;
+                for (int k = 0; k < (exponent < 0 ? -1 * exponent : exponent); k++)  {
+                    factor1 = factor1 * 10;
+                }
+                if (exponent < 0)
+                    factor1 = 1 / factor1;
+                factor = factor * factor1;
+            }
+            else {
+                __ctOS_stream_ungetc(stream, c);
+            }
+            break;
+        }
+        else {
+            digit = __convert_digit(c, 10);
+            if (-1==digit) {
+                __ctOS_stream_ungetc(stream, c);
+                break;
+            }
+            /*
+             * Now convert - this depends on whether
+             * we already have read the radix or not
+             */
+            if (0 == had_radix) {
+                *double_ptr = (*double_ptr)*10 + digit;
+            }
+            else {
+                *double_ptr += fraction_base * digit;
+                fraction_base /= 10;
+            }
+        }
+        read_characters++;
+    }
+    *double_ptr = *double_ptr * factor;
+    return read_characters;    
+}
+
+
 /*
  * Utility function to consume a character array from a stream
  * Parameters:
@@ -1743,6 +1858,11 @@ static int __do_scan(__ctOS_stream_t* stream, const char* template, va_list args
     int* int_ptr;
     char* char_ptr;
     char* ptr = (char*) template;
+    double value;
+    float* float_ptr;
+    double* double_ptr;
+    long double* long_double_ptr;
+    int l_flags = 0;
     unsigned int initial_filpos = __ctOS_stream_tell(stream);
     while (*ptr) {
         if ('%' == *ptr) {
@@ -1751,7 +1871,8 @@ static int __do_scan(__ctOS_stream_t* stream, const char* template, va_list args
              */
             width = -1;
             suppress_assignment = 0;
-            if(parse_conv_specs_scanf(&ptr, &suppress_assignment, &width)) {
+            l_flags = 0;
+            if(parse_conv_specs_scanf(&ptr, &suppress_assignment, &width, &l_flags)) {
                 return (0==count) ? EOF : count;
             }
             /*
@@ -1774,6 +1895,42 @@ static int __do_scan(__ctOS_stream_t* stream, const char* template, va_list args
                         count++;
                     }
                     break;
+                case 'f':
+                case 'e':
+                case 'E':
+                case 'g':
+                case 'a':
+                    SCANF_DEBUG("Have floating point conversion specifier\n");
+                    if (EOF==__consume_whitespace(stream)) {
+                        return (0==count) ? EOF : count;
+                    }
+                    double_ptr = &value;
+                    rc = __consume_double(stream, double_ptr, width);
+                    SCANF_DEBUG("rc is %d, count is %d\n", rc, count);
+                    if (EOF==rc) {
+                        return (0==count) ? EOF : count;
+                    }
+                    else {
+                        count++;
+                    }
+                    /*
+                     * Copy the result - we need the number of l flags
+                     * in the conversion specifier to see whether this is float
+                     * or a double
+                     */
+                    if (0 == l_flags) {
+                        float_ptr = (float*) va_arg(args, float*);
+                        *float_ptr = value;
+                    }
+                    else if (1 == l_flags) {
+                        double_ptr = (double*) va_arg(args, double*);
+                        *double_ptr = value;
+                    }
+                    else if (l_flags > 1) {
+                        long_double_ptr = (long double*) va_arg(args, long double*);
+                        *long_double_ptr = value;
+                    }
+                    break;                
                 case 'o':
                     if (EOF==__consume_whitespace(stream)) {
                         return (0==count) ? EOF : count;

@@ -1738,7 +1738,118 @@ int testcase116() {
     return 0;
 }
 
+/*
+ * Testcase 117: sscanf
+ * Test parsing of a float (f, e, E, g, a)
+ * Parse an integer
+ */
+int testcase117() {
+    float x;
+    ASSERT(sscanf("1", "%f", &x));
+    ASSERT(x == 1.0);
+    return 0;
+} 
 
+/*
+ * Testcase 118: sscanf
+ * Test parsing of a float (f, e, E, g, a)
+ * Parse a floating point number
+ */
+int testcase118() {
+    float x;
+    float error;
+    ASSERT(sscanf("1.5", "%f", &x));
+    ASSERT(x == 1.5);
+    ASSERT(sscanf("3.141", "%f", &x));
+    error = 3.141 - x;
+    if (error < 0)
+        error = -1.0 * error;
+    ASSERT(error < 10e-5);
+    return 0;
+} 
+
+/*
+ * Testcase 119: sscanf
+ * Test parsing of a float (f, e, E, g, a)
+ * Parse a floating point number with a sign
+ */
+int testcase119() {
+    float x;
+    float error;
+    ASSERT(sscanf("-3.141", "%f", &x));
+    error = -3.141 - x;
+    if (error < 0)
+        error = -1.0 * error;
+    ASSERT(error < 10e-5);
+    return 0;
+} 
+
+/*
+ * Testcase 120: sscanf
+ * Test parsing of a float (f, e, E, g, a)
+ * Parse a floating point number with a trailing e-expression
+ */
+int testcase120() {
+    float x;
+    float error;
+    ASSERT(sscanf("3.141e5", "%f", &x));
+    error = 3.141e5 - x;
+    if (error < 0)
+        error = -1.0 * error;
+    ASSERT(error < 10e-5);
+    return 0;
+} 
+
+/*
+ * Testcase 121: sscanf
+ * Test parsing of a float (f, e, E, g, a)
+ * Parse a floating point number as a double
+ */
+int testcase121() {
+    double x;
+    double error;
+    ASSERT(sscanf("3.141e5", "%lf", &x));
+    error = 3.141e5 - x;
+    if (error < 0)
+        error = -1.0 * error;
+    ASSERT(error < 10e-5);
+    return 0;
+} 
+
+/*
+ * Testcase 122: sscanf
+ * Test parsing of a float (f, e, E, g, a) followed by n
+ * Parse a floating point number as a double
+ */
+int testcase122() {
+    double x;
+    int n;
+    double error;
+    ASSERT(sscanf("3.141e5", "%lg%n", &x, &n));
+    error = 3.141e5 - x;
+    if (error < 0)
+        error = -1.0 * error;
+    ASSERT(error < 10e-5);
+    ASSERT(n == strlen("3.141e5"));
+    return 0;
+} 
+
+/*
+ * Testcase 123: sscanf
+ * Test parsing of a float (f, e, E, g, a) followed by n
+ * Parse a floating point number as a double, use a negative exponent
+ */
+int testcase123() {
+    double x;
+    int n;
+    double error;
+    ASSERT(sscanf("3.141e-2", "%lg%n", &x, &n));
+    error = 3.141e-2 - x;
+    if (error < 0)
+        error = -1.0 * error;
+    ASSERT(error < 10e-5);
+    return 0;
+}
 
 int main() {
     INIT;
@@ -1858,5 +1969,12 @@ int main() {
     RUN_CASE(114);
     RUN_CASE(115);
     RUN_CASE(116);
+    RUN_CASE(117);
+    RUN_CASE(118);
+    RUN_CASE(119);
+    RUN_CASE(120);
+    RUN_CASE(121);
+    RUN_CASE(122);
+    RUN_CASE(123);
     END;
 }
