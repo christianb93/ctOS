@@ -366,6 +366,14 @@ char* getenv(const char* name) {
  * 
  */
 int putenv(char* string) {
+    /*
+     * Resynchronize our environment with the global one 
+     * if needed - see the comments for getenv
+     */
+   if (environ != __ctOS_environ) {
+        __ctOS_validate_environ(environ);
+        environ = __ctOS_clone_environ(environ);
+    }     
     char** new_env = __ctOS_putenv(string);
     if (0 == new_env) {
         errno = ENOMEM;
