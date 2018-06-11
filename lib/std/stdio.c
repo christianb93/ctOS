@@ -881,6 +881,7 @@ static int __do_print_int(__ctOS_stream_t* stream, int value, int precision, int
     unsigned int mycount = 0;
     int digits = 0;
     int sign_chars = 0;
+    int sign = 0;
     int i;
     unsigned int tmp;
     unsigned int unsigned_value;
@@ -890,10 +891,14 @@ static int __do_print_int(__ctOS_stream_t* stream, int value, int precision, int
      */
     if ((value <0) && (signed_int)) {
         sign_chars = 1;
+        sign = 1;
         unsigned_value = value * (-1);
     }
     else {
         unsigned_value = value;
+    }
+    if (flags & __PRINTF_FLAGS_SPACE) {
+        sign_chars = 1;
     }
     /*
      * First determine the number of digits which we will print
@@ -910,7 +915,7 @@ static int __do_print_int(__ctOS_stream_t* stream, int value, int precision, int
      * If this is still smaller than the width and the flag __PRINTF_FLAGS_MINUS is not set, print trailing spaces first
      */
     if (width != -1) {
-        for (i = 0; i < (width - MAX(precision, digits) + sign_chars); i++) {
+        for (i = 0; i < (width - MAX(precision, digits) - sign_chars); i++) {
             if (0 == (__PRINTF_FLAGS_MINUS & flags)) {
                 if ((-1 == size) || ((*count) < size)) {
                     if (EOF==__ctOS_stream_putc(stream, ' '))
@@ -926,7 +931,7 @@ static int __do_print_int(__ctOS_stream_t* stream, int value, int precision, int
      */
     if (sign_chars) {
         if ((-1 == size) || ((*count) < size)) {
-            if (EOF == __ctOS_stream_putc(stream, '-'))
+            if (EOF == __ctOS_stream_putc(stream, (sign == 1 ? '-' : ' ')))
                 return -1;
         }
         mycount++;
@@ -1003,9 +1008,10 @@ static int __do_print_int(__ctOS_stream_t* stream, int value, int precision, int
  * @count - counter which will be increased for each character printed
  * @size - only if -1==size or count < size, an actual print is done
  * @cap - set this to 1 to capitalize nan and inf
+ * @scientific - use e or E notation, depending on cap
  */
 static int __do_print_double(__ctOS_stream_t* stream, double value, int precision, int width, int signed_int, int flags,
-       int* count, int size, int cap) {
+       int* count, int size, int cap, int scientific) {
     double unsigned_value;
     double tmp;
     int base;
@@ -1013,19 +1019,25 @@ static int __do_print_double(__ctOS_stream_t* stream, double value, int precisio
     int digit;
     int len;
     int sign_chars = 0;
+    int sign = 0;
     int i;
     int rc;
     int mycount = 0;
     double delta = 0;
+    int exp;
     /*
      * Handle sign
      */
     if ((value < 0) && (signed_int)) {
         unsigned_value = value * (-1.0);
         sign_chars = 1;
+        sign = 1;
     }
     else {
         unsigned_value = value;
+    }
+    if (flags & __PRINTF_FLAGS_SPACE) {
+        sign_chars = 1;
     }
     /*
      * Watch out for special case INF and NAN. As for NaN, the above comparison to determine the sign
@@ -1055,6 +1067,21 @@ static int __do_print_double(__ctOS_stream_t* stream, double value, int precisio
         mycount+=3;
         return mycount;
     }
+
+    /*
+     * If the conversion specifier is e or E, retrieve exponent and then set it to zero
+     */
+    if (1 == scientific) {
+        exp = 0;
+        while (unsigned_value > 10) {
+            exp++;
+            unsigned_value = unsigned_value / 10;
+        }
+        while ((unsigned_value < 1) && (unsigned_value > 0)) {
+            exp--;
+            unsigned_value = unsigned_value * 10;
+        }
+    }
     /*
      * To achieve rounding, add  .5 ^ precision
      */
@@ -1062,7 +1089,7 @@ static int __do_print_double(__ctOS_stream_t* stream, double value, int precisio
     for (i = 0; i < precision; i++) {
         delta = delta / 10;
     }
-    unsigned_value = unsigned_value + delta;
+    unsigned_value = unsigned_value + delta;    
     /*
      * Determine number of non-zero digits to the left of the decimal point
      */
@@ -1079,12 +1106,25 @@ static int __do_print_double(__ctOS_stream_t* stream, double value, int precisio
     if (unsigned_value < 1)
         digits = 1;
     /*
-     * We will print the leading digits, a decimal digit and precision digits to the right of the
+     * We will print at least the leading digits, a decimal digit and precision digits to the right of the
      * decimal point, plus maybe a sign - but skip radix if precision is zero
      */
     len = digits + precision + sign_chars + ((0 == precision) ? 0 : 1);
     /*
-     * If this is still than the width and the flag __PRINTF_FLAGS_MINUS is not set, print trailing spaces first
+     * If scientific notation is specified, we will print in addition "E" plus a sign plus the
+     * number of digits of the exponent
+     */
+    if (scientific) {
+        len += 4;
+        tmp = exp;
+        while (tmp > 100)
+        {
+            len++;
+            tmp = tmp / 10;
+        }
+    }
+    /*
+     * If this is still less than the width and the flag __PRINTF_FLAGS_MINUS is not set, print trailing spaces first
      */
     if (width != -1) {
         for (i = 0; i < (width - len); i++) {
@@ -1103,7 +1143,7 @@ static int __do_print_double(__ctOS_stream_t* stream, double value, int precisio
      */
     if (sign_chars) {
         if ((-1 == size) || ((*count) < size)) {
-            if (EOF == __ctOS_stream_putc(stream, '-'))
+            if (EOF == __ctOS_stream_putc(stream, (sign == 1 ? '-' : ' ')))
                 return -1;
         }
         mycount++;
@@ -1146,6 +1186,29 @@ static int __do_print_double(__ctOS_stream_t* stream, double value, int precisio
             return -1;
         (*count)++;
         mycount++;
+    }
+    /*
+     * If scientific notation is requested, print e or E,
+     * followed by exponent
+     */
+    if (scientific) {
+        if (-1 == __ctOS_stream_putc(stream, (cap ? 'E' : 'e')))
+            return -1;
+        (*count)++;
+        mycount++;
+        /*
+         * If the exponent is non-negative, print a '+' as __do_print_int will not do this
+         */
+        if (! (exp < 0)) {
+            if (-1 == __ctOS_stream_putc(stream, '+'))
+                return -1;
+            (*count)++;
+            mycount++;
+        }
+        rc = __do_print_int(stream, exp, 2, -1, 1, 0, 10, count, size);
+        if (rc < 0)
+            return -1;
+        mycount+=rc;
     }
     /*
      * Print trailing spaces if required - note that this should only happen
@@ -1208,7 +1271,7 @@ static int __do_print(__ctOS_stream_t* stream, size_t size, const char* template
              * A conversion specification consists of
              * - zero or more flags in any order (-, +, space, #, 0)
              * - an optional field width, which might be *
-             * - optionally a precision, separated from the field width by a semicolon
+             * - optionally a precision, separated from the field width by a period
              * - an optional length modifier (h, hh, l, ll, j, z, t, L)
              * - the conversion specifier (d, i, o, u, x, X, f, F, e, E, g, G, a, A, c, s, p, n, %)
              *
@@ -1319,7 +1382,7 @@ static int __do_print(__ctOS_stream_t* stream, size_t size, const char* template
                      */
                     if (-1 == precision)
                         precision = 6;
-                    if (-1==__do_print_double(stream, double_val, precision, width, signed_int, flags,  &count, size, cap))
+                    if (-1==__do_print_double(stream, double_val, precision, width, signed_int, flags,  &count, size, cap, 0))
                         return -1;
                     break;
                 case 'E':
@@ -1328,10 +1391,15 @@ static int __do_print(__ctOS_stream_t* stream, size_t size, const char* template
                 case 'G':
                 case 'a':
                 case 'A':
-                    /*
-                     * Not yet supported, but get argument from stack
-                     */
+                    cap = (*ptr == 'e') ? 0 : 1;
                     double_val = va_arg(args, double);
+                    /*
+                     * Default precision for doubles is 6
+                     */
+                    if (-1 == precision)
+                        precision = 6;
+                    if (-1==__do_print_double(stream, double_val, precision, width, signed_int, flags,  &count, size, cap, 1))
+                        return -1;
                     break;
                 default:
                     break;

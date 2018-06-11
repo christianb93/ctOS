@@ -11,6 +11,7 @@
 #include "stdint.h"
 #include "vga.h"
 #include "errno.h"
+#include "lib/os/mathlib.h"
 
 extern void kprintf(char* template, ...);
 extern int do_test_case(int x, int(*testcase)());
@@ -1851,10 +1852,105 @@ int testcase123() {
     return 0;
 }
 
+/*
+ * Testcase 124: sprintf
+ * Test printing of a float in scientific notation
+ */
+int testcase124() {
+    double x = 1.5;
+    char buffer[256];
+    memset(buffer, 0, 256);
+    sprintf(buffer, "%1.4E", x);
+    ASSERT(0 == strcmp(buffer, "1.5000E+00"));
+    return 0;
+}
+
+/*
+ * Testcase 125: sprintf
+ * Test printing of a float in scientific notation
+ */
+int testcase125() {
+    double x = 3.141;
+    char buffer[256];
+    memset(buffer, 0, 256);
+    sprintf(buffer, "%1.4E", x);
+    ASSERT(0 == strcmp(buffer, "3.1410E+00"));
+    return 0;
+}
+
+/*
+ * Testcase 126: sprintf
+ * Test printing of a float in scientific notation
+ * with a trailing space
+ */
+int testcase126() {
+    double x = 31.41;
+    char buffer[256];
+    memset(buffer, 0, 256);
+    sprintf(buffer, " %1.4E", x);
+    ASSERT(0 == strcmp(buffer, " 3.1410E+01"));
+    return 0;
+}
+
+/*
+ * Testcase 127: sprintf
+ * Test printing of a float in scientific notation
+ * with a trailing space and an asterisk
+ */
+int testcase127() {
+    double x = 0.12345;
+    char buffer[256];
+    memset(buffer, 0, 256);
+    sprintf(buffer, " %1.*E", 4, x);
+    ASSERT(0 == strcmp(buffer, " 1.2345E-01"));
+    return 0;
+}
+
+/*
+ * Testcase 128: sprintf
+ * Test printing of a float in scientific notation
+ * with a trailing space and an asterisk
+ * Special case 0
+ */
+int testcase128() {
+    double x = 0.0;
+    char buffer[256];
+    memset(buffer, 0, 256);
+    sprintf(buffer, " %1.*E", 5, x);
+    ASSERT(0 == strcmp(buffer, " 0.00000E+00"));
+    return 0;
+}
+
+/*
+ * Testcase 129
+ * sprintf
+ */
+int testcase129() {
+    char buffer[256];
+    sprintf(buffer, "% *d", 1, 1);
+    ASSERT(0 == strcmp(buffer, " 1"));
+    sprintf(buffer, "% *d", 1, -1);
+    ASSERT(0 == strcmp(buffer, "-1"));
+    return 0;
+}
+
+/*
+ * Testcase 130
+ * sprintf, leading space for float
+ */
+int testcase130() {
+    char buffer[256];
+    sprintf(buffer, "% *.*f", 1, 5, 1.5);
+    ASSERT(0 == strcmp(buffer, " 1.50000"));
+    sprintf(buffer, "% *.*f", 1, 5, -1.5);
+    ASSERT(0 == strcmp(buffer, "-1.50000"));
+    return 0;
+}
+
 int main() {
     INIT;
     RUN_CASE(1);
-    RUN_CASE(2);
+    RUN_CASE(2);    
     RUN_CASE(3);
     RUN_CASE(4);
     RUN_CASE(5);
@@ -1976,5 +2072,12 @@ int main() {
     RUN_CASE(121);
     RUN_CASE(122);
     RUN_CASE(123);
+    RUN_CASE(124);
+    RUN_CASE(125);
+    RUN_CASE(126);
+    RUN_CASE(127);
+    RUN_CASE(128);
+    RUN_CASE(129);
+    RUN_CASE(130);
     END;
 }
