@@ -52,7 +52,7 @@ cd ..
 ./bin/run.sh
 ```
 
-Without any options, this will run ctOS on the QEMU emulator (assuming that it is installed). To see a list of available configurations, enter `./bin/run.sh ?`. Currently, all configurations require QEMU, but ctOS also works with Bochs and Virtualbox, and I will add more run targets in the future.
+Without any options, this will run ctOS on the QEMU emulator (assuming that it is installed). To see a list of available configurations, enter `./bin/run.sh ?`. Currently, configurations for the emulators QEMU, Bochs and VirtualBox are included.
 
 Of course, you can also try to run ctOS on real hardware. **Be very careful when you try this, as especially during installation, you can break your partition table and loose data!** Needless to say that I do not assume responsibility for any potential damage that your system incurs while trying this. 
 
