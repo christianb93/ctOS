@@ -80,6 +80,15 @@ int __sem_down_intr(semaphore_t* sem, char* file, int line) {
     return 0;
 }
 
+static int do_timeout = 0;
+int __sem_down_timed(semaphore_t* sem, char* file, int line, u32 timeout) {
+    if (do_timeout)
+        return -2;
+    sem->value--;
+    return 0;
+}
+
+
 int sem_down_nowait(semaphore_t* sem) {
     sem->value--;
     return 0;
@@ -1073,6 +1082,25 @@ int testcase43() {
     return 0;
 }
 
+
+/*
+ * Testcase 44: do a timed read which results in a timeout
+ * tty_read should return 0 in this case
+ */
+int testcase44() {
+    char buffer[16];
+    struct termios tt;
+    tty_init();
+    /*
+     * Set the VTIME field
+     */
+    tty_tcgetattr(0, &tt);
+    tt.c_cc[5] = 10;
+    do_timeout = 1;
+    ASSERT(tty_read(0, 16, buffer, 0) == 0);
+    return 0;
+}
+
 int main() {
     INIT;
     RUN_CASE(1);
@@ -1118,6 +1146,7 @@ int main() {
     RUN_CASE(41);
     RUN_CASE(42);
     RUN_CASE(43);
+    RUN_CASE(44);
     END;
 }
 

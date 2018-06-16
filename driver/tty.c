@@ -20,6 +20,7 @@
 #include "lib/os/signals.h"
 #include "fs.h"
 #include "tty_ld.h"
+#include "timer.h"
 #include "lib/fcntl.h"
 
 /*
@@ -193,9 +194,31 @@ ssize_t tty_read(minor_dev_t minor, ssize_t size, void* data, u32 flags) {
         }
     }
     else {
-        if (-1 == sem_down_intr(&tty->data_available)) {
+        /*
+         * If c_cc[VTIME] is positive, we do sem_down with a time
+         * out, otherwise we do a simple interruptible sem_down
+         * The time in the termios structure is in tenth of seconds 
+         */
+        int timeout = tty->settings.c_cc[VTIME];
+        if (timeout > 0) {
+            rc = sem_down_timed(&tty->data_available, timeout*(HZ / 10));
+        }
+        else {
+            rc = sem_down_intr(&tty->data_available); 
+        }
+        if (-1 == rc) {
+            /*
+             * We have been interrupted
+             */
             mutex_up(&tty->available);
             return -EPAUSE;
+        }
+        else if (-2 == rc) {
+            /*
+             * We did a timed read and the timeout happened
+             */
+            mutex_up(&tty->available);
+            return 0;
         }
     }
     /*

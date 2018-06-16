@@ -126,16 +126,35 @@ int main() {
     /*
       * Now do a non-blocking read which returns data
       */
-     printf("Testcase 7: doing non-blocking read, please enter a and hit RETURN within the next five seconds\n");
-     sleep(5);
-     fcntl(STDIN_FILENO, F_SETFL, tflags | O_NONBLOCK);
-     rc = read(STDIN_FILENO, buffer, 1);
-     fcntl(STDIN_FILENO, F_SETFL, tflags);
-     if ((rc == 1) && (buffer[0]='a'))
-         printf("Testcase 7 successful\n");
-     else {
-         printf("Testcase 7 failed, expected return code 1, got %d with errno %d\n", rc, errno);
-         _exit(1);
-     }
+    printf("Testcase 7: doing non-blocking read, please enter a and hit RETURN within the next five seconds\n");
+    sleep(5);
+    fcntl(STDIN_FILENO, F_SETFL, tflags | O_NONBLOCK);
+    rc = read(STDIN_FILENO, buffer, 2);
+    fcntl(STDIN_FILENO, F_SETFL, tflags);
+    if ((rc == 2) && (buffer[0]=='a') & (buffer[1]=='\n'))
+        printf("Testcase 7 successful\n");
+    else {
+        printf("Testcase 7 failed, expected return code 2, got %d with errno %d\n", rc, errno);
+        _exit(1);
+    }
+    /*
+     * Try a timed read
+     */
+    struct termios tt;
+    int old_vtime;
+    tcgetattr(STDERR_FILENO, &tt);
+    old_vtime = tt.c_cc[VTIME];
+    tt.c_cc[VTIME]=6;
+    tcsetattr(STDIN_FILENO, TCSANOW, &tt);
+    rc = read(STDIN_FILENO, buffer, 1);
+    tt.c_cc[VTIME] = old_vtime;
+    tcsetattr(STDIN_FILENO, TCSANOW, &tt);
+    if (0 == rc) {
+        printf("Testcase 8 successful\n");
+    }
+    else {
+        printf("Testcase 8 failed, expected return code 0 but got %d\n", rc);
+        _exit(1);
+    }
     return 0;
 }
