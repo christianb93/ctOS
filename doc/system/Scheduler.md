@@ -20,7 +20,7 @@ To support scheduling on SMP system, the main data structures of the scheduler, 
 
 ## The scheduling algorithm
 
-Similar to Linux, FreeBSD and newer versions of Windows, ctOS uses round-robin scheduling with dynamic priorities. The priority of a runnable can range from 0 to 15, where 15 is the highest priority and 0 is the lowest priority. For each priority, a queue of runnables ready to run is maintained. When the scheduling algorithm is invoked, it performs the following steps.
+Similar to earlier versions of Linux, FreeBSD and newer versions of Windows, ctOS uses round-robin scheduling with dynamic priorities. The priority of a runnable can range from 0 to 15, where 15 is the highest priority and 0 is the lowest priority. For each priority, a queue of runnables ready to run is maintained. When the scheduling algorithm is invoked, it performs the following steps.
 
 * It first checks the quantum of the currently active runnable to see whether the scheduling flag was set because the task quantum has reached zero or because the task needs to be rescheduled for a different reason, for instance because the task called sched_yield
 * If the quantum has reached zero, the priority of the runnable is decreased by one given that it is not yet 0. In this way, runnables which have fully exceeded their CPU time are punished
