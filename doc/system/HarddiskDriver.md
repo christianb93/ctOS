@@ -455,10 +455,30 @@ GPT partionining scheme is used ("protective MBR"), it continues to locate and p
 The algorithm above leads to the following public interface functions
 for the HD driver utilities.
 
-| Function |	Description |
-|:----|-:----|
-|ssize_t hd_rw( request_queue,sectors, first_sector,rw,  buffer, minor) |	Execute the part of the algorithm described above which takes place in the mainline, i.e. reserve a DMA buffer, format a request and add it to the request queue and initiate the processing of the request queue is necessary. This function will also split the request into chunks if necessary 
-|hd_handle_irq(request_queue) |	Perform the part of the processing above which takes place in the interrupt handler. This function is called by a controller-specific interrupt handler which is also responsible for identifying the request queue to be used
+<table>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ssize_t hd_rw( request_queue,sectors, first_sector,rw,  buffer, minor)
+</td>
+<td>Execute the part of the algorithm described above which takes place in the mainline, i.e. reserve a DMA buffer, format a request and add it to the request queue and initiate the processing of the request queue is necessary. This function will also split the request into chunks if necessary 
+</td>
+</tr>
+<tr class="even">
+<td>hd_handle_irq(request_queue) 
+</td>
+<td>
+Perform the part of the processing above which takes place in the interrupt handler. This function is called by a controller-specific interrupt handler which is also responsible for identifying the request queue to be used
+</td>
+</tr>
+</tbody>
+</table>
+
 
 
 
